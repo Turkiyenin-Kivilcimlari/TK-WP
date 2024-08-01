@@ -1,0 +1,414 @@
+/* Genel Font Stili */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap');
+
+/* Genel Stil ve Body */
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+/* Header Stili */
+header {
+    background-color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.logo {
+    width: 50px;
+    height: 60px;
+    object-fit: contain;
+}
+
+nav a {
+    margin-left: 20px;
+    text-decoration: none;
+    color: #333;
+}
+
+.sign-up {
+    background-color: #6c5ce7;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+}
+
+/* Hero Bölümü Stili */
+.hero {
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 50px;
+    text-align: center;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.background-square {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    transform: skew(-5deg);
+    z-index: -1;
+}
+
+.hero h1 {
+    font-size: 2.5em;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.hero p {
+    font-size: 1.2em;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.slider-container {
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.slider {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+
+.slide {
+    min-width: 100%;
+    padding: 40px;
+    box-sizing: border-box;
+    text-align: center;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    gap: 30px;
+}
+.slide-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: center;
+}
+
+.slide h2 {
+    font-size: 1.8em;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.slide p {
+    font-size: 1em;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.slide img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.slider-nav {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.nav-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #ccc;
+    margin: 0 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.nav-dot.active {
+    background-color: #333;
+}
+@media (max-width: 768px) {
+    .slide-content {
+        grid-template-columns: 1fr;
+    }
+}
+/* Chat Butonu Stili */
+.chat-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #6c5ce7;
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+}
+
+/* Ana İçerik Bölümleri Stili */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.quote {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.quote p {
+    font-size: 18px;
+    font-style: italic;
+}
+
+.quote .author {
+    font-weight: bold;
+}
+
+.sections {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.section {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.content-info-section {
+    background-color: white;
+    padding: 50px;
+    text-align: center;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+.section:nth-child(even) {
+    flex-direction: row-reverse;
+}
+
+.image, .content {
+    flex: 1;
+}
+
+.image img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.content {
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.content h2 {
+    color: #4a4af4;
+    margin-top: 0;
+}
+/*background-square Dizayn
+/* Frame Stili - Eklenen Kısım */
+/* Eklenen kısım: Arka plan karesi için stil */
+.background-square {
+    position: fixed;
+    top: -750px;
+    left: -750px;
+    width: 1500px;
+    height: 1500px;
+    background-color: rgba(108, 92, 231, 0.1); /* Mor renk, hafif transparan */
+    transform: rotate(125deg);
+    z-index: -1; /* İçeriğin arkasında kalmasını sağlar */
+}
+
+/* Mevcut içeriğin arka plan karesiyle uyumlu olması için */
+body {
+    position: relative;
+    overflow-x: hidden; /* Yatay kaydırmayı engeller */
+}
+
+main {
+    position: relative;
+    z-index: 1; /* Ana içeriğin arka plan karesinin üzerinde olmasını sağlar */
+}
+
+
+/* Blog Bölümü Stili */
+.blog {
+    background-color: #f0f2ff;
+    padding: 50px 20px;
+    text-align: center;
+}
+
+.blog h2 {
+    font-size: 32px;
+    color: #333;
+    margin-bottom: 40px;
+}
+
+.blog-posts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.blog-post {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.blog-post:hover {
+    transform: translateY(-5px);
+}
+
+.blog-post img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+.blog-post p {
+    padding: 15px;
+    font-size: 16px;
+    color: #333;
+    margin: 0;
+}
+
+/* Footer Stili */
+footer {
+    background-color: #4B0082;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 50px 0 20px;
+    font-weight: 300;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.footer-section {
+    flex: 1;
+    margin-bottom: 20px;
+    min-width: 150px;
+}
+
+.footer-section h3, .footer-section h4 {
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-section ul li {
+    margin-bottom: 8px;
+}
+
+.footer-section ul li a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.3s ease;
+}
+
+.footer-section ul li a:hover {
+    color: rgba(255, 255, 255, 1);
+}
+
+/* Sosyal Medya İkonları */
+.social-icons {
+    margin-top: 15px;
+}
+
+.social-icons a {
+    color: rgba(255, 255, 255, 0.7);
+    margin-right: 15px;
+    font-size: 18px;
+    transition: color 0.3s ease;
+}
+
+.social-icons a:hover {
+    color: rgba(255, 255, 255, 1);
+}
+
+/* Footer Alt Kısmı */
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 20px;
+    margin-top: 40px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.footer-bottom ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+}
+
+.footer-bottom ul li {
+    display: inline;
+    margin: 0 10px;
+}
+
+.footer-bottom ul li a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-bottom ul li a:hover {
+    color: rgba(255, 255, 255, 1);
+}
+
+/* Responsive Tasarım */
+@media (max-width: 768px) {
+    .section, .section:nth-child(even) {
+        flex-direction: column;
+    }
+
+    .blog-posts {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-content {
+        flex-direction: column;
+    }
+    
+    .footer-section {
+        margin-bottom: 30px;
+    }
+}
