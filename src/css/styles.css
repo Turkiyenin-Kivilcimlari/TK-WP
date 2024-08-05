@@ -9,16 +9,6 @@ body {
     background-color: #f0f0f0;
 }
 
-/* Header Stili */
-header {
-    background-color: white;
-    padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid #e0e0e0;
-}
-
 .logo {
     width: 50px;
     height: 60px;
@@ -364,51 +354,4 @@ footer {
     color: rgba(255, 255, 255, 1);
 }
 
-/* Footer Alt Kısmı */
-.footer-bottom {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 20px;
-    margin-top: 40px;
-    text-align: center;
-    font-size: 12px;
-}
 
-.footer-bottom ul {
-    list-style: none;
-    padding: 0;
-    margin-top: 10px;
-}
-
-.footer-bottom ul li {
-    display: inline;
-    margin: 0 10px;
-}
-
-.footer-bottom ul li a {
-    color: rgba(255, 255, 255, 0.7);
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-.footer-bottom ul li a:hover {
-    color: rgba(255, 255, 255, 1);
-}
-
-/* Responsive Tasarım */
-@media (max-width: 768px) {
-    .section, .section:nth-child(even) {
-        flex-direction: column;
-    }
-
-    .blog-posts {
-        grid-template-columns: 1fr;
-    }
-
-    .footer-content {
-        flex-direction: column;
-    }
-    
-    .footer-section {
-        margin-bottom: 30px;
-    }
-}
