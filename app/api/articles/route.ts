@@ -3,6 +3,7 @@ import Article, { ArticleStatus } from '@/models/Article';
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { createArticleSlug, generateSlug } from '@/lib/utils';
+import { encryptedJson } from '@/lib/response';
 
 // Force this route to be dynamically rendered
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
     // Toplam sayfa sayısını hesapla
     const pages = Math.ceil(total / limit);
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       count: articles.length,
       total,
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
   try {
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json({ success: false, message: "Giriş yapmalısınız" }, { status: 401 });
+      return encryptedJson({ success: false, message: "Giriş yapmalısınız" }, { status: 401 });
     }
 
     // İstek içeriğini önce string olarak alıp inceleyebiliriz
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     // Başlık kontrolü
     if (!title || !title.trim()) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Başlık gereklidir' },
         { status: 400 }
       );
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
     
     // Blok kontrolü
     if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'En az bir içerik bloğu gereklidir' },
         { status: 400 }
       );
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
     const savedArticle = await article.save();
     
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: "Makale başarıyla oluşturuldu",
       article: {
@@ -139,7 +140,7 @@ export async function POST(req: NextRequest) {
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

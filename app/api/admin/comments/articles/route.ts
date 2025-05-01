@@ -4,6 +4,7 @@ import Comment from '@/models/Comment';
 import Article from '@/models/Article';
 import { checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import mongoose from 'mongoose';
+import { encryptedJson } from '@/lib/response';
 
 // Define an interface for the lean article result
 interface ArticleLean {
@@ -38,12 +39,12 @@ export async function GET(req: NextRequest) {
       title: article.title || 'İsimsiz Makale'
     }));
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       articles: formattedArticles
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

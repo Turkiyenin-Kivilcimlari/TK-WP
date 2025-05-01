@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getSession } from 'next-auth/react';
+import { decrypt } from './crypto';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || '',
@@ -53,7 +54,18 @@ const put = async (url: string, data?: any) => {
 
 // Cevap hatası durumunda işlem
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const data = (response.data as any);
+    if (data && typeof data.payload === 'string') {
+      try {
+        const decrypted = decrypt(data.payload);
+        response.data = JSON.parse(decrypted);
+      } catch (err) {
+        console.error('Response decryption failed:', err);
+      }
+    }
+    return response;
+  },
   (error) => {
 
     if (error.response?.status === 401) {

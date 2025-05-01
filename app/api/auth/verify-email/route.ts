@@ -4,6 +4,7 @@ import Token, { TokenType } from "@/models/Token";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import { encryptedJson } from "@/lib/response";
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest) {
     const token = url.searchParams.get("token");
 
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Doğrulama token'ı eksik" },
         { status: 400 }
       );
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!verificationToken) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Geçersiz veya süresi dolmuş token" },
         { status: 400 }
       );
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
     const user = await User.findById(verificationToken.userId);
 
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Kullanıcı bulunamadı" },
         { status: 404 }
       );
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
     // Başarılı bir şekilde doğrulama sayfasına yönlendir
     return NextResponse.redirect(new URL("/email-verified", req.url));
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: "Sunucu hatası" },
       { status: 500 }
     );
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
       verifyOtpSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false},
           { status: 400 }
         );
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Kullanıcı bulunamadı" },
         { status: 404 }
       );
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
 
     // Kullanıcı zaten doğrulandıysa
     if (user.emailVerified) {
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         message: "E-posta adresiniz zaten doğrulanmış",
       });
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
     const userByEmail = await User.findOne({ email });
 
     if (!userByEmail) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Kullanıcı bulunamadı" },
         { status: 404 }
       );
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
 
     // Token yoksa hata ver
     if (userTokens.length === 0) {
-      return NextResponse.json({
+      return encryptedJson({
         success: false,
         message: "Süresi geçerli doğrulama kodu bulunamadı. Lütfen yeni kod isteyin.",
       }, { status: 400 });
@@ -162,7 +163,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isOtpValid) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Geçersiz doğrulama kodu" },
         { status: 400 }
       );
@@ -186,12 +187,12 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: "E-posta adresiniz başarıyla doğrulandı",
     });
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: "Sunucu hatası" },
       { status: 500 }
     );

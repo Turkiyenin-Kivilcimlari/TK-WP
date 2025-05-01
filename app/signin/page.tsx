@@ -24,7 +24,7 @@ import {
 
 const signInSchema = z.object({
   email: z.string().email("Geçerli bir e-posta adresi girin"),
-  password: z.string().min(6, "Şifre en az 6 karakter olmalıdır"),
+  password: z.string(),
 });
 
 // Ayrı bir bileşen olarak URL parametrelerini işleyen kısmı ayırıyoruz

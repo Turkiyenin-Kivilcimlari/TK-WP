@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { encryptedJson } from '@/lib/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     // Check if the user is authenticated
     if (!session || !session.user) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: "Oturum bulunamadı",
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
     const user = await User.findById(userId);
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'Kullanıcı bulunamadı',
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
       isVerificationExpired = true;
     }
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       data: {
         enabled: isTwoFactorEnabled,
@@ -84,7 +85,7 @@ export async function GET(req: NextRequest) {
     });
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Sunucu hatası',

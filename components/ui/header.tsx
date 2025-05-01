@@ -24,6 +24,7 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { UserRole } from "@/models/User";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Avatar bileşenini import ediyoruz
+import api from "@/lib/api";
 
 function Header({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname();
@@ -38,16 +39,16 @@ function Header({ children }: { children?: React.ReactNode }) {
       href: "/about",
     },
     {
-      title: "İletişim",
-      href: "/contact",
-    },
-    {
       title: "Yazılar",
       href: "/articles",
     },
     {
       title: "Etkinlikler",
       href: "/events",
+    },
+    {
+      title: "İletişim",
+      href: "/contact",
     }
   ];
 
@@ -89,15 +90,19 @@ function Header({ children }: { children?: React.ReactNode }) {
     const handleProfileUpdate = () => {
       // Manuel session yenileme
       const refreshSessionData = async () => {
-        const newSession = await fetch('/api/auth/session');
-        if (newSession.ok) {
-          const sessionData = await newSession.json();
-          if (sessionData?.user) {
-            setUserData({
-              name: `${sessionData.user.name || ''} ${sessionData.user.lastname || ''}`.trim(),
-              profileImage: sessionData.user.avatar || "",
-            });
+        try {
+          const response = await api.get('/api/auth/session');
+          if (response.status === 200) {
+            const sessionData = response.data;
+            if (sessionData?.user) {
+              setUserData({
+                name: `${sessionData.user.name || ''} ${sessionData.user.lastname || ''}`.trim(),
+                profileImage: sessionData.user.avatar || "",
+              });
+            }
           }
+        } catch (error) {
+          console.error("Session yenilenirken hata:", error);
         }
       };
       
@@ -209,25 +214,26 @@ function Header({ children }: { children?: React.ReactNode }) {
   return (
     <>
       <header className="w-full z-[100] fixed top-0 left-0 bg-background border-b shadow-sm">
-        <div className="container relative mx-auto min-h-20 flex gap-4 flex-row lg:grid lg:grid-cols-12 items-center">
+        <div className="container mx-auto py-2 flex gap-2 flex-row lg:grid lg:grid-cols-12 items-center">
           {/* Logo ve Başlık - Sol taraf */}
           <div className="flex lg:col-span-3 justify-start items-center pl-3 lg:pl-0">
             <Link href="/" className="text-m lg:text-xl font-bold flex items-center gap-2">
-              <Image src="https://res.cloudinary.com/dkqu2s9gz/image/upload/v1742649496/eewobokrrfmwt5maygoh.png" alt="Logo" width={70} height={70} />
-              <span className="text-xl">Türkiye'nin Kıvılcımları</span>
+              <Image src="https://res.cloudinary.com/dkqu2s9gz/image/upload/v1742649496/eewobokrrfmwt5maygoh.png" alt="Logo" width={48} height={48} className="object-contain" />
+              <span className="text-lg lg:text-xl">Türkiye'nin Kıvılcımları</span>
             </Link>
           </div>
           
           {/* Navigasyon Menüsü - Orta kısım */}
-          <div className="justify-center items-center gap-4 lg:flex hidden lg:col-span-6">
-            <NavigationMenu className="flex justify-center items-start">
-              <NavigationMenuList className="flex justify-center gap-4 flex-row">
+          <div className="justify-center items-center gap-2 lg:gap-4 lg:flex hidden lg:col-span-6">
+            <NavigationMenu className="flex justify-center items-center">
+              <NavigationMenuList className="flex justify-center gap-1 md:gap-2 flex-row">
                 {navigationItems.map((item) => (
                   <NavigationMenuItem key={item.title}>
                     <Link href={item.href} legacyBehavior passHref>
                       <NavigationMenuLink asChild>
                         <Button 
                           variant={isActive(item.href) ? "default" : "ghost"}
+                          size="default"
                           className={isActive(item.href) ? "bg-primary text-primary-foreground" : ""}
                         >
                           {item.title}
@@ -241,15 +247,15 @@ function Header({ children }: { children?: React.ReactNode }) {
           </div>
           
           {/* Kullanıcı ve Tema Kontrolleri - Sağ taraf */}
-          <div className="hidden md:flex lg:col-span-3 justify-end w-full gap-4 ml-auto">
+          <div className="hidden md:flex lg:col-span-3 justify-end w-full gap-2 ml-auto">
             {isLoggedIn ? <UserProfileSection /> : <AuthButtons />}
             <ThemeToggleButton />
           </div>
           
           {/* Mobil Menü Açma Düğmesi */}
-          <div className="flex ml-auto mr-2 md:hidden items-center justify-end gap-2">
+          <div className="flex ml-auto mr-0 md:hidden items-center justify-end gap-2">
             <ThemeToggleButton />
-            <Button variant="ghost" size="sm" onClick={() => setOpen(!isOpen)} className="p-1">
+            <Button variant="ghost" size="sm" onClick={() => setOpen(!isOpen)} className="p-0">
               {isOpen ? (
                 <X className="w-5 h-5" />
               ) : (
@@ -259,7 +265,7 @@ function Header({ children }: { children?: React.ReactNode }) {
           </div>
         </div>
         {isOpen && (
-          <div className="fixed inset-0 top-20 bg-background/95 backdrop-blur-sm z-[100] overflow-y-auto max-h-[calc(100vh-5rem)]">
+          <div className="fixed inset-0 top-16 bg-background/95 backdrop-blur-sm z-[100] overflow-y-auto max-h-[calc(100vh-4rem)]">
             <div className="container mx-auto py-4 px-4">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
@@ -281,7 +287,7 @@ function Header({ children }: { children?: React.ReactNode }) {
                   {isLoggedIn ? (
                     <>
                       <div className="flex items-center gap-2 p-2">
-                        <Avatar className="w-10 h-10">
+                        <Avatar className="w-8 h-8">
                           <AvatarImage src={userData.profileImage} alt="Profile" />
                           <AvatarFallback>{userData.name.substring(0, 2)}</AvatarFallback>
                         </Avatar>
@@ -346,7 +352,7 @@ function Header({ children }: { children?: React.ReactNode }) {
           </div>
         )}
       </header>
-      <div className="pt-20 relative z-0">{children}</div>
+      <div className="pt-16 relative z-0">{children}</div>
     </>
   );
 }

@@ -5,13 +5,14 @@ import User from "@/models/User";
 import * as QRCode from 'qrcode';
 import crypto from 'crypto';
 import base32 from 'hi-base32';
+import { encryptedJson } from "@/lib/response";
 
 export async function POST(req: NextRequest) {
   try {
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findById(userId).select('+twoFactorSecret');
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
       
       const qrCode = await QRCode.toDataURL(otpauthUrl);
       
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         data: {
           qrCode,
@@ -56,13 +57,13 @@ export async function POST(req: NextRequest) {
         }
       });
     } catch (error) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'QR kod oluşturma hatası' },
         { status: 500 }
       );
     }
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

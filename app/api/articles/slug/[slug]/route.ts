@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
+import { encryptedJson } from '@/lib/response';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,7 @@ export async function GET(
     const slug = params.slug;
     
     if (!slug) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Slug ifadesi zorunludur.' },
         { status: 400 }
       );
@@ -32,7 +33,7 @@ export async function GET(
     const article = await Article.findOne({ slug }).populate('author', 'name lastname avatar');
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yazı bulunamadı' },
         { status: 404 }
       );
@@ -48,7 +49,7 @@ export async function GET(
       );
       
       if (!isAuthorized) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Bu yazıyı görüntüleme izniniz yok.' },
           { status: 403 }
         );
@@ -73,13 +74,13 @@ export async function GET(
       delete formattedArticle.author._id;
     }
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       article: formattedArticle
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Yazı yüklenirken bir hata oluştu.',

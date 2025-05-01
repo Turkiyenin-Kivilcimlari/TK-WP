@@ -4,6 +4,7 @@ import Event, { EventStatus } from '@/models/Event';
 import User from '@/models/User';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { Schema } from 'mongoose';
+import { encryptedJson } from '@/lib/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ export async function POST(
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -30,7 +31,7 @@ export async function POST(
     const event = await Event.findOne({ slug });
     
     if (!event) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Etkinlik bulunamadı' },
         { status: 404 }
       );
@@ -38,7 +39,7 @@ export async function POST(
     
     // Etkinlik onaylanmış mı kontrol et
     if (event.status !== EventStatus.APPROVED) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu etkinliğe şu anda kayıt olamazsınız' },
         { status: 400 }
       );
@@ -46,7 +47,7 @@ export async function POST(
     
     // Etkinlik tarihi geçmiş mi kontrol et
     if (new Date(event.eventDate) < new Date()) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu etkinlik sona ermiştir' },
         { status: 400 }
       );
@@ -58,7 +59,7 @@ export async function POST(
     );
     
     if (isAlreadyRegistered) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu etkinliğe zaten kayıtlısınız' },
         { status: 400 }
       );
@@ -68,7 +69,7 @@ export async function POST(
     const user = await User.findById(token.id);
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -84,13 +85,13 @@ export async function POST(
     
     await event.save();
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Etkinliğe başarıyla kaydoldunuz'
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Etkinliğe kayıt olurken bir hata oluştu' },
       { status: 500 }
     );
@@ -106,7 +107,7 @@ export async function DELETE(
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -120,7 +121,7 @@ export async function DELETE(
     const event = await Event.findOne({ slug });
     
     if (!event) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Etkinlik bulunamadı' },
         { status: 404 }
       );
@@ -128,7 +129,7 @@ export async function DELETE(
     
     // Etkinlik tarihi geçmiş mi kontrol et
     if (new Date(event.eventDate) < new Date()) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçmiş etkinliklerden kaydınızı silemezsiniz' },
         { status: 400 }
       );
@@ -140,7 +141,7 @@ export async function DELETE(
     );
     
     if (participantIndex === -1) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu etkinliğe kayıtlı değilsiniz' },
         { status: 400 }
       );
@@ -151,13 +152,13 @@ export async function DELETE(
     
     await event.save();
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Etkinlik kaydınız iptal edildi'
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Etkinlik kaydı iptal edilirken bir hata oluştu' },
       { status: 500 }
     );

@@ -4,6 +4,7 @@ import Token, { TokenType } from '@/models/Token';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import crypto from 'crypto';
+import { encryptedJson } from '@/lib/response';
 
 // Şema doğrulama
 const resetPasswordSchema = z.object({
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
       resetPasswordSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return NextResponse.json({ success: false}, { status: 400 });
+        return encryptedJson({ success: false}, { status: 400 });
       }
       throw error;
     }
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
     });
     
     if (!resetToken) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz veya süresi dolmuş token' },
         { status: 400 }
       );
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
       const user = await User.findById(resetToken.userId).select('+twoFactorSecret');
       
       if (!user) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Kullanıcı bulunamadı' },
           { status: 404 }
         );
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
       if (!shouldSkipTwoFactor) {
         // 2FA kodu gönderilmemiş veya geçersizse hata döndür
         if (!twoFactorCode) {
-          return NextResponse.json(
+          return encryptedJson(
             { 
               success: false, 
               message: 'İki faktörlü doğrulama kodu gerekli',
@@ -153,7 +154,7 @@ export async function POST(req: NextRequest) {
         }
         
         if (!user.twoFactorSecret) {
-          return NextResponse.json(
+          return encryptedJson(
             {
               success: false,
               message: 'İki faktörlü doğrulama yapılamadı, gizli anahtar eksik',
@@ -165,7 +166,7 @@ export async function POST(req: NextRequest) {
         const is2FAValid = await verify2FACode(user.twoFactorSecret, twoFactorCode ?? '');
         
         if (!is2FAValid) {
-          return NextResponse.json(
+          return encryptedJson(
             { 
               success: false, 
               message: 'Geçersiz doğrulama kodu',
@@ -183,19 +184,19 @@ export async function POST(req: NextRequest) {
       // Token'ı sil
       await Token.deleteOne({ _id: resetToken._id });
       
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         message: 'Şifreniz başarıyla sıfırlandı'
       });
     } catch (error) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Şifre güncellenirken bir hata oluştu' },
         { status: 500 }
       );
     }
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

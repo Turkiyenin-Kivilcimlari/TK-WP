@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendVerificationEmail } from '@/lib/mail';
 import { Types, Document } from 'mongoose';
 import { TokenType } from '@/models/Token';
+import { encryptedJson } from '@/lib/response';
 
 // Define the interface for User document
 interface UserDocument extends Document {
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     const { email, forceNew } = body;
     
     if (!email) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'E-posta adresi gereklidir' },
         { status: 400 }
       );
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email }) as UserDocument | null;
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     
     // E-posta zaten doğrulanmışsa ve forceNew false ise bildir
     if (user.emailVerified && !forceNew) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'E-posta adresiniz zaten doğrulanmış' },
         { status: 400 }
       );
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     try {
       userObjectId = new Types.ObjectId(userId);
     } catch (error) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz kullanıcı ID formatı' },
         { status: 400 }
       );
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
     });
     
     if (!tokenDoc) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Token oluşturma hatası' },
         { status: 500 }
       );
@@ -97,19 +98,19 @@ export async function POST(req: NextRequest) {
     });
     
     if (!emailSent) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'E-posta gönderilemedi, lütfen daha sonra tekrar deneyin' },
         { status: 500 }
       );
     }
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Doğrulama bağlantısı e-posta adresinize gönderildi'
     });
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );
