@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { encryptedJson } from '@/lib/response';
 
 // Force this route to be dynamically rendered
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
       // Session yoksa JWT token'ı kontrol et
       const token = await authenticateUser(req);
       if (!token || typeof token === 'string') {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Giriş yapmalısınız' },
           { status: 401 }
         );
@@ -32,19 +33,19 @@ export async function GET(req: NextRequest) {
     
     await connectToDatabase();
     
-    // Kullanıcıyı bul
-    const user = await User.findById(userId).select('-password');
+    // Kullanıcıyı bul ve hassas alanları hariç tut
+    const user = await User.findById(userId).select('-password -twoFactorSecret');
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
     }
     
-    return NextResponse.json({ success: true, user });
+    return encryptedJson({ success: true, user });
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );
@@ -57,7 +58,7 @@ export async function PUT(req: NextRequest) {
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token || typeof token === 'string') {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -76,7 +77,7 @@ export async function PUT(req: NextRequest) {
     const user = await User.findById(userId);
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -105,7 +106,7 @@ export async function PUT(req: NextRequest) {
     ).select('-password').lean();
     
     if (!updatedUser) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı güncellenemedi' },
         { status: 500 }
       );
@@ -135,7 +136,7 @@ export async function PUT(req: NextRequest) {
     
     
     // Güncellenmiş kullanıcı bilgilerini döndür
-    return NextResponse.json({ 
+    return encryptedJson({ 
       success: true, 
       message: 'Kullanıcı bilgileri güncellendi', 
       user: {
@@ -149,7 +150,7 @@ export async function PUT(req: NextRequest) {
       }
     });
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

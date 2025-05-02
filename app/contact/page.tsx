@@ -14,6 +14,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
 import { toast } from "sonner";
+import api from '@/lib/api';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -149,18 +150,10 @@ export default function ContactPage() {
     setIsSubmitting(true);
 
     try {
-      // API'ye form verilerini gönder
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      // API'ye form verilerini gönder - fetch yerine api.post kullanıyoruz
+      const response = await api.post("/api/contact", formData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      if (!response.data.success) {
         throw new Error("Form gönderilemedi");
       }
 

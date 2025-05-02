@@ -2,6 +2,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 import Token, { TokenType } from '@/models/Token';
+import { encryptedJson } from '@/lib/response';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
     const { email, token } = body;
     
     if (!email || !token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Eksik parametreler' },
         { status: 400 }
       );
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     });
     
     if (!resetToken) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz veya süresi dolmuş token' },
         { status: 400 }
       );
@@ -35,20 +36,20 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email });
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
     }
     
     // Kullanıcının 2FA durumunu döndür
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       requires2FA: user.twoFactorEnabled || false
     });
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

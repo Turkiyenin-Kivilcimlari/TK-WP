@@ -3,6 +3,7 @@ import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import crypto from 'crypto';
+import { encryptedJson } from '@/lib/response';
 
 // Şema doğrulama
 const resetPasswordWith2FASchema = z.object({
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
       resetPasswordWith2FASchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return NextResponse.json({ success: false}, { status: 400 });
+        return encryptedJson({ success: false}, { status: 400 });
       }
       throw error;
     }
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email }).select('+twoFactorSecret');
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
     
     // Kullanıcının 2FA'sı etkin değilse hata döndür
     if (!user.twoFactorEnabled || !user.twoFactorSecret) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu hesap için iki faktörlü doğrulama etkinleştirilmemiş' },
         { status: 400 }
       );
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
     const is2FAValid = await verify2FACode(user.twoFactorSecret, twoFactorCode);
     
     if (!is2FAValid) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz doğrulama kodu' },
         { status: 400 }
       );
@@ -140,13 +141,13 @@ export async function POST(req: NextRequest) {
     user.password = password;
     await user.save();
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Şifreniz başarıyla sıfırlandı'
     });
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

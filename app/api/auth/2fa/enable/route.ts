@@ -3,13 +3,14 @@ import User, { UserRole } from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import crypto from 'crypto';
+import { encryptedJson } from '@/lib/response';
 
 export async function POST(req: NextRequest) {
   try {
     // Kimlik doğrulama kontrolü
     const authToken = await authenticateUser(req);
     if (!authToken) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     const { token } = await req.json();
     
     if (!token || typeof token !== 'string') {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçerli bir token girilmelidir' },
         { status: 400 }
       );
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findById(userId).select('+twoFactorSecret');
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     
     // 2FA zaten aktifse bildir
     if (user.twoFactorEnabled) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: true, message: '2FA zaten etkin' },
         { status: 200 }
       );
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
     try {
       // 2FA secret kontrolü
       if (!user.twoFactorSecret) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: '2FA secret bulunamadı' },
           { status: 400 }
         );
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
       const isValid = codeStr === token;
 
       if (!isValid) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Geçersiz doğrulama kodu' },
           { status: 400 }
         );
@@ -109,18 +110,18 @@ export async function POST(req: NextRequest) {
       user.lastTwoFactorVerification = new Date();
       await user.save();
       
-      return NextResponse.json({ 
+      return encryptedJson({ 
         success: true, 
         message: '2FA başarıyla etkinleştirildi'
       });
     } catch (verifyError) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Doğrulama işlemi sırasında hata oluştu' },
         { status: 500 }
       );
     }
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
 import { deleteMultipleImages } from '@/lib/cloudinary';
 import { createArticleSlug } from '@/lib/utils';
+import { encryptedJson } from '@/lib/response';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,7 @@ export async function GET(
     
     // Makalenin varlığını doğrudan ObjectId kullanmadan kontrol et
     if (!mongoose.isValidObjectId(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale ID formatı' },
         { status: 400 }
       );
@@ -35,7 +36,7 @@ export async function GET(
     const article = await Article.findById(articleId).populate('author', 'name lastname avatar');
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -43,14 +44,14 @@ export async function GET(
     
     // Ensure author is populated and not just an ObjectId
     if (!article.author || typeof article.author === 'string' || article.author instanceof mongoose.Types.ObjectId) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yazar bilgileri yüklenemedi' },
         { status: 500 }
       );
     }
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -65,7 +66,7 @@ export async function GET(
       );
       
       if (!isAuthorized) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Bu makaleyi görüntüleme yetkiniz yok' },
           { status: 403 }
         );
@@ -115,12 +116,12 @@ export async function GET(
       thumbnail: article.thumbnail || null, // Thumbnail alanını ekle
     };
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       article: articleData
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Bir hata oluştu'
@@ -139,7 +140,7 @@ export async function PATCH(
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -147,7 +148,7 @@ export async function PATCH(
     
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale kimliği' },
         { status: 400 }
       );
@@ -160,7 +161,7 @@ export async function PATCH(
     
     // Başlık kontrolü
     if (title !== undefined && (!title || !title.trim())) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Başlık gereklidir' },
         { status: 400 }
       );
@@ -168,7 +169,7 @@ export async function PATCH(
     
     // Blok kontrolü
     if (blocks !== undefined && (!blocks || !Array.isArray(blocks) || blocks.length === 0)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'En az bir içerik bloğu gereklidir' },
         { status: 400 }
       );
@@ -180,7 +181,7 @@ export async function PATCH(
     const article = await Article.findById(articleId);
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -192,7 +193,7 @@ export async function PATCH(
     
     // Admin kullanıcıları admin API'sine yönlendir
     if (isAdmin) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'İşleminiz yapılamıyor.',
@@ -203,7 +204,7 @@ export async function PATCH(
     
     // Admin değilse ve yazar değilse güncelleme izni yok
     if (!isAuthor) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu makaleyi güncelleme yetkiniz yok' },
         { status: 403 }
       );
@@ -211,7 +212,7 @@ export async function PATCH(
     
     // Normal kullanıcılar için durum değişikliği kısıtlaması
     if (status !== undefined && status !== article.status) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale durumunu değiştirme yetkiniz yok' },
         { status: 403 }
       );
@@ -245,7 +246,7 @@ export async function PATCH(
     
     // Admin olmayan kullanıcılar sadece kendi makalelerini güncelleyebilir
     if (!isAdmin && status !== undefined && status !== article.status) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale durumunu değiştirme yetkiniz yok' },
         { status: 403 }
       );
@@ -265,7 +266,7 @@ export async function PATCH(
       
       // Enum doğrulaması yap
       if (!Object.values(ArticleStatus).includes(status as ArticleStatus)) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: `Geçersiz durum değeri.` },
           { status: 400 }
         );
@@ -287,7 +288,7 @@ export async function PATCH(
     
     // Eğer güncellenecek alan yoksa hata döndür
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Güncellenecek alan bulunamadı' },
         { status: 400 }
       );
@@ -301,14 +302,14 @@ export async function PATCH(
     );
     
     if (!updatedArticle) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale güncellenemedi' },
         { status: 500 }
       );
     }
     
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Makale başarıyla güncellendi',
       article: {
@@ -321,7 +322,7 @@ export async function PATCH(
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Bir hata oluştu',
@@ -337,7 +338,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -345,7 +346,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale kimliği' },
         { status: 400 }
       );
@@ -361,7 +362,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     
     // Başlık kontrolü
     if (title !== undefined && (!title || !title.trim())) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Başlık gereklidir' },
         { status: 400 }
       );
@@ -369,7 +370,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     
     // Blok kontrolü
     if (blocks !== undefined && (!blocks || !Array.isArray(blocks) || blocks.length === 0)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'En az bir içerik bloğu gereklidir' },
         { status: 400 }
       );
@@ -381,7 +382,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const article = await Article.findById(articleId);
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -389,7 +390,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     
     // Makale sahibi değilse güncelleme izni yok
     if (article.author.toString() !== token.id) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu makaleyi güncelleme yetkiniz yok' },
         { status: 403 }
       );
@@ -420,14 +421,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     );
     
     if (!updatedArticle) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
     }
     
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Makale başarıyla güncellendi',
       article: {
@@ -439,7 +440,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Bir hata oluştu',
@@ -459,7 +460,7 @@ export async function DELETE(
     const token = await authenticateUser(req);
     
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yetkilendirme başarısız' },
         { status: 401 }
       );
@@ -472,7 +473,7 @@ export async function DELETE(
     const article = await Article.findById(articleId).select('author thumbnail blocks');
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -483,7 +484,7 @@ export async function DELETE(
     const isAdmin = token.role === UserRole.ADMIN || token.role === UserRole.SUPERADMIN;
 
     if (!isAuthor && !isAdmin) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için yetkiniz yok' },
         { status: 403 }
       );
@@ -515,12 +516,12 @@ export async function DELETE(
       const deleteResult = await deleteMultipleImages(imageUrls);
     }
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Makale başarıyla silindi',
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Makale silinemedi',
@@ -539,7 +540,7 @@ export async function POST(
     // Token kontrolünü yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -548,7 +549,7 @@ export async function POST(
     // Admin olup olmadığını kontrol et
     if (token.role === UserRole.ADMIN || token.role === UserRole.SUPERADMIN) {
       // Admin işlemleri için doğru endpoint'e yönlendir
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'İşleminiz yapılamıyor.',
@@ -558,12 +559,12 @@ export async function POST(
     }
     
     // Normal kullanıcılar için bu işlem izin verilmiyor
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
       { status: 403 }
     );
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
+import { encryptedJson } from '@/lib/response';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export async function GET(
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -29,7 +30,7 @@ export async function GET(
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -37,7 +38,7 @@ export async function GET(
     
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale kimliği' },
         { status: 400 }
       );
@@ -49,7 +50,7 @@ export async function GET(
     const article = await Article.findById(articleId).populate('author', 'name lastname email avatar');
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -70,12 +71,12 @@ export async function GET(
       }
     }
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       article: formattedArticle
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );
@@ -95,7 +96,7 @@ export async function PATCH(
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -103,7 +104,7 @@ export async function PATCH(
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -111,7 +112,7 @@ export async function PATCH(
     
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale kimliği' },
         { status: 400 }
       );
@@ -128,7 +129,7 @@ export async function PATCH(
     const article = await Article.findById(articleId);
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -149,7 +150,7 @@ export async function PATCH(
       
       // Enum doğrulaması
       if (!Object.values(ArticleStatus).includes(status as ArticleStatus)) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: `Geçersiz durum değeri: ${status}. Geçerli değerler: ${Object.values(ArticleStatus).join(', ')}` },
           { status: 400 }
         );
@@ -163,7 +164,7 @@ export async function PATCH(
     
     // Eğer güncellenecek alan yoksa hata döndür
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Güncellenecek alan bulunamadı' },
         { status: 400 }
       );
@@ -180,14 +181,14 @@ export async function PATCH(
     );
     
     if (!updatedArticle) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale güncellenemedi' },
         { status: 500 }
       );
     }
     
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Makale başarıyla güncellendi',
       article: {
@@ -198,7 +199,7 @@ export async function PATCH(
       }
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: 'Bir hata oluştu',
       },
@@ -220,7 +221,7 @@ export async function DELETE(
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -228,7 +229,7 @@ export async function DELETE(
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -236,7 +237,7 @@ export async function DELETE(
     
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale kimliği' },
         { status: 400 }
       );
@@ -248,7 +249,7 @@ export async function DELETE(
     const article = await Article.findById(articleId);
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -257,12 +258,12 @@ export async function DELETE(
     // Makaleyi sil
     await Article.findByIdAndDelete(articleId);
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Makale başarıyla silindi'
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );
@@ -282,7 +283,7 @@ export async function PUT(
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -290,7 +291,7 @@ export async function PUT(
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -298,7 +299,7 @@ export async function PUT(
     
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale kimliği' },
         { status: 400 }
       );
@@ -309,7 +310,7 @@ export async function PUT(
     const { status } = body;
     
     if (!status) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Durum bilgisi gereklidir' },
         { status: 400 }
       );
@@ -317,7 +318,7 @@ export async function PUT(
     
     // Enum doğrulaması
     if (!Object.values(ArticleStatus).includes(status as ArticleStatus)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: `Geçersiz durum değeri: ${status}. Geçerli değerler: ${Object.values(ArticleStatus).join(', ')}` },
         { status: 400 }
       );
@@ -329,7 +330,7 @@ export async function PUT(
     const article = await Article.findById(articleId);
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -354,13 +355,13 @@ export async function PUT(
     );
     
     if (!updatedArticle) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale güncellenemedi' },
         { status: 500 }
       );
     }
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Makale durumu başarıyla güncellendi',
       article: {
@@ -371,7 +372,7 @@ export async function PUT(
       }
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

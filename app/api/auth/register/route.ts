@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { sendVerificationEmail } from '@/lib/mail';
 import { Types } from 'mongoose';
 import bcrypt from 'bcrypt';
+import { encryptedJson } from '@/lib/response';
 
 // Kayıt isteği şeması
 const registerSchema = z.object({
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
       registerSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return NextResponse.json({ success: false}, { status: 400 });
+        return encryptedJson({ success: false}, { status: 400 });
       }
       throw error;
     }
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     const existingUser = await User.findOne({ email });
     
     if (existingUser) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu e-posta adresi zaten kullanımda' },
         { status: 400 }
       );
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
     });
     
     if (!tokenDoc) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Token oluşturma hatası' },
         { status: 500 }
       );
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
     // E-posta gönder
     await sendVerificationEmail(email, { token: verificationToken, otpCode });
     
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: true, 
         message: 'Kayıt başarılı. Lütfen e-posta adresinizi doğrulayın.', 
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

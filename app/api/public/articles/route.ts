@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import { connectToDatabase } from '@/lib/mongodb';
+import { encryptedJson } from '@/lib/response';
 
 // Dynamic rendering için yapılandırma
 export const dynamic = 'force-dynamic';
@@ -53,10 +54,10 @@ export async function GET(req: NextRequest) {
       .populate({
       path: 'author',
       model: User,
-      select: 'name lastname avatar role slug'
+      select: 'name lastname avatar -_id' // role ve slug kaldırıldı
       });
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       articles,
       pagination: {
@@ -68,7 +69,7 @@ export async function GET(req: NextRequest) {
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, error: 'Bir hata oluştu' },
       { status: 500 }
     );

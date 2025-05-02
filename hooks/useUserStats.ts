@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import api from '@/lib/api';
 
 interface UserStats {
   totalUsers: number;
@@ -36,22 +37,12 @@ export function useUserStats() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 saniye timeout
 
-        // API'den kullanıcı istatistiklerini al
-        const response = await fetch('/api/admin/stats', {
-          signal: controller.signal,
-          // Cache'i devre dışı bırak
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
+        // API'den kullanıcı istatistiklerini al - fetch yerine api.get kullanıyoruz
+        const response = await api.get('/api/admin/stats', {
+          signal: controller.signal
         }).finally(() => clearTimeout(timeoutId));
         
-        if (!response.ok) {
-          throw new Error('İstatistikler alınırken bir hata oluştu');
-        }
-        
-        const data = await response.json();
-        setStats(data);
+        setStats(response.data);
         setError(null);
       } catch (error: any) {
         

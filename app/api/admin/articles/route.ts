@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import { UserRole } from '@/models/User';
 import mongoose from 'mongoose';
+import { encryptedJson } from '@/lib/response';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
     
     // Makaleleri getir (yazar bilgileriyle birlikte)
     const articles = await Article.find(query)
-      .populate('author', 'name lastname email')
+      .populate('author', 'name lastname') // email kaldırıldı
       .sort(sortOption)
       .skip(skip)
       .limit(limit);
@@ -110,7 +111,7 @@ export async function GET(req: NextRequest) {
       return formattedArticle;
     });
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       articles: formattedArticles,
       total,
@@ -119,7 +120,7 @@ export async function GET(req: NextRequest) {
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

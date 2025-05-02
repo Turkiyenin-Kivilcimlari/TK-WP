@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Event, { EventStatus, EventType } from '@/models/Event';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { UserRole } from '@/models/User';
+import { encryptedJson } from '@/lib/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +16,13 @@ export async function GET(
     await connectToDatabase();
     
     const event = await Event.findOne({ slug: params.slug })
-      .populate('author', 'name lastname avatar email');
+      .populate('author', 'name lastname avatar'); // email kaldırıldı
     
     if (!event) {
-      return NextResponse.json({ success: false, message: 'Etkinlik bulunamadı' }, { status: 404 });
+      return encryptedJson({ success: false, message: 'Etkinlik bulunamadı' }, { status: 404 });
     }
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       event: {
         id: event._id ? event._id.toString() : '',
@@ -35,11 +36,10 @@ export async function GET(
         coverImage: event.coverImage,
         status: event.status,
         author: event.author ? {
-          id: (event.author as any)._id.toString(),
           name: (event.author as any).name,
           lastname: (event.author as any).lastname,
-          email: (event.author as any).email,
           avatar: (event.author as any).avatar
+          // email alanı kaldırıldı
         } : null,
         rejectionReason: event.rejectionReason,
         createdAt: event.createdAt,
@@ -47,7 +47,7 @@ export async function GET(
       }
     });
   } catch (error) {
-    return NextResponse.json({ success: false, message: 'Etkinlik getirilemedi' }, { status: 500 });
+    return encryptedJson({ success: false, message: 'Etkinlik getirilemedi' }, { status: 500 });
   }
 }
 
@@ -60,7 +60,7 @@ export async function PUT(
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -79,7 +79,7 @@ export async function PUT(
     const event = await Event.findOne({ slug });
 
     if (!event) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Etkinlik bulunamadı' },
         { status: 404 }
       );
@@ -89,7 +89,7 @@ export async function PUT(
     const authorId = event.author ? event.author.toString() : null;
     
     if (!isAdmin && authorId !== userId) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu etkinliği düzenleme yetkiniz yok' },
         { status: 403 }
       );
@@ -112,19 +112,19 @@ export async function PUT(
     ).populate('author');
 
     if (!updatedEvent) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Etkinlik güncellenemedi' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Etkinlik başarıyla güncellendi',
       event: updatedEvent
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );
@@ -140,7 +140,7 @@ export async function DELETE(
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -154,7 +154,7 @@ export async function DELETE(
     const event = await Event.findOne({ slug });
     
     if (!event) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Etkinlik bulunamadı' },
         { status: 404 }
       );
@@ -165,7 +165,7 @@ export async function DELETE(
     const isAdmin = token.role === UserRole.ADMIN || token.role === UserRole.SUPERADMIN;
     
     if (!isAuthor && !isAdmin) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için yetkiniz bulunmamaktadır' },
         { status: 403 }
       );
@@ -174,13 +174,13 @@ export async function DELETE(
     // Etkinliği sil
     await Event.deleteOne({ _id: event._id });
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Etkinlik başarıyla silindi'
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Etkinlik silinirken bir hata oluştu' },
       { status: 500 }
     );

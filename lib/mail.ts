@@ -34,6 +34,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 
     return true;
   } catch (error) {
+    console.error('E-posta gönderim hatası:', error);
     return false;
   }
 }

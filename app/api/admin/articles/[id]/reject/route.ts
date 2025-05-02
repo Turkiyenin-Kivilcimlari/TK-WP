@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
+import { encryptedJson } from '@/lib/response';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export async function POST(
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -29,7 +30,7 @@ export async function POST(
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -37,7 +38,7 @@ export async function POST(
     
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale kimliği' },
         { status: 400 }
       );
@@ -48,7 +49,7 @@ export async function POST(
     const { reason } = body;
     
     if (!reason || !reason.trim()) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Reddetme nedeni zorunludur' },
         { status: 400 }
       );
@@ -60,7 +61,7 @@ export async function POST(
     const article = await Article.findById(articleId);
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -83,13 +84,13 @@ export async function POST(
     );
     
     if (!updatedArticle) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale reddedilemedi' },
         { status: 500 }
       );
     }
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Makale başarıyla reddedildi',
       article: {
@@ -100,7 +101,7 @@ export async function POST(
       }
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

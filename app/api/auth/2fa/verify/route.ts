@@ -5,6 +5,7 @@ import { authenticateUser } from '@/middleware/authMiddleware';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import crypto from 'crypto';
+import { encryptedJson } from '@/lib/response';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
       // Session yoksa JWT token'ı kontrol et
       const authToken = await authenticateUser(req);
       if (!authToken || typeof authToken === 'string') {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Giriş yapmalısınız' },
           { status: 401 }
         );
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { token } = body;
     
     if (!token || typeof token !== 'string') {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçerli bir token girilmelidir' },
         { status: 400 }
       );
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findById(userId).select('+twoFactorSecret');
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     
     // 2FA aktif değilse hata döndür
     if (!user.twoFactorEnabled) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: '2FA etkinleştirilmemiş' },
         { status: 400 }
       );
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     try {
       // Özel doğrulama mantığı - speakeasy yerine kendi algoritmamızı kullanalım
       if (!user.twoFactorSecret || typeof user.twoFactorSecret !== 'string') {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: '2FA yapılandırması geçersiz' },
           { status: 400 }
         );
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
       }
       
       if (!isValid) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Geçersiz doğrulama kodu' },
           { status: 400 }
         );
@@ -123,21 +124,21 @@ export async function POST(req: NextRequest) {
       await user.save();
 
       // Doğrulama başarılı
-      return NextResponse.json({ 
+      return encryptedJson({ 
         success: true, 
         message: '2FA doğrulama başarılı',
         verified: true,
         isAdmin: isAdmin
       });
     } catch (verifyError) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Doğrulama kodu işlenirken hata oluştu' },
         { status: 400 }
       );
     }
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

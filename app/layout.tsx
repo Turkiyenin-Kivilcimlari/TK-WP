@@ -5,6 +5,8 @@ import "./globals.css";
 import { ThemeProvider } from "./theme-provider";
 import { Footer } from "@/components/footer";
 import { Providers } from "./providers";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/react";
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import Script from "next/script";
@@ -53,6 +55,8 @@ export default function RootLayout({
                 <main className="min-h-screen">
                   <ErrorHandler />
                   {children}
+                  <SpeedInsights />
+                  <Analytics />
                 </main>
                 <Footer />
               </ThemeProvider>

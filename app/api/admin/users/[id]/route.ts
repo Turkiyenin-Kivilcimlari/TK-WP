@@ -5,6 +5,7 @@ import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/auth
 import mongoose from 'mongoose';
 import Article from '@/models/Article'; // Article modelini ekleyelim
 import Comment from '@/models/Comment'; // Comment modelini ekleyelim
+import { encryptedJson } from '@/lib/response';
 
 // Kullanıcı bilgilerini güncelle (admin işlemi)
 export async function PUT(
@@ -19,7 +20,7 @@ export async function PUT(
     // Normal token kontrolünü de yap
     const token = await authenticateUser(req) as { role: UserRole; id: string };
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -29,7 +30,7 @@ export async function PUT(
     
     // Geçerli bir MongoDB ID'si mi kontrol et
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz kullanıcı kimliği' },
         { status: 400 }
       );
@@ -45,7 +46,7 @@ export async function PUT(
     const user = await User.findById(userId);
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -53,7 +54,7 @@ export async function PUT(
     
     // Yönetici değilse, sadece kendi bilgilerini güncelleyebilir
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN && token.id !== userId) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu kullanıcının bilgilerini güncelleme izniniz yok' },
         { status: 403 }
       );
@@ -62,7 +63,7 @@ export async function PUT(
     // ADMIN rolündeki kullanıcıların rolünün değiştirilmesini engelle
     // SUPERADMIN ise bu kısıtlama olmayacak
     if (role && user.role === UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yönetim üyelerinin rolü değiştirilemez' },
         { status: 403 }
       );
@@ -71,7 +72,7 @@ export async function PUT(
     // Rol değişikliğini sadece yöneticiler yapabilir
     // ADMIN rolü artık sadece MEMBER ve REPRESENTATIVE rollerini değiştirebilir
     if (role && token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı rolünü değiştirme yetkiniz yok' },
         { status: 403 }
       );
@@ -79,7 +80,7 @@ export async function PUT(
     
     // SUPERADMIN olmayan bir yönetici diğer bir kullanıcıyı SUPERADMIN yapamaz
     if (role === UserRole.SUPERADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'SUPERADMIN yetkisi atama yetkiniz yok' },
         { status: 403 }
       );
@@ -110,13 +111,13 @@ export async function PUT(
       { new: true }
     ).select('-password');
     
-    return NextResponse.json({ 
+    return encryptedJson({ 
       success: true, 
       message: 'Kullanıcı bilgileri güncellendi', 
       user: updatedUser 
     });
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );
@@ -137,7 +138,7 @@ export async function DELETE(
     // Normal token kontrolünü de yap
     const token = await authenticateUser(req) as { role: UserRole; id: string };
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -145,7 +146,7 @@ export async function DELETE(
 
     // Sadece ADMIN ve SUPERADMIN rolündekilerin silme yetkisi var
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için yetkiniz bulunmamaktadır' },
         { status: 403 }
       );
@@ -156,7 +157,7 @@ export async function DELETE(
     
     // ID parametresini daha iyi kontrol et
     if (!userId || userId === 'undefined' || userId === 'null') {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçerli bir kullanıcı kimliği belirtilmedi' },
         { status: 400 }
       );
@@ -164,7 +165,7 @@ export async function DELETE(
     
     // Geçerli bir MongoDB ID'si mi kontrol et
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: `Geçersiz kullanıcı kimliği formatı.` },
         { status: 400 }
       );
@@ -176,7 +177,7 @@ export async function DELETE(
     const exists = await User.findById(userId);
     
     if (!exists) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: `Kullanıcı bulunamadı.` },
         { status: 404 }
       );
@@ -186,7 +187,7 @@ export async function DELETE(
     // Sadece SUPERADMIN diğer yönetici kullanıcıları silebilir
     if (token.role === UserRole.ADMIN && 
         (exists.role === UserRole.ADMIN || exists.role === UserRole.SUPERADMIN)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yönetim üyelerinin hesaplarını silme yetkiniz bulunmamaktadır' },
         { status: 403 }
       );
@@ -194,7 +195,7 @@ export async function DELETE(
     
     // Süper yöneticiler bile diğer süper yöneticileri silemez (güvenlik için)
     if (token.role === UserRole.SUPERADMIN && exists.role === UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Süper yöneticiler birbirlerini silemez' },
         { status: 403 }
       );
@@ -211,13 +212,13 @@ export async function DELETE(
     const user = await User.findByIdAndDelete(userId);
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı silinirken bir hata oluştu' },
         { status: 500 }
       );
     }
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Kullanıcı ve ilişkili tüm içerikleri başarıyla silindi',
       deletedData: {
@@ -226,7 +227,7 @@ export async function DELETE(
       }
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: `Kullanıcı silinirken hata oluştu.` },
       { status: 500 }
     );

@@ -4,6 +4,7 @@ import Event, { EventStatus, EventType } from '@/models/Event';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { UserRole } from '@/models/User';
 import slugify from 'slugify';
+import { encryptedJson } from '@/lib/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
       // Kullanıcının kimliğini doğrula
       const token = await authenticateUser(req);
       if (!token) {
-        return NextResponse.json({ success: false, message: 'Yetkilendirme hatası' }, { status: 401 });
+        return encryptedJson({ success: false, message: 'Yetkilendirme hatası' }, { status: 401 });
       }
 
       // Burada önemli düzeltme: organizer yerine author kullanılmalı
@@ -89,17 +90,17 @@ export async function GET(req: NextRequest) {
     // Etkinlikleri getir - populate'i author olarak değiştirdik
     const events = await Event.find(filter)
       .sort({ eventDate: upcoming ? 1 : -1 })
-      .populate('author', 'name lastname avatar email')
+      .populate('author', 'name lastname avatar') // email kaldırıldı
       .lean();
 
 
     // İstemciye dön
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       events: events.map(formatEvent)
     });
   } catch (error) {
-    return NextResponse.json({
+    return encryptedJson({
       success: false,
       message: 'Etkinlikler getirilemedi'
     }, { status: 500 });
@@ -121,17 +122,15 @@ function formatEvent(event: any) {
     status: event.status,
     // Author kullanımını düzenle
     organizer: event.author ? {
-      id: event.author._id.toString(),
       name: event.author.name,
       lastname: event.author.lastname,
       avatar: event.author.avatar
     } : null,
     author: event.author ? {
-      id: event.author._id.toString(),
       name: event.author.name,
       lastname: event.author.lastname,
-      avatar: event.author.avatar,
-      email: event.author.email
+      avatar: event.author.avatar
+      // email: event.author.email // Email kaldırıldı
     } : null,
     createdAt: event.createdAt,
     updatedAt: event.updatedAt
@@ -146,7 +145,7 @@ export async function POST(req: NextRequest) {
     // Kullanıcı kimlik doğrulaması
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json({ success: false, message: 'Yetkilendirme hatası' }, { status: 401 });
+      return encryptedJson({ success: false, message: 'Yetkilendirme hatası' }, { status: 401 });
     }
 
     // İstek gövdesini al
@@ -159,7 +158,7 @@ export async function POST(req: NextRequest) {
 
     // Yetki kontrolü - sadece admin ve temsilci kullanıcılar etkinlik oluşturabilir
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN && token.role !== UserRole.REPRESENTATIVE) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için yetkiniz bulunmamaktadır' },
         { status: 403 }
       );
@@ -173,7 +172,7 @@ export async function POST(req: NextRequest) {
 
     // Zorunlu alan kontrolü
     if (!title || !description || !eventDate || !eventType || !coverImage) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Tüm zorunlu alanları doldurun' },
         { status: 400 }
       );
@@ -181,14 +180,14 @@ export async function POST(req: NextRequest) {
 
     // Etkinlik türüne göre ek kontroller
     if ((eventType === EventType.IN_PERSON || eventType === EventType.HYBRID) && !location) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Fiziksel etkinlikler için konum zorunludur' },
         { status: 400 }
       );
     }
 
     if ((eventType === EventType.ONLINE || eventType === EventType.HYBRID) && !onlineUrl) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Online etkinlikler için bağlantı zorunludur' },
         { status: 400 }
       );
@@ -220,16 +219,16 @@ export async function POST(req: NextRequest) {
     const savedEvent = await event.save();
 
     // Detayları ile birlikte etkinliği döndür
-    const populatedEvent = await Event.findById(savedEvent._id).populate('author', 'name lastname email avatar role');
+    const populatedEvent = await Event.findById(savedEvent._id).populate('author', 'name lastname avatar'); // email ve role kaldırıldı
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Etkinlik başarıyla oluşturuldu',
       event: populatedEvent
     }, { status: 201 });
 
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Etkinlik oluşturulurken bir hata oluştu' },
       { status: 500 }
     );

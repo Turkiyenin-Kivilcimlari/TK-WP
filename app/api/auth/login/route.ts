@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import { Document } from 'mongoose';
+import { encryptedJson } from '@/lib/response';
 
 // Define a type for user document
 interface UserDocument extends Document {
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     // Üretim ortamında Cloudflare Turnstile token doğrulaması yapılmalı
     if (process.env.NODE_ENV !== 'development') {
       if (!turnstileToken) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Robot doğrulaması gerekli' },
           { status: 400 }
         );
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
       // Cloudflare Turnstile doğrulaması
       const isVerified = await verifyCloudflareTurnstile(turnstileToken);
       if (!isVerified) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Robot doğrulaması başarısız oldu' },
           { status: 400 }
         );
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
       loginSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return NextResponse.json({ success: false }, { status: 400 });
+        return encryptedJson({ success: false }, { status: 400 });
       }
       throw error;
     }
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email }).select('+password') as UserDocument | null;
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz e-posta veya şifre' },
         { status: 401 }
       );
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
     const isPasswordMatch = await user.comparePassword(password);
     
     if (!isPasswordMatch) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz e-posta veya şifre' },
         { status: 401 }
       );
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
     
     // Yeni: E-posta doğrulanmadıysa girişe izin verme
     if (!user.emailVerified) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'E-posta adresinizi doğrulayın',
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
     const token = user.getJwtToken();
     
     // Token'ı çerezle gönder
-    const response = NextResponse.json(
+    const response = encryptedJson(
       { 
         success: true, 
         message: 'Giriş başarılı',
@@ -143,18 +144,18 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
     
-    // HttpOnly çerez olarak token'ı ayarla
+    // HttpOnly, Secure ve SameSite: 'strict' ile çerezi set et
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax', // 'strict' yerine 'lax' yapıldı
-      maxAge: 30 * 24 * 60 * 60, // 30 gün
+      sameSite: 'strict',
+      maxAge:  24 * 60 * 60, // 24 saat
       path: '/',
     });
     
     return response;
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

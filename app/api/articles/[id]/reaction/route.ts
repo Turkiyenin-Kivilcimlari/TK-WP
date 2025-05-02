@@ -3,6 +3,7 @@ import Article from '@/models/Article';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
+import { encryptedJson } from '@/lib/response';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,7 @@ export async function POST(
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -27,7 +28,7 @@ export async function POST(
     const { reactionType } = await req.json();
 
     if (!reactionType || !['like', 'dislike'].includes(reactionType)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz reaksiyon tipi' },
         { status: 400 }
       );
@@ -35,7 +36,7 @@ export async function POST(
 
     // ObjectId kontrolü
     if (!mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale ID formatı' },
         { status: 400 }
       );
@@ -46,7 +47,7 @@ export async function POST(
     // Makalenin var olup olmadığını kontrol et
     const article = await Article.findById(articleId);
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -62,7 +63,7 @@ export async function POST(
       article.reactions.splice(existingReactionIndex, 1);
       await article.updateReactionCounts();
 
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         reaction: null,
         message: 'Reaksiyon kaldırıldı'
@@ -73,7 +74,7 @@ export async function POST(
       article.reactions[existingReactionIndex].type = reactionType;
       await article.updateReactionCounts();
 
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         reaction: reactionType,
         message: `Makale ${reactionType === 'like' ? 'beğenildi' : 'beğenilmedi'}`
@@ -89,14 +90,14 @@ export async function POST(
       
       await article.updateReactionCounts();
 
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         reaction: reactionType,
         message: `Makale ${reactionType === 'like' ? 'beğenildi' : 'beğenilmedi'}`
       });
     }
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );
@@ -126,7 +127,7 @@ export async function GET(
 
     // ObjectId kontrolü
     if (!mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale ID formatı' },
         { status: 400 }
       );
@@ -137,7 +138,7 @@ export async function GET(
     // Makaleyi getir
     const article = await Article.findById(articleId);
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -154,14 +155,14 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       likeCount: article.likeCount,
       dislikeCount: article.dislikeCount,
       userReaction
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

@@ -7,6 +7,7 @@ import User from '@/models/User';
 import Article from '@/models/Article';
 import { checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import mongoose from 'mongoose';
+import { encryptedJson } from '@/lib/response';
 
 // For lean queries in stats route
 interface ArticleWithStatus {
@@ -105,7 +106,7 @@ export async function GET(req: NextRequest) {
     // İçerik sayısı - makale verilerinden geliyor
     const contentCount = { count: totalCount, change: monthlyChange };
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       totalUsers,
       newUsers: {
@@ -120,7 +121,7 @@ export async function GET(req: NextRequest) {
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Sunucu hatası: '

@@ -3,6 +3,7 @@ import Comment from '@/models/Comment';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
+import { encryptedJson } from '@/lib/response';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,7 @@ export async function POST(
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -27,7 +28,7 @@ export async function POST(
     const { reactionType } = await req.json();
 
     if (!reactionType || !['like', 'dislike'].includes(reactionType)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz reaksiyon tipi' },
         { status: 400 }
       );
@@ -35,7 +36,7 @@ export async function POST(
 
     // ObjectId kontrolü
     if (!mongoose.Types.ObjectId.isValid(commentId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz yorum ID formatı' },
         { status: 400 }
       );
@@ -46,7 +47,7 @@ export async function POST(
     // Yorumun var olup olmadığını kontrol et
     const comment = await Comment.findById(commentId);
     if (!comment) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yorum bulunamadı' },
         { status: 404 }
       );
@@ -62,7 +63,7 @@ export async function POST(
       comment.reactions.splice(existingReactionIndex, 1);
       await comment.updateReactionCounts();
 
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         reaction: null,
         message: 'Reaksiyon kaldırıldı'
@@ -73,7 +74,7 @@ export async function POST(
       comment.reactions[existingReactionIndex].type = reactionType;
       await comment.updateReactionCounts();
 
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         reaction: reactionType,
         message: `Yorum ${reactionType === 'like' ? 'beğenildi' : 'beğenilmedi'}`
@@ -89,14 +90,14 @@ export async function POST(
       
       await comment.updateReactionCounts();
 
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         reaction: reactionType,
         message: `Yorum ${reactionType === 'like' ? 'beğenildi' : 'beğenilmedi'}`
       });
     }
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );
@@ -126,7 +127,7 @@ export async function GET(
 
     // ObjectId kontrolü
     if (!mongoose.Types.ObjectId.isValid(commentId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz yorum ID formatı' },
         { status: 400 }
       );
@@ -137,7 +138,7 @@ export async function GET(
     // Yorumu getir
     const comment = await Comment.findById(commentId);
     if (!comment) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yorum bulunamadı' },
         { status: 404 }
       );
@@ -154,14 +155,14 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       likeCount: comment.likeCount,
       dislikeCount: comment.dislikeCount,
       userReaction
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );
