@@ -54,12 +54,22 @@ import {
 import { toast } from "sonner";
 import api from "@/lib/api";
 
+interface EventDay {
+  date: string;
+  startTime: string;
+  endTime?: string;
+  eventType: EventType;
+  location?: string;
+  onlineUrl?: string;
+}
+
 interface EventCardProps {
   id: string;
   title: string;
   slug: string;
   description: string;
-  eventDate: string | Date;
+  eventDate?: string | Date;
+  eventDays: EventDay[];
   coverImage?: string;
   status?: string;
   eventType: EventType;
@@ -123,35 +133,157 @@ export default function EventsPage() {
 
   const events = eventsData?.events || [];
 
-  const isEventPast = (eventDate: string | Date) => {
-    const date = new Date(eventDate);
-    const oneHourAfterEvent = new Date(date.getTime() + 60 * 60 * 1000);
-    return oneHourAfterEvent < new Date();
+  const getFirstEventDay = (event: EventCardProps) => {
+    if (event.eventDays && event.eventDays.length > 0) {
+      return event.eventDays[0];
+    }
+    if (event.eventDate) {
+      return {
+        date: new Date(event.eventDate).toISOString(),
+        startTime: format(new Date(event.eventDate), "HH:mm"),
+        eventType: event.eventType,
+        location: event.location,
+        onlineUrl: event.onlineUrl,
+      };
+    }
+    return null;
+  };
+
+  const isEventPast = (event: EventCardProps) => {
+    try {
+      // For multi-day events, check the last day
+      if (event.eventDays && event.eventDays.length > 0) {
+        const lastDay = event.eventDays[event.eventDays.length - 1];
+        
+        // If we have an end time, use it, otherwise use start time + 2 hours as default duration
+        let eventEndDateTime: Date;
+        if (lastDay.endTime) {
+          eventEndDateTime = new Date(`${lastDay.date}T${lastDay.endTime}`);
+        } else {
+          // If no end time specified, assume event lasts 2 hours from start time
+          const startDateTime = new Date(`${lastDay.date}T${lastDay.startTime}`);
+          eventEndDateTime = new Date(startDateTime.getTime() + (2 * 60 * 60 * 1000));
+        }
+        
+        // Add 1 hour grace period after event end
+        const graceEndTime = new Date(eventEndDateTime.getTime() + 60 * 60 * 1000);
+        return graceEndTime < new Date();
+      }
+      
+      // For single events with eventDate
+      if (event.eventDate) {
+        const eventDate = new Date(event.eventDate as string);
+        if (isNaN(eventDate.getTime())) return false;
+        
+        // Assume event lasts 2 hours if no duration specified
+        const eventEndDate = new Date(eventDate.getTime() + (2 * 60 * 60 * 1000));
+        
+        // Add 1 hour grace period after event end
+        const graceEndTime = new Date(eventEndDate.getTime() + 60 * 60 * 1000);
+        return graceEndTime < new Date();
+      }
+      
+      return false;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const renderEventDateInfo = (event: EventCardProps) => {
+    if (!event.eventDays || event.eventDays.length === 0) {
+      if (event.eventDate) {
+        return (
+          <div className="flex items-center text-xs text-muted-foreground gap-1 mb-2">
+            <Calendar className="h-3 w-3" />
+            <span>{formatEventDate(event.eventDate, "d MMM yyyy")}</span>
+            <span>•</span>
+            <Clock className="h-3 w-3" />
+            <span>{formatEventDate(event.eventDate, "HH:mm")}</span>
+          </div>
+        );
+      }
+      return null;
+    }
+
+    if (event.eventDays.length === 1) {
+      const day = event.eventDays[0];
+      
+      return (
+        <div className="flex items-center text-xs text-muted-foreground gap-1 mb-2">
+          <Calendar className="h-3 w-3" />
+          <span>{formatEventDate(day.date, "d MMM yyyy")}</span>
+          <span>•</span>
+          <Clock className="h-3 w-3" />
+          <span>
+            {day.startTime}
+            {day.endTime && ` - ${day.endTime}`}
+          </span>
+        </div>
+      );
+    }
+    
+    const firstDay = event.eventDays[0];
+    const lastDay = event.eventDays[event.eventDays.length - 1];
+    
+    return (
+      <div className="flex items-center text-xs text-muted-foreground gap-1 mb-2">
+        <Calendar className="h-3 w-3" />
+        <span>
+          {formatEventDate(firstDay.date, "d MMM")} - {formatEventDate(lastDay.date, "d MMM yyyy")}
+        </span>
+        <span>•</span>
+        <Badge variant="outline" className="text-xs py-0 px-1 h-4">
+          {event.eventDays.length} gün
+        </Badge>
+      </div>
+    );
   };
 
   const renderEventLocation = (event: EventCardProps) => {
-    if (event.eventType === EventType.IN_PERSON || event.location) {
+    const firstDay = getFirstEventDay(event);
+    
+    if (!firstDay) return null;
+    
+    const eventTypeStr = String(firstDay.eventType || '').toUpperCase();
+    
+    if (eventTypeStr.includes('IN_PERSON') || eventTypeStr.includes('HYBRID') || firstDay.location) {
       return (
         <div className="flex items-start text-xs">
           <MapPin className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
-          <span className="line-clamp-1">{event.location}</span>
+          <span className="line-clamp-1">{firstDay.location || event.location}</span>
         </div>
       );
     }
     return null;
   };
 
+  const formatEventDate = (dateString: string | Date, formatString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return "Geçersiz tarih";
+      }
+      return format(date, formatString, { locale: tr });
+    } catch (error) {
+      return "Geçersiz tarih";
+    }
+  };
+
   const renderOnlineLink = (event: EventCardProps) => {
-    if (
-      (event.eventType === EventType.ONLINE || event.eventType === EventType.HYBRID) &&
-      event.onlineUrl &&
-      !isEventPast(event.eventDate)
-    ) {
+    const firstDay = getFirstEventDay(event);
+    
+    if (!firstDay) return null;
+    
+    const eventTypeStr = String(firstDay.eventType || '').toUpperCase();
+    
+    if ((eventTypeStr.includes('ONLINE') || eventTypeStr.includes('HYBRID')) && 
+        (firstDay.onlineUrl || event.onlineUrl) && 
+        !isEventPast(event)) {
       return (
         <div className="flex items-start text-xs">
           <LinkIcon className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
           <span className="line-clamp-1 text-primary">
-            <a href={event.onlineUrl} target="_blank" rel="noopener noreferrer">
+            <a href={firstDay.onlineUrl || event.onlineUrl} target="_blank" rel="noopener noreferrer">
               Online Bağlantı
             </a>
           </span>
@@ -161,6 +293,61 @@ export default function EventsPage() {
     return null;
   };
 
+  const getEventType = (event: EventCardProps): string => {
+    const safeEventType = String(event.eventType || '');
+    
+    if (event.eventDays && event.eventDays.length > 0) {
+      if (event.eventDays.length > 1) {
+        const typeSet = new Set(event.eventDays.map(day => String(day.eventType || '')));
+        
+        if (typeSet.has('HYBRID') || (typeSet.has('IN_PERSON') && typeSet.has('ONLINE'))) {
+          return 'HYBRID';
+        }
+        
+        if (typeSet.has('IN_PERSON') && !typeSet.has('ONLINE')) {
+          return 'IN_PERSON';
+        }
+        
+        if (typeSet.has('ONLINE') && !typeSet.has('IN_PERSON')) {
+          return 'ONLINE';
+        }
+      }
+      return safeEventType;
+
+    }
+    return safeEventType;
+  };
+
+  const renderEventTypeInfo = (event: EventCardProps) => {
+    const eventTypeStr = getEventType(event).toUpperCase();
+    
+    let label = "Fiziksel";
+    let badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+    
+    if (eventTypeStr.includes('ONLINE')) {
+      label = "Online";
+      badgeClass = "bg-green-50 text-green-700 border-green-200";
+    } else if (eventTypeStr.includes('HYBRID')) {
+      label = "Hibrit";
+      badgeClass = "bg-purple-50 text-purple-700 border-purple-200";
+    }
+    
+    const hasMixedTypes = event.eventDays && event.eventDays.length > 1 && 
+      new Set(event.eventDays.map(day => String(day.eventType || ''))).size > 1;
+    
+    return (
+      <div className="mt-1">
+        <Badge variant="outline" className={`text-xs ${badgeClass}`}>
+          {label}
+        </Badge>
+        {hasMixedTypes && (
+          <div className="text-xs text-muted-foreground mt-1">
+            * Günlere göre değişiklik gösterir
+          </div>
+        )}
+      </div>
+    );
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -200,7 +387,7 @@ export default function EventsPage() {
       setEventToDelete(null);
     }
   };
-
+  console.log("events", events);
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
@@ -345,20 +532,7 @@ export default function EventsPage() {
                 )}
               </div>
               <CardHeader className="p-4 pb-2">
-                <div className="flex items-center text-xs text-muted-foreground gap-1 mb-2">
-                  <Calendar className="h-3 w-3" />
-                  <span>
-                    {format(new Date(event.eventDate), "d MMM yyyy", {
-                      locale: tr,
-                    })}
-                  </span>
-                  <span>•</span>
-                  <Clock className="h-3 w-3" />
-                  <span>
-                    {format(new Date(event.eventDate), "HH:mm", { locale: tr })}
-                  </span>
-                </div>
-
+                {renderEventDateInfo(event)}
                 <CardTitle className="text-base mb-1 line-clamp-2">
                   {event.title}
                 </CardTitle>
@@ -370,6 +544,7 @@ export default function EventsPage() {
                 </p>
 
                 <div className="mt-2 space-y-1">
+                  {renderEventTypeInfo(event)}
                   {renderEventLocation(event)}
                   {renderOnlineLink(event)}
                 </div>

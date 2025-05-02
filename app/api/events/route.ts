@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
-import Event, { EventStatus, EventType } from '@/models/Event';
-import { authenticateUser } from '@/middleware/authMiddleware';
-import { UserRole } from '@/models/User';
-import slugify from 'slugify';
-import { encryptedJson } from '@/lib/response';
+import { NextRequest } from "next/server";
+import { connectToDatabase } from "@/lib/mongodb";
+import Event, { EventStatus, EventType } from "@/models/Event";
+import { authenticateUser } from "@/middleware/authMiddleware";
+import { UserRole } from "@/models/User";
+import { encryptedJson } from "@/lib/response";
+import { Schema } from "mongoose";
+import slugify from "slugify";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Etkinlikleri getir
 export async function GET(req: NextRequest) {
@@ -15,13 +16,13 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const searchParams = url.searchParams;
 
-    const upcoming = searchParams.get('upcoming') === 'true';
-    const past = searchParams.get('past') === 'true';
-    const my = searchParams.get('my') === 'true';
-    const status = searchParams.get('status');
-    const eventType = searchParams.get('eventType');
-    const search = searchParams.get('search') || '';
-    const grace = parseInt(searchParams.get('grace') || '60', 10); // Varsayılan 60 dakika (1 saat)
+    const upcoming = searchParams.get("upcoming") === "true";
+    const past = searchParams.get("past") === "true";
+    const my = searchParams.get("my") === "true";
+    const status = searchParams.get("status");
+    const eventType = searchParams.get("eventType");
+    const search = searchParams.get("search") || "";
+    const grace = parseInt(searchParams.get("grace") || "60", 10); // Varsayılan 60 dakika (1 saat)
 
     await connectToDatabase();
 
@@ -33,41 +34,54 @@ export async function GET(req: NextRequest) {
       // Kullanıcının kimliğini doğrula
       const token = await authenticateUser(req);
       if (!token) {
-        return encryptedJson({ success: false, message: 'Yetkilendirme hatası' }, { status: 401 });
+        return encryptedJson(
+          { success: false, message: "Yetkilendirme hatası" },
+          { status: 401 }
+        );
       }
 
-      // Burada önemli düzeltme: organizer yerine author kullanılmalı
-      // Etkinlik oluşturma kısmında author: token.id olarak kaydedildiğinden, 
-      // burada da author alanıyla filtreleme yapmalıyız
       filter.author = token.id;
 
-      // Kullanıcı kendi etkinliklerini görüntülerken, tüm durumları göster
-      // Durum filtresi olarak belirtilen bir değer varsa onu kullan
       if (status) {
         filter.status = status;
       }
-
     } else {
-      // Gelecek/Geçmiş etkinlik filtrelemesi
+      // Yaklaşan/Geçmiş etkinlik filtrelemesi için etkinlik günlerini kontrol et
+      const now = new Date();
+      
       if (upcoming) {
-        // Yaklaşan etkinlikler: Şu andan başlayıp, etkinlik saatinden grace dakika (varsayılan 60 dk) sonrasına kadar
-        const now = new Date();
-        filter.eventDate = {
-          $gte: new Date(now.getTime() - grace * 60 * 1000) // Şimdi - grace period
-        };
+        // Yaklaşan etkinlikler: Son günü henüz geçmemiş etkinlikler
+        filter.$or = [
+          { 
+            "eventDays.date": { 
+              $gte: new Date(now.setHours(0, 0, 0, 0)) 
+            } 
+          },
+          {
+            $and: [
+              { "eventDays.date": { $eq: new Date(now.setHours(0, 0, 0, 0)) } },
+              { 
+                $or: [
+                  { "eventDays.endTime": { $exists: true, $ne: "" } },
+                  { "eventDays.startTime": { $exists: true } }
+                ]
+              }
+            ]
+          }
+        ];
       } else if (past) {
-        // Geçmiş etkinlikler: Etkinlik saatinden grace dakika sonrası geçmişse
-        const now = new Date();
-        filter.eventDate = {
-          $lt: new Date(now.getTime() - grace * 60 * 1000) // Şimdi - grace period
+        // Geçmiş etkinlikler: Son günü geçmiş etkinlikler
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        filter["eventDays.date"] = { 
+          $lt: new Date(yesterday.setHours(23, 59, 59, 999)) 
         };
       }
 
-      // Durum filtresi
       if (status) {
         filter.status = status;
       } else {
-        // Kendi etkinlikleri dışında sadece onaylanmış etkinlikleri göster
         filter.status = EventStatus.APPROVED;
       }
     }
@@ -80,30 +94,30 @@ export async function GET(req: NextRequest) {
     // Arama filtresi
     if (search) {
       filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { location: { $regex: search, $options: 'i' } }
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { "eventDays.location": { $regex: search, $options: "i" } },
       ];
     }
 
-
-    // Etkinlikleri getir - populate'i author olarak değiştirdik
+    // Etkinlikleri getir
     const events = await Event.find(filter)
-      .sort({ eventDate: upcoming ? 1 : -1 })
-      .populate('author', 'name lastname avatar') // email kaldırıldı
+      .sort({ "eventDays.0.date": upcoming ? 1 : -1 })
+      .populate("author", "name lastname avatar")
       .lean();
 
-
-    // İstemciye dön
     return encryptedJson({
       success: true,
-      events: events.map(formatEvent)
+      events: events.map(formatEvent),
     });
   } catch (error) {
-    return encryptedJson({
-      success: false,
-      message: 'Etkinlikler getirilemedi'
-    }, { status: 500 });
+    return encryptedJson(
+      {
+        success: false,
+        message: "Etkinlikler getirilemedi",
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -114,26 +128,35 @@ function formatEvent(event: any) {
     title: event.title,
     slug: event.slug,
     description: event.description,
-    eventDate: event.eventDate,
     eventType: event.eventType,
-    location: event.location,
-    onlineUrl: event.onlineUrl,
+    eventDays: event.eventDays
+      ? event.eventDays.map((day: any) => ({
+          date: day.date,
+          startTime: day.startTime,
+          endTime: day.endTime,
+          location: day.location || null,
+          onlineUrl: day.onlineUrl || null,
+        }))
+      : [],
     coverImage: event.coverImage,
     status: event.status,
-    // Author kullanımını düzenle
-    organizer: event.author ? {
-      name: event.author.name,
-      lastname: event.author.lastname,
-      avatar: event.author.avatar
-    } : null,
-    author: event.author ? {
-      name: event.author.name,
-      lastname: event.author.lastname,
-      avatar: event.author.avatar
-      // email: event.author.email // Email kaldırıldı
-    } : null,
+    organizer: event.author
+      ? {
+          name: event.author.name,
+          lastname: event.author.lastname,
+          avatar: event.author.avatar,
+        }
+      : null,
+    author: event.author
+      ? {
+          id: event.author._id,
+          name: event.author.name,
+          lastname: event.author.lastname,
+          avatar: event.author.avatar,
+        }
+      : null,
     createdAt: event.createdAt,
-    updatedAt: event.updatedAt
+    updatedAt: event.updatedAt,
   };
 }
 
@@ -142,94 +165,174 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    // Kullanıcı kimlik doğrulaması
     const token = await authenticateUser(req);
     if (!token) {
-      return encryptedJson({ success: false, message: 'Yetkilendirme hatası' }, { status: 401 });
+      return encryptedJson(
+        { success: false, message: "Yetkilendirme hatası" },
+        { status: 401 }
+      );
     }
 
-    // İstek gövdesini al
     const eventData = await req.json();
 
-    // Slug kontrolü - eğer slug yoksa başlıktan oluştur
     if (!eventData.slug && eventData.title) {
       eventData.slug = slugify(eventData.title);
     }
 
-    // Yetki kontrolü - sadece admin ve temsilci kullanıcılar etkinlik oluşturabilir
-    if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN && token.role !== UserRole.REPRESENTATIVE) {
+    if (
+      token.role !== UserRole.ADMIN &&
+      token.role !== UserRole.SUPERADMIN &&
+      token.role !== UserRole.REPRESENTATIVE
+    ) {
       return encryptedJson(
-        { success: false, message: 'Bu işlem için yetkiniz bulunmamaktadır' },
+        { success: false, message: "Bu işlem için yetkiniz bulunmamaktadır" },
         { status: 403 }
       );
     }
 
-    // Veritabanı bağlantısı
     await connectToDatabase();
 
-    // İstek verilerini al
-    const { title, description, eventDate, eventType, location, onlineUrl, coverImage } = eventData;
+    const { title, description, eventType, eventDays, coverImage } = eventData;
 
-    // Zorunlu alan kontrolü
-    if (!title || !description || !eventDate || !eventType || !coverImage) {
+    if (!title || !description || !eventType || !eventDays || !coverImage) {
       return encryptedJson(
-        { success: false, message: 'Tüm zorunlu alanları doldurun' },
+        {
+          success: false,
+          message: "Tüm zorunlu alanları doldurun",
+          errors: {
+            title: !title ? "Başlık zorunludur" : null,
+            description: !description ? "Açıklama zorunludur" : null,
+            eventType: !eventType ? "Etkinlik tipi zorunludur" : null,
+            eventDays: !eventDays ? "En az bir etkinlik günü gereklidir" : null,
+            coverImage: !coverImage ? "Kapak görseli zorunludur" : null,
+          },
+        },
         { status: 400 }
       );
     }
 
-    // Etkinlik türüne göre ek kontroller
-    if ((eventType === EventType.IN_PERSON || eventType === EventType.HYBRID) && !location) {
+    if (!Array.isArray(eventDays) || eventDays.length === 0) {
       return encryptedJson(
-        { success: false, message: 'Fiziksel etkinlikler için konum zorunludur' },
+        { success: false, message: "En az bir etkinlik günü eklemelisiniz" },
         { status: 400 }
       );
     }
 
-    if ((eventType === EventType.ONLINE || eventType === EventType.HYBRID) && !onlineUrl) {
+    const fixedEventDays = eventDays.map((day) => {
+      const updatedDay = { ...day };
+
+      if (updatedDay.eventType === EventType.ONLINE) {
+        if (!updatedDay.endTime || updatedDay.endTime === "") {
+          updatedDay.endTime = "23:59";
+        }
+      }
+
+      return updatedDay;
+    });
+
+    const invalidDays = fixedEventDays.filter((day) => {
+      try {
+        if (day.eventType === EventType.IN_PERSON) {
+          if (!day.location || (!day.endTime && day.endTime !== undefined))
+            return true;
+        }
+
+        if (day.eventType === EventType.ONLINE && !day.onlineUrl) {
+          return true;
+        }
+
+        if (day.eventType === EventType.HYBRID) {
+          if (
+            !day.location ||
+            !day.onlineUrl ||
+            (!day.endTime && day.endTime !== undefined)
+          )
+            return true;
+        }
+
+        return false;
+      } catch (err) {
+        return true;
+      }
+    });
+
+    if (invalidDays.length > 0) {
       return encryptedJson(
-        { success: false, message: 'Online etkinlikler için bağlantı zorunludur' },
+        {
+          success: false,
+          message: "Etkinlik günleri için gerekli bilgiler eksik",
+          errors: {
+            eventDays:
+              "Her etkinlik günü için ilgili alanların doldurulması gerekiyor",
+          },
+        },
         { status: 400 }
       );
     }
 
-    // Etkinlik durumunu belirle
     let status = EventStatus.PENDING_APPROVAL;
 
-    // Admin ve süper admin kullanıcılar için direkt onaylı olarak oluşturabilirler
     if (token.role === UserRole.ADMIN || token.role === UserRole.SUPERADMIN) {
       status = eventData.status || EventStatus.APPROVED;
     }
 
-    // Yeni etkinlik oluştur
-    const event = new Event({
-      title,
-      description,
-      eventDate,
-      eventType,
-      location,
-      onlineUrl,
-      coverImage,
-      author: token.id,
-      status,
-      slug: eventData.slug
-    });
+    try {
+      const event = new Event({
+        title,
+        description,
+        eventType,
+        eventDays: fixedEventDays,
+        coverImage,
+        author: token.id,
+        status,
+        participants: [],
+        slug: eventData.slug || undefined,
+      });
 
-    // Etkinliği kaydet
-    const savedEvent = await event.save();
+      const savedEvent = await event.save();
 
-    // Detayları ile birlikte etkinliği döndür
-    const populatedEvent = await Event.findById(savedEvent._id).populate('author', 'name lastname avatar'); // email ve role kaldırıldı
+      const populatedEvent = await Event.findById(savedEvent._id).populate(
+        "author",
+        "name lastname avatar"
+      );
 
-    return encryptedJson({
-      success: true,
-      message: 'Etkinlik başarıyla oluşturuldu',
-      event: populatedEvent
-    }, { status: 201 });
+      return encryptedJson(
+        {
+          success: true,
+          message: "Etkinlik başarıyla oluşturuldu",
+          event: populatedEvent,
+        },
+        { status: 201 }
+      );
+    } catch (modelError: any) {
+      if (modelError.name === "ValidationError") {
+        const validationErrors: Record<string, string> = {};
 
+        for (const path in modelError.errors) {
+          validationErrors[path] = modelError.errors[path].message;
+        }
+
+        return encryptedJson(
+          {
+            success: false,
+            message:
+              "Validasyon hatası: " +
+              Object.values(validationErrors).join(", "),
+            validationErrors,
+          },
+          { status: 400 }
+        );
+      }
+
+      throw modelError;
+    }
   } catch (error: any) {
     return encryptedJson(
-      { success: false, message: 'Etkinlik oluşturulurken bir hata oluştu' },
+      {
+        success: false,
+        message: "Etkinlik oluşturulurken bir hata oluştu.",
+        error: "Bilinmeyen hata",
+      },
       { status: 500 }
     );
   }

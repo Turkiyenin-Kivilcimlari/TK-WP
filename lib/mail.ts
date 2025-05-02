@@ -1,10 +1,10 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 // SMTP yapılandırması için .env.local dosyasındaki bilgileri kullanıyoruz
 const transporter = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
   port: Number(process.env.MAIL_PORT),
-  secure: process.env.SECURE_CONNECTITON_TYPE === 'SSL/TLS',
+  secure: process.env.SECURE_CONNECTITON_TYPE === "SSL/TLS",
   auth: {
     user: process.env.MAIL_EMAIL,
     pass: process.env.MAIL_PASSWORD,
@@ -34,16 +34,18 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error('E-posta gönderim hatası:', error);
     return false;
   }
 }
 
 // Şifre sıfırlama e-postası gönder
-export async function sendPasswordResetEmail(to: string, resetToken: string): Promise<boolean> {
+export async function sendPasswordResetEmail(
+  to: string,
+  resetToken: string
+): Promise<boolean> {
   // Şifre sıfırlama URL'ini oluştur
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password/${resetToken}`;
-  
+
   // E-posta HTML içeriği
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.5;">
@@ -65,20 +67,25 @@ export async function sendPasswordResetEmail(to: string, resetToken: string): Pr
 
   return sendEmail({
     to,
-    subject: 'Şifre Sıfırlama İsteği',
+    subject: "Şifre Sıfırlama İsteği",
     html,
   });
 }
 
 // E-posta doğrulama postası gönder
-export async function sendVerificationEmail(to: string, verificationData: { token: string, otpCode: string }): Promise<boolean> {
-  if (!verificationData || typeof verificationData !== 'object') {
+export async function sendVerificationEmail(
+  to: string,
+  verificationData: { token: string; otpCode: string }
+): Promise<boolean> {
+  if (!verificationData || typeof verificationData !== "object") {
     return false;
   }
   if (!verificationData.token || !verificationData.otpCode) {
     return false;
   }
-  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify-email/${verificationData.token}`;
+  const verifyUrl = `${
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  }/verify-email/${verificationData.token}`;
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #333; text-align: center;">E-posta Adresinizi Doğrulayın</h2>
@@ -95,6 +102,6 @@ export async function sendVerificationEmail(to: string, verificationData: { toke
   return sendEmail({
     to,
     subject: "E-posta Adresinizi Doğrulayın",
-    html
+    html,
   });
 }

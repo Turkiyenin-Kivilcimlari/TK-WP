@@ -1,22 +1,54 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
-import { nanoid } from 'nanoid';
-import slugify from 'slugify';
+import mongoose, { Document, Schema, model, Model, Types } from "mongoose";
+import slugify from "slugify";
+import { nanoid } from "nanoid";
 
-// Etkinlik tipleri
+// Etkinlik Tipleri
 export enum EventType {
-  IN_PERSON = 'IN_PERSON',
-  ONLINE = 'ONLINE',
-  HYBRID = 'HYBRID'
+  IN_PERSON = "IN_PERSON", // Fiziksel
+  ONLINE = "ONLINE", // Çevrimiçi
+  HYBRID = "HYBRID", // Hibrit
 }
 
-// Etkinlik durumu
+// Etkinlik Durumları
 export enum EventStatus {
-  DRAFT = 'DRAFT', // Taslak
-  PENDING_APPROVAL = 'PENDING_APPROVAL', // Onay bekliyor
-  APPROVED = 'APPROVED', // Onaylandı
-  REJECTED = 'REJECTED', // Reddedildi
-  COMPLETED = 'COMPLETED', // Tamamlandı
-  CANCELLED = 'CANCELLED', // İptal edildi
+  DRAFT = "DRAFT", // Taslak
+  PENDING_APPROVAL = "PENDING_APPROVAL", // Onay Bekliyor
+  APPROVED = "APPROVED", // Onaylandı
+  REJECTED = "REJECTED", // Reddedildi
+  COMPLETED = "COMPLETED", // Tamamlandı
+  CANCELLED = "CANCELLED", // İptal edildi
+}
+
+// Etkinlik Günü Arayüzü
+interface IEventDay {
+  date: Date; // Tarih
+  startTime: string; // Başlangıç saati (HH:MM)
+  endTime?: string; // Bitiş saati (HH:MM) - opsiyonel
+  eventType: EventType; // Her günün kendi etkinlik tipi olabilir
+  location?: string; // Konum (fiziksel etkinlik için)
+  onlineUrl?: string; // Online URL (online etkinlik için)
+}
+
+// Etkinlik Arayüzü
+export interface IEvent extends Document {
+  title: string;
+  slug: string;
+  description: string;
+  eventType: EventType;
+  eventDays: IEventDay[];
+  coverImage: string;
+  author: Types.ObjectId | string; // Etkinliği oluşturan
+  participants: Participant[];
+  status: EventStatus;
+  rejectionReason?: string;
+  reviewedAt?: Date; // Onaylanan etkinlikler için tarih
+  reviewedBy?: Types.ObjectId; // Onaylayan adminin ID'si
+  eventDate?: Date; // Etkinlik tarihi (ilk günün tarihi)
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  generateSlug: () => string;
 }
 
 // Katılımcı tipi
@@ -28,138 +60,191 @@ interface Participant {
   registeredAt: Date;
 }
 
-// Etkinlik interface'i
-export interface IEvent extends Document {
-  title: string;
-  slug: string;
-  description: string;
-  coverImage: string;
-  eventDate: Date;
-  eventType: EventType;
-  location?: string;
-  onlineUrl?: string;
-  author: Schema.Types.ObjectId;
-  participants: Participant[];
-  status: EventStatus;
-  rejectionReason?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  generateSlug: () => string;
-}
+// Etkinlik Günü Şeması
+const EventDaySchema = new Schema<IEventDay>({
+  date: {
+    type: Date,
+    required: true,
+  },
+  startTime: {
+    type: String,
+    required: true,
+    validate: {
+      validator: function (v: string) {
+        return /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
+      },
+      message: (props) =>
+        `${props.value} geçerli bir saat formatı değil (HH:MM)`,
+    },
+  },
+  endTime: {
+    type: String,
+    // Online etkinliklerde gerekli değil, diğer etkinliklerde gerekli
+    required: function (this: any) {
+      // this nesnesi Document yerine Object olarak işleniyor olabilir
+      // Bu yüzden daha esnek bir kontrol yapıyoruz
+      try {
+        return this.eventType && this.eventType !== EventType.ONLINE;
+      } catch (e) {
+        // Eğer bir hata oluşursa genel durumda zorunlu kabul et
+        // API tarafında özel işlem yapılacak
+        return true;
+      }
+    },
+    validate: {
+      validator: function (v: string | undefined) {
+        // Değer boşsa ve tür ONLINE ise geçerli
+        try {
+          if (this.eventType === EventType.ONLINE) return true;
+        } catch (e) {
+          // Tür kontrolü çalışmazsa format kontrolü yap
+        }
 
-// Etkinlik şeması
+        // Boş değilse format kontrolü
+        return !v || /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
+      },
+      message: (props) =>
+        `${props.value} geçerli bir saat formatı değil (HH:MM)`,
+    },
+  },
+  eventType: {
+    type: String,
+    enum: EventType,
+    required: true,
+  },
+  location: {
+    type: String,
+    required: function (this: IEventDay) {
+      return (
+        this.eventType === EventType.IN_PERSON ||
+        this.eventType === EventType.HYBRID
+      );
+    },
+  },
+  onlineUrl: {
+    type: String,
+    required: function (this: IEventDay) {
+      return (
+        this.eventType === EventType.ONLINE ||
+        this.eventType === EventType.HYBRID
+      );
+    },
+  },
+});
+
+// Etkinlik Şeması
 const EventSchema = new Schema<IEvent>(
   {
-    title: { 
-      type: String, 
-      required: [true, 'Başlık zorunludur'],
-      trim: true
+    title: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    slug: { 
-      type: String, 
-      required: true, 
+    slug: {
+      type: String,
+      required: true,
       unique: true,
-      index: true 
+      trim: true,
     },
-    description: { 
-      type: String, 
-      required: [true, 'Açıklama zorunludur'],
-      minlength: [20, 'Açıklama en az 20 karakter olmalıdır']
+    description: {
+      type: String,
+      required: true,
     },
-    coverImage: { 
-      type: String, 
-      required: [true, 'Kapak görseli zorunludur']
+    coverImage: {
+      type: String,
+      required: true,
     },
-    eventDate: { 
-      type: Date, 
-      required: [true, 'Etkinlik tarihi zorunludur']
-    },
-    eventType: { 
-      type: String, 
+    eventType: {
+      type: String,
+      required: true,
       enum: Object.values(EventType),
-      required: [true, 'Etkinlik türü zorunludur'],
-      default: EventType.IN_PERSON
     },
-    location: { 
-      type: String,
-      required: function(this: IEvent) {
-        return this.eventType === EventType.IN_PERSON || this.eventType === EventType.HYBRID;
-      }
+    eventDays: {
+      type: [EventDaySchema],
+      required: true,
+      validate: {
+        validator: (days: IEventDay[]) => days.length > 0,
+        message: "En az bir etkinlik günü belirtilmelidir",
+      },
     },
-    onlineUrl: { 
-      type: String,
-      required: function(this: IEvent) {
-        return this.eventType === EventType.ONLINE || this.eventType === EventType.HYBRID;
-      }
-    },
-    author: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'User', 
-      required: true 
+    author: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     participants: [
       {
-        userId: { type: Schema.Types.ObjectId, ref: 'User' },
-        name: { type: String, required: true },
-        lastname: { type: String, required: true },
-        email: { type: String, required: true },
-        registeredAt: { type: Date, default: Date.now }
-      }
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+        },
+        lastname: {
+          type: String,
+          required: true,
+        },
+        email: {
+          type: String,
+          required: true,
+        },
+        registeredAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
     ],
-    status: { 
-      type: String, 
+    status: {
+      type: String,
+      required: true,
       enum: Object.values(EventStatus),
-      default: EventStatus.PENDING_APPROVAL
+      default: EventStatus.PENDING_APPROVAL,
     },
-    rejectionReason: { 
-      type: String
-    }
+    rejectionReason: {
+      type: String,
+    },
   },
-  { 
-    timestamps: true 
+  {
+    timestamps: true,
   }
 );
 
-// Etkinlik kaydedilmeden önce slug oluştur
-EventSchema.pre('save', async function(next) {
-  // Yeni oluşturuluyorsa veya başlık değiştiyse
-  if (this.isNew || this.isModified('title')) {
+// Slug oluşturma metodu
+EventSchema.methods.generateSlug = function (): string {
+  const slugBase = this.title
+    ? slugify(this.title, { lower: true })
+    : nanoid(10);
+  return `${slugBase}-${nanoid(5)}`;
+};
+
+// Slug değeri yoksa oluştur
+EventSchema.pre("validate", function (next) {
+  if (!this.slug) {
     this.slug = this.generateSlug();
   }
   next();
 });
 
-// Slug oluşturma metodu
-EventSchema.methods.generateSlug = function(): string {
-  const base = slugify(this.title, {
-    lower: true,
-    strict: true,
-    locale: 'tr'
-  });
-  
-  // Benzersizlik için nanoid ekle
-  return `${base}-${nanoid(6)}`;
-};
-
-// Modeli export et
-// Prevent conflict with the browser's built-in Event constructor
-// by checking if we're in a browser environment
+// Client-side model hatalarını önleyen düzeltmeler - Model oluşturma mantığını güncelliyoruz
 let EventModel: Model<IEvent>;
 
-// Check if mongoose is available (server-side only)
-if (mongoose.models && mongoose.models.Event) {
-  EventModel = mongoose.models.Event;
-} else if (mongoose.model) {
-  // Only create a new model if mongoose.model is available
+// İstemci tarafı ve sunucu tarafı ortamlarını doğru şekilde işle
+if (typeof window === "undefined") {
+  // Sunucu tarafındayız, modeli güvenle oluşturabiliriz
   try {
-    EventModel = mongoose.model<IEvent>('Event');
-  } catch {
-    // If the model doesn't exist yet, create it
-    EventModel = mongoose.model<IEvent>('Event', EventSchema);
+    // Modelin zaten tanımlanıp tanımlanmadığını kontrol et
+    EventModel =
+      mongoose.models.Event || mongoose.model<IEvent>("Event", EventSchema);
+  } catch (e) {
+    // Model tanımlanmamışsa oluştur
+    EventModel = mongoose.model<IEvent>("Event", EventSchema);
   }
 } else {
-  // Create a dummy model for client-side
-  // This won't be used but prevents errors during hydration
+  // İstemci tarafında, boş bir nesne döndür
+  // @ts-ignore - Burayı TypeScript hatalarından kaçınmak için görmezden geliyoruz
   EventModel = {} as Model<IEvent>;
 }
 

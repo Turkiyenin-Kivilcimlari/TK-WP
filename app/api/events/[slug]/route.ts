@@ -16,35 +16,60 @@ export async function GET(
     await connectToDatabase();
     
     const event = await Event.findOne({ slug: params.slug })
-      .populate('author', 'name lastname avatar'); // email kaldırıldı
+      .populate('author', 'name lastname avatar');
     
     if (!event) {
       return encryptedJson({ success: false, message: 'Etkinlik bulunamadı' }, { status: 404 });
     }
     
+    // Etkinlik verilerini yeni modele göre hazırla
+    const eventData = {
+      id: event._id ? event._id.toString() : '',
+      title: event.title,
+      slug: event.slug,
+      description: event.description,
+      // Etkinlik günleri varsa ilk günü eventDate'e ata, yoksa null
+      eventDate: Array.isArray(event.eventDays) && event.eventDays.length > 0
+        ? event.eventDays[0].date
+        : null,
+      // Tek günlü etkinlikler için genel eventType kullan
+      // Çok günlü etkinlikler için eventDays içindeki her günün kendi eventType'ı kullanılacak
+      eventType: event.eventType,
+      // Yeni model için eventDays alanını ekleyelim
+      eventDays: Array.isArray(event.eventDays) ? event.eventDays.map((day: any) => ({
+        date: day.date,
+        startTime: day.startTime,
+        endTime: day.endTime || "",
+        // Her günün kendi tipini kullan
+        eventType: day.eventType || event.eventType, // Eğer gün tipi yoksa etkinliğin genel tipini kullan
+        location: day.location || "",
+        onlineUrl: day.onlineUrl || "",
+      })) : [],
+      // Eski model için uyumluluğu koruyalım
+      location: Array.isArray(event.eventDays) && event.eventDays.length > 0
+        ? event.eventDays[0].location || ""
+        : "",
+      onlineUrl: Array.isArray(event.eventDays) && event.eventDays.length > 0
+        ? event.eventDays[0].onlineUrl || ""
+        : "",
+      coverImage: event.coverImage,
+      status: event.status,
+      author: event.author ? {
+        id: typeof event.author === 'string'
+          ? event.author
+          : (event.author as any)._id.toString(),
+        name: (event.author as any).name,
+        lastname: (event.author as any).lastname,
+        avatar: (event.author as any).avatar
+      } : null,
+      rejectionReason: event.rejectionReason,
+      createdAt: event.createdAt,
+      updatedAt: event.updatedAt
+    };
+    
     return encryptedJson({
       success: true,
-      event: {
-        id: event._id ? event._id.toString() : '',
-        title: event.title,
-        slug: event.slug,
-        description: event.description,
-        eventDate: event.eventDate,
-        eventType: event.eventType,
-        location: event.location,
-        onlineUrl: event.onlineUrl,
-        coverImage: event.coverImage,
-        status: event.status,
-        author: event.author ? {
-          name: (event.author as any).name,
-          lastname: (event.author as any).lastname,
-          avatar: (event.author as any).avatar
-          // email alanı kaldırıldı
-        } : null,
-        rejectionReason: event.rejectionReason,
-        createdAt: event.createdAt,
-        updatedAt: event.updatedAt
-      }
+      event: eventData
     });
   } catch (error) {
     return encryptedJson({ success: false, message: 'Etkinlik getirilemedi' }, { status: 500 });
@@ -97,6 +122,31 @@ export async function PUT(
 
     // Güncelleme verilerini hazırla
     const updateData: any = { ...body };
+
+    // Eğer eventDays bir günden fazla ise, eventType'ı eventDays'deki her günün tipinden belirle
+    if (updateData.eventDays && Array.isArray(updateData.eventDays) && updateData.eventDays.length > 1) {
+      // Çok günlü etkinlikler için, her gün kendi tipine sahip olmalı (eventDays zaten bu bilgiyi içeriyor)
+      // eventType alanı genel etkinlik tipi olarak belirlenir - çok günlü etkinliklerde bu genellikle HYBRID olabilir
+      
+      // Etkinlik tiplerini kontrol et
+      const hasInPerson = updateData.eventDays.some((day: any) => day.eventType === EventType.IN_PERSON);
+      const hasOnline = updateData.eventDays.some((day: any) => day.eventType === EventType.ONLINE);
+      const hasHybrid = updateData.eventDays.some((day: any) => day.eventType === EventType.HYBRID);
+      
+      // Etkinlik tipini belirle
+      if (hasHybrid || (hasInPerson && hasOnline)) {
+        updateData.eventType = EventType.HYBRID;
+      } else if (hasInPerson) {
+        updateData.eventType = EventType.IN_PERSON;
+      } else if (hasOnline) {
+        updateData.eventType = EventType.ONLINE;
+      }
+    } 
+    // Eğer tek günlük etkinlik ise, günün tipini etkinlik tipi olarak kullan
+    else if (updateData.eventDays && Array.isArray(updateData.eventDays) && updateData.eventDays.length === 1) {
+      // Tek günlük etkinliklerde günün tipi genel etkinlik tipi olur
+      updateData.eventType = updateData.eventDays[0].eventType;
+    }
     
     // Admin değilse, durumu otomatik olarak PENDING_APPROVAL olarak ayarla
     // Reddedilmiş bir etkinliği düzenliyorsa da PENDING_APPROVAL'a geçsin
@@ -125,7 +175,7 @@ export async function PUT(
     });
   } catch (error: any) {
     return encryptedJson(
-      { success: false, message: 'Bir hata oluştu' },
+      { success: false, message: 'Bir hata oluştu.' },
       { status: 500 }
     );
   }
