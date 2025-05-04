@@ -24,6 +24,7 @@ import Image from 'next/image';
 import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { emitProfileUpdated } from '@/lib/events';
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 export default function ProfileContent() {
@@ -36,6 +37,7 @@ export default function ProfileContent() {
     lastname: "",
     phone: "",
     avatar: "",
+    allowEmails: false,
   });
   
   const { uploadImage, isUploading, deleteImage, isDeleting } = useUploadImage();
@@ -67,6 +69,7 @@ export default function ProfileContent() {
         lastname: userData.lastname || "",
         phone: userData.phone || "",
         avatar: userData.avatar || "",
+        allowEmails: userData.allowEmails !== undefined ? userData.allowEmails : true,
       });
     }
   }, [userData]);
@@ -74,6 +77,10 @@ export default function ProfileContent() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    setFormData((prev) => ({ ...prev, allowEmails: checked }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -408,7 +415,7 @@ export default function ProfileContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Ad <span className="text-red-500">*</span></Label>
+                <Label htmlFor="name">Ad</Label>
                 <Input
                   id="name"
                   name="name"
@@ -419,7 +426,7 @@ export default function ProfileContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastname">Soyad <span className="text-red-500">*</span></Label>
+                <Label htmlFor="lastname">Soyad</Label>
                 <Input
                   id="lastname"
                   name="lastname"
@@ -451,6 +458,35 @@ export default function ProfileContent() {
                 placeholder="Telefon numarası"
               />
             </div>
+
+            {/* E-posta izni için checkbox ekle */}
+            {isEditing && (
+              <div className="flex items-center space-x-2 mt-4">
+                <Checkbox 
+                  id="allowEmails" 
+                  checked={formData.allowEmails}
+                  onCheckedChange={handleCheckboxChange}
+                  disabled={isSubmitting}
+                />
+                <Label 
+                  htmlFor="allowEmails" 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Bilgilendirme e-postaları almak istiyorum
+                </Label>
+              </div>
+            )}
+            
+            {!isEditing && (
+              <div className="text-sm">
+                <p>
+                  <strong>E-posta bildirimleri:</strong>{' '}
+                  <span className={formData.allowEmails ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                    {formData.allowEmails ? "Açık" : "Kapalı"}
+                  </span>
+                </p>
+              </div>
+            )}
           </CardContent>
           <CardFooter className="flex justify-between">
             {isEditing ? (
@@ -485,8 +521,6 @@ export default function ProfileContent() {
           </CardFooter>
         </form>
       </Card>
-
-      
     </div>
   );
 }

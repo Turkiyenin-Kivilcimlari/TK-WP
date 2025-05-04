@@ -16,14 +16,9 @@ const registerSchema = z.object({
   email: z.string().email('Geçerli bir e-posta adresi giriniz'),
   password: z
     .string()
-    .min(8, 'Şifre en az 8 karakter olmalıdır')
-    .regex(/[a-z]/, 'Şifre en az bir küçük harf içermelidir')
-    .regex(/[A-Z]/, 'Şifre en az bir büyük harf içermelidir')
-    .regex(/\d/, 'Şifre en az bir rakam içermelidir'),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Şifreler eşleşmiyor",
-  path: ["confirmPassword"],
+    .min(8, 'Şifre en az 8 karakter olmalıdır'),
+  turnstileToken: z.string().optional(),
+  allowEmails: z.boolean().default(true)
 });
 
 export async function POST(req: NextRequest) {
@@ -42,7 +37,7 @@ export async function POST(req: NextRequest) {
       throw error;
     }
     
-    const { name, lastname, email, password, phone } = body;
+    const { name, lastname, email, password, phone, allowEmails } = body;
     
     // E-posta adresi kullanımda mı kontrol et
     const existingUser = await User.findOne({ email });
@@ -62,7 +57,8 @@ export async function POST(req: NextRequest) {
       password,
       phone,
       role: UserRole.MEMBER, // Varsayılan olarak üye rolü
-      emailVerified: false // E-posta henüz doğrulanmadı
+      emailVerified: false, // E-posta henüz doğrulanmadı
+      allowEmails: allowEmails ?? true, // Yeni alan ekleniyor, varsayılan true
     });
     
     // Mongoose document olarak belirtelim
@@ -78,6 +74,7 @@ export async function POST(req: NextRequest) {
       email: userDoc.email,
       phone: userDoc.phone,
       role: userDoc.role,
+      allowEmails: userDoc.allowEmails,
     };
     
     // E-posta doğrulama kodunu al

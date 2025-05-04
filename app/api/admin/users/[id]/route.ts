@@ -38,7 +38,7 @@ export async function PUT(
     
     // İstek gövdesini al
     const body = await req.json();
-    const { name, lastname, phone, role } = body;
+    const { name, lastname, phone, role, allowEmails } = body;
     
     await connectToDatabase();
     
@@ -92,6 +92,7 @@ export async function PUT(
     if (name) updateData.name = name;
     if (lastname) updateData.lastname = lastname;
     if (phone) updateData.phone = phone;
+    if (allowEmails !== undefined) updateData.allowEmails = allowEmails;
     
     // Rol güncellemesini düzeltelim - SUPERADMIN ve ADMIN için izin verelim
     if (role) {

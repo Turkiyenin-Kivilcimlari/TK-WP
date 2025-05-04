@@ -29,6 +29,7 @@ import {
   ExternalLink,
   Filter,
   Loader2,
+  Mail,
   Search,
 } from "lucide-react";
 import Link from "next/link";
@@ -37,29 +38,32 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EventManagement } from "@/components/admin/EventManagement";
 import { useAdminEvents } from "@/hooks/useEvents";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import api from "@/lib/api";
 
 interface AdminEventDay {
-  date?: string
-  eventType: EventType
+  date?: string;
+  eventType: EventType;
 }
 
 interface AdminAuthor {
-  name?: string
-  lastname?: string
+  name?: string;
+  lastname?: string;
 }
 
 interface AdminEvent {
-  id: string
-  _id: string
-  slug: string
-  title: string
-  status: EventStatus
-  eventType?: EventType
-  eventDays?: AdminEventDay[]
-  eventDate?: string
-  author?: AdminAuthor
-  coverImage?: string
-  rejectionReason?: string
+  id: string;
+  _id: string;
+  slug: string;
+  title: string;
+  status: EventStatus;
+  eventType?: EventType;
+  eventDays?: AdminEventDay[];
+  eventDate?: string;
+  author?: AdminAuthor;
+  coverImage?: string;
+  rejectionReason?: string;
+  description?: string; // Açıklama ekledik, mail içeriğinde kullanılabilir
 }
 
 export default function AdminEventsPage() {
@@ -67,6 +71,9 @@ export default function AdminEventsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [emailSending, setEmailSending] = useState<{ [key: string]: boolean }>(
+    {}
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -235,6 +242,41 @@ export default function AdminEventsPage() {
     return "Belirtilmemiş";
   };
 
+  // E-posta gönderme işlevi
+  const handleSendEmail = async (event: AdminEvent) => {
+    if (emailSending[event.id]) return; // Zaten gönderiliyor ise işlemi durdur
+
+    try {
+      setEmailSending((prev) => ({ ...prev, [event.id]: true }));
+
+      // API'ye istek gönder - yeni API yolunu kullan
+      const response = await api.post(`/api/admin/events/send-notification`, {
+        eventId: event._id,
+        slug: event.slug,
+        title: event.title,
+        description: event.description,
+        eventDate: getEventDate(event),
+        eventType: getEffectiveEventType(event),
+      });
+
+      if (response.data.success) {
+        toast.success("E-postalar gönderildi", {
+          description: `${response.data.sentCount || 0} kullanıcıya bildirim gönderildi.`,
+        });
+      } else {
+        toast.error("E-posta gönderilemedi", {
+          description: response.data.message || "Bir hata oluştu.",
+        });
+      }
+    } catch (error: any) {
+      toast.error("E-posta gönderilemedi", {
+        description: error.message || "Bir hata oluştu.",
+      });
+    } finally {
+      setEmailSending((prev) => ({ ...prev, [event.id]: false }));
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
@@ -317,8 +359,6 @@ export default function AdminEventsPage() {
               <p className="text-muted-foreground">Etkinlik bulunamadı.</p>
             </div>
           ) : (
-            
-
             <div className="divide-y">
               {events.map((event: AdminEvent) => (
                 <div key={event.slug} className="p-4 md:p-6">
@@ -342,14 +382,17 @@ export default function AdminEventsPage() {
                         {event.author?.name} {event.author?.lastname}
                       </div>
 
-                      {event.status === EventStatus.REJECTED && event.rejectionReason && (
-                        <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded-md text-sm">
-                          <span className="font-medium text-red-600">
-                            Reddedilme nedeni:{" "}
-                          </span>
-                          <span className="text-red-600">{event.rejectionReason}</span>
-                        </div>
-                      )}
+                      {event.status === EventStatus.REJECTED &&
+                        event.rejectionReason && (
+                          <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded-md text-sm">
+                            <span className="font-medium text-red-600">
+                              Reddedilme nedeni:{" "}
+                            </span>
+                            <span className="text-red-600">
+                              {event.rejectionReason}
+                            </span>
+                          </div>
+                        )}
 
                       {event.eventDays && event.eventDays.length > 1 && (
                         <div className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md inline-block">
@@ -357,8 +400,13 @@ export default function AdminEventsPage() {
                         </div>
                       )}
 
-                      <div className="pt-3 flex flex-col sm:flex-row gap-2">
-                        <Button asChild variant="outline" size="sm" className="flex items-center gap-1">
+                      <div className="pt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1 bg-blue-100 text-blue-700 hover:bg-blue-50 hover:text-blue-700"
+                        >
                           <Link href={`/events/${event.slug}`} target="_blank">
                             <ExternalLink className="h-4 w-4" />
                             Görüntüle
@@ -370,6 +418,27 @@ export default function AdminEventsPage() {
                           status={event.status}
                           onActionComplete={refetch}
                         />
+
+                        {/* E-posta gönder butonu */}
+                        {event.status === EventStatus.APPROVED && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1 text-xs "
+                            onClick={() => handleSendEmail(event)}
+                            disabled={emailSending[event.id]}
+                          >
+                            <Mail className="h-4 w-4" />
+                            {emailSending[event.id] ? (
+                              <>
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                Gönderiliyor...
+                              </>
+                            ) : (
+                              "E-posta Gönder"
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </div>
 

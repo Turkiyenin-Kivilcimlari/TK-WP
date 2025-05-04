@@ -19,6 +19,15 @@ export enum EventStatus {
   CANCELLED = "CANCELLED", // İptal edildi
 }
 
+// Katılımcı arayüzü
+export interface IParticipant {
+  userId: Types.ObjectId;
+  name: string;
+  lastname: string;
+  email: string;
+  registeredAt: Date;
+}
+
 // Etkinlik Günü Arayüzü
 interface IEventDay {
   date: Date; // Tarih
@@ -38,7 +47,8 @@ export interface IEvent extends Document {
   eventDays: IEventDay[];
   coverImage: string;
   author: Types.ObjectId | string; // Etkinliği oluşturan
-  participants: Participant[];
+  participants: IParticipant[]; // Etkinliğe katılanlar
+  participantCount: number; // Katılımcı sayısı
   status: EventStatus;
   rejectionReason?: string;
   reviewedAt?: Date; // Onaylanan etkinlikler için tarih
@@ -51,14 +61,30 @@ export interface IEvent extends Document {
   generateSlug: () => string;
 }
 
-// Katılımcı tipi
-interface Participant {
-  userId: Schema.Types.ObjectId;
-  name: string;
-  lastname: string;
-  email: string;
-  registeredAt: Date;
-}
+// Katılımcı Şeması
+const ParticipantSchema = new Schema<IParticipant>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  lastname: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+  },
+  registeredAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
 // Etkinlik Günü Şeması
 const EventDaySchema = new Schema<IEventDay>({
@@ -172,31 +198,12 @@ const EventSchema = new Schema<IEvent>(
       ref: "User",
       required: true,
     },
-    participants: [
-      {
-        userId: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-        name: {
-          type: String,
-          required: true,
-        },
-        lastname: {
-          type: String,
-          required: true,
-        },
-        email: {
-          type: String,
-          required: true,
-        },
-        registeredAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    participants: [ParticipantSchema],
+    participantCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     status: {
       type: String,
       required: true,
@@ -211,6 +218,14 @@ const EventSchema = new Schema<IEvent>(
     timestamps: true,
   }
 );
+
+// Pre-save hook to update participant count
+EventSchema.pre("save", function (next) {
+  if (this.participants) {
+    this.participantCount = this.participants.length;
+  }
+  next();
+});
 
 // Slug oluşturma metodu
 EventSchema.methods.generateSlug = function (): string {

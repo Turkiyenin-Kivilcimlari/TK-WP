@@ -136,6 +136,7 @@ function formatEvent(event: any) {
           endTime: day.endTime,
           location: day.location || null,
           onlineUrl: day.onlineUrl || null,
+          eventType: day.eventType || event.eventType,
         }))
       : [],
     coverImage: event.coverImage,
@@ -155,6 +156,13 @@ function formatEvent(event: any) {
           avatar: event.author.avatar,
         }
       : null,
+    participants: event.participants?.map((p: any) => ({
+      userId: p.userId.toString(),
+      name: p.name,
+      lastname: p.lastname,
+      email: p.email,
+    })) || [],
+    participantCount: event.participantCount || event.participants?.length || 0,
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
   };

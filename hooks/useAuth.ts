@@ -15,6 +15,7 @@ export interface User {
   phone?: string;
   avatar?: string;
   role: UserRole;
+  allowEmails?: boolean;  // Yeni alan eklendi
 }
 
 // Kayıt formu girdileri türü
@@ -26,6 +27,7 @@ export interface RegisterFormData {
   password: string;
   confirmPassword: string;
   turnstileToken?: string; // turnstileToken alanı ekleyin
+  allowEmails?: boolean;  // Yeni alan eklendi
 }
 
 // Giriş formu girdileri türü

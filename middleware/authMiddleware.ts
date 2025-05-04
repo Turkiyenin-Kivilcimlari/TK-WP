@@ -185,6 +185,13 @@ export async function checkAdminAuthWithTwoFactor(req: NextRequest) {
         // Doğrulama geçerli, devam et
         return null;
       }
+    } else if (isVerified) {
+      // lastTwoFactorVerification null olsa bile, twoFactorVerified true ise devam et
+      // Bu aradaki durumları düzeltir
+      // Yeni bir doğrulama zamanı oluştur
+      user.lastTwoFactorVerification = new Date();
+      await user.save();
+      return null;
     }
     
     // Doğrulama geçersiz veya süresi dolmuş

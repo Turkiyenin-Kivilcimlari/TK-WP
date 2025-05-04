@@ -36,6 +36,8 @@ import {
   Loader2,
   Filter,
   Trash2,
+  CalendarPlus,
+  UserCheck,
 } from "lucide-react";
 import { UserRole } from "@/models/User";
 import { EventType, EventStatus } from "@/models/Event";
@@ -88,6 +90,13 @@ interface EventCardProps {
     lastname: string;
     avatar?: string;
   };
+  participants?: {
+    userId: string;
+    name: string;
+    lastname: string;
+    email: string;
+  }[];
+  participantCount?: number;
 }
 
 export default function EventsPage() {
@@ -100,6 +109,7 @@ export default function EventsPage() {
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [registering, setRegistering] = useState<Record<string, boolean>>({});
 
   const userRole = session?.user?.role;
   const isAdmin =
@@ -110,10 +120,16 @@ export default function EventsPage() {
     userRole === UserRole.REPRESENTATIVE;
 
   const isUserAuthor = (event: EventCardProps) => {
-    return (
-      session?.user?.id === event.author?.id ||
-      session?.user?.id === event.organizer?.id
-    );
+    if (!session?.user?.id) return false;
+    const currentUserId = session.user.id;
+    const isAuthor = event.author?.id === currentUserId;
+    const isOrganizer = event.organizer?.id === currentUserId;
+    return isAuthor || isOrganizer;
+  };
+
+  const isRegistered = (event: EventCardProps) => {
+    if (!session?.user?.id || !event.participants) return false;
+    return event.participants.some((p) => p.userId === session.user.id);
   };
 
   const {
@@ -126,7 +142,11 @@ export default function EventsPage() {
     past: tab === "past",
     my: tab === "my",
     status:
-      tab === "my" ? undefined : statusFilter !== "all" ? statusFilter : undefined,
+      tab === "my"
+        ? undefined
+        : statusFilter !== "all"
+        ? statusFilter
+        : undefined,
     eventType: typeFilter !== "all" ? typeFilter : undefined,
     search: searchTerm,
   });
@@ -151,38 +171,33 @@ export default function EventsPage() {
 
   const isEventPast = (event: EventCardProps) => {
     try {
-      // For multi-day events, check the last day
       if (event.eventDays && event.eventDays.length > 0) {
         const lastDay = event.eventDays[event.eventDays.length - 1];
-        
-        // If we have an end time, use it, otherwise use start time + 2 hours as default duration
         let eventEndDateTime: Date;
         if (lastDay.endTime) {
           eventEndDateTime = new Date(`${lastDay.date}T${lastDay.endTime}`);
         } else {
-          // If no end time specified, assume event lasts 2 hours from start time
-          const startDateTime = new Date(`${lastDay.date}T${lastDay.startTime}`);
-          eventEndDateTime = new Date(startDateTime.getTime() + (2 * 60 * 60 * 1000));
+          const startDateTime = new Date(
+            `${lastDay.date}T${lastDay.startTime}`
+          );
+          eventEndDateTime = new Date(
+            startDateTime.getTime() + 2 * 60 * 60 * 1000
+          );
         }
-        
-        // Add 1 hour grace period after event end
-        const graceEndTime = new Date(eventEndDateTime.getTime() + 60 * 60 * 1000);
+        const graceEndTime = new Date(
+          eventEndDateTime.getTime() + 60 * 60 * 1000
+        );
         return graceEndTime < new Date();
       }
-      
-      // For single events with eventDate
+
       if (event.eventDate) {
         const eventDate = new Date(event.eventDate as string);
         if (isNaN(eventDate.getTime())) return false;
-        
-        // Assume event lasts 2 hours if no duration specified
-        const eventEndDate = new Date(eventDate.getTime() + (2 * 60 * 60 * 1000));
-        
-        // Add 1 hour grace period after event end
+        const eventEndDate = new Date(eventDate.getTime() + 2 * 60 * 60 * 1000);
         const graceEndTime = new Date(eventEndDate.getTime() + 60 * 60 * 1000);
         return graceEndTime < new Date();
       }
-      
+
       return false;
     } catch (error) {
       return false;
@@ -207,7 +222,7 @@ export default function EventsPage() {
 
     if (event.eventDays.length === 1) {
       const day = event.eventDays[0];
-      
+
       return (
         <div className="flex items-center text-xs text-muted-foreground gap-1 mb-2">
           <Calendar className="h-3 w-3" />
@@ -221,15 +236,16 @@ export default function EventsPage() {
         </div>
       );
     }
-    
+
     const firstDay = event.eventDays[0];
     const lastDay = event.eventDays[event.eventDays.length - 1];
-    
+
     return (
       <div className="flex items-center text-xs text-muted-foreground gap-1 mb-2">
         <Calendar className="h-3 w-3" />
         <span>
-          {formatEventDate(firstDay.date, "d MMM")} - {formatEventDate(lastDay.date, "d MMM yyyy")}
+          {formatEventDate(firstDay.date, "d MMM")} -{" "}
+          {formatEventDate(lastDay.date, "d MMM yyyy")}
         </span>
         <span>•</span>
         <Badge variant="outline" className="text-xs py-0 px-1 h-4">
@@ -241,16 +257,22 @@ export default function EventsPage() {
 
   const renderEventLocation = (event: EventCardProps) => {
     const firstDay = getFirstEventDay(event);
-    
+
     if (!firstDay) return null;
-    
-    const eventTypeStr = String(firstDay.eventType || '').toUpperCase();
-    
-    if (eventTypeStr.includes('IN_PERSON') || eventTypeStr.includes('HYBRID') || firstDay.location) {
+
+    const eventTypeStr = String(firstDay.eventType || "").toUpperCase();
+
+    if (
+      eventTypeStr.includes("IN_PERSON") ||
+      eventTypeStr.includes("HYBRID") ||
+      firstDay.location
+    ) {
       return (
         <div className="flex items-start text-xs">
           <MapPin className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
-          <span className="line-clamp-1">{firstDay.location || event.location}</span>
+          <span className="line-clamp-1">
+            {firstDay.location || event.location}
+          </span>
         </div>
       );
     }
@@ -271,19 +293,25 @@ export default function EventsPage() {
 
   const renderOnlineLink = (event: EventCardProps) => {
     const firstDay = getFirstEventDay(event);
-    
+
     if (!firstDay) return null;
-    
-    const eventTypeStr = String(firstDay.eventType || '').toUpperCase();
-    
-    if ((eventTypeStr.includes('ONLINE') || eventTypeStr.includes('HYBRID')) && 
-        (firstDay.onlineUrl || event.onlineUrl) && 
-        !isEventPast(event)) {
+
+    const eventTypeStr = String(firstDay.eventType || "").toUpperCase();
+
+    if (
+      (eventTypeStr.includes("ONLINE") || eventTypeStr.includes("HYBRID")) &&
+      (firstDay.onlineUrl || event.onlineUrl) &&
+      !isEventPast(event)
+    ) {
       return (
         <div className="flex items-start text-xs">
           <LinkIcon className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
           <span className="line-clamp-1 text-primary">
-            <a href={firstDay.onlineUrl || event.onlineUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              href={firstDay.onlineUrl || event.onlineUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Online Bağlantı
             </a>
           </span>
@@ -294,47 +322,54 @@ export default function EventsPage() {
   };
 
   const getEventType = (event: EventCardProps): string => {
-    const safeEventType = String(event.eventType || '');
-    
+    const safeEventType = String(event.eventType || "");
+
     if (event.eventDays && event.eventDays.length > 0) {
       if (event.eventDays.length > 1) {
-        const typeSet = new Set(event.eventDays.map(day => String(day.eventType || '')));
-        
-        if (typeSet.has('HYBRID') || (typeSet.has('IN_PERSON') && typeSet.has('ONLINE'))) {
-          return 'HYBRID';
+        const typeSet = new Set(
+          event.eventDays.map((day) => String(day.eventType || ""))
+        );
+
+        if (
+          typeSet.has("HYBRID") ||
+          (typeSet.has("IN_PERSON") && typeSet.has("ONLINE"))
+        ) {
+          return "HYBRID";
         }
-        
-        if (typeSet.has('IN_PERSON') && !typeSet.has('ONLINE')) {
-          return 'IN_PERSON';
+
+        if (typeSet.has("IN_PERSON") && !typeSet.has("ONLINE")) {
+          return "IN_PERSON";
         }
-        
-        if (typeSet.has('ONLINE') && !typeSet.has('IN_PERSON')) {
-          return 'ONLINE';
+
+        if (typeSet.has("ONLINE") && !typeSet.has("IN_PERSON")) {
+          return "ONLINE";
         }
       }
       return safeEventType;
-
     }
     return safeEventType;
   };
 
   const renderEventTypeInfo = (event: EventCardProps) => {
     const eventTypeStr = getEventType(event).toUpperCase();
-    
+
     let label = "Fiziksel";
     let badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
-    
-    if (eventTypeStr.includes('ONLINE')) {
+
+    if (eventTypeStr.includes("ONLINE")) {
       label = "Online";
       badgeClass = "bg-green-50 text-green-700 border-green-200";
-    } else if (eventTypeStr.includes('HYBRID')) {
+    } else if (eventTypeStr.includes("HYBRID")) {
       label = "Hibrit";
       badgeClass = "bg-purple-50 text-purple-700 border-purple-200";
     }
-    
-    const hasMixedTypes = event.eventDays && event.eventDays.length > 1 && 
-      new Set(event.eventDays.map(day => String(day.eventType || ''))).size > 1;
-    
+
+    const hasMixedTypes =
+      event.eventDays &&
+      event.eventDays.length > 1 &&
+      new Set(event.eventDays.map((day) => String(day.eventType || ""))).size >
+        1;
+
     return (
       <div className="mt-1">
         <Badge variant="outline" className={`text-xs ${badgeClass}`}>
@@ -387,7 +422,510 @@ export default function EventsPage() {
       setEventToDelete(null);
     }
   };
-  console.log("events", events);
+
+  const handleRegister = async (event: EventCardProps, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!session?.user) {
+      toast.error("Etkinliğe katılabilmek için giriş yapmalısınız");
+      router.push(`/signin?callbackUrl=/events/${event.slug}`);
+      return;
+    }
+
+    try {
+      setRegistering((prev) => ({ ...prev, [event.id]: true }));
+
+      if (!event.slug) {
+        toast.error("Etkinlik bilgileri eksik, kayıt yapılamadı");
+        return;
+      }
+
+      if (!event.eventDays || event.eventDays.length === 0) {
+        toast.error("Etkinlik gün bilgileri eksik, kayıt yapılamadı");
+        console.error("Missing event days in event:", event.id, event.title);
+        return;
+      }
+
+      console.log("Event registration details:", {
+        slug: event.slug,
+        title: event.title,
+        eventDays: event.eventDays,
+      });
+
+      const response = await api.post(`/api/events/${event.slug}/register`);
+
+      if (response.data.success) {
+        toast.success("Etkinliğe başarıyla kaydoldunuz");
+        await refetch();
+      } else {
+        toast.error(response.data.message || "Kayıt işlemi başarısız");
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error);
+
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+
+        try {
+          const fallbackResponse = await api.post(
+            `/api/events/${event.slug}/register`,
+            {}
+          );
+
+          if (fallbackResponse.data.success) {
+            toast.success("Etkinliğe başarıyla kaydoldunuz");
+            await refetch();
+            return;
+          }
+        } catch (fallbackError) {
+          console.error("Fallback registration failed:", fallbackError);
+          toast.error(
+            "Etkinliğe kayıt yapılamadı. Lütfen daha sonra tekrar deneyin."
+          );
+        }
+      } else {
+        toast.error("Bir hata oluştu, lütfen daha sonra tekrar deneyin");
+      }
+    } finally {
+      setRegistering((prev) => ({ ...prev, [event.id]: false }));
+    }
+  };
+
+  const handleUnregister = async (
+    event: EventCardProps,
+    e: React.MouseEvent
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      setRegistering((prev) => ({ ...prev, [event.id]: true }));
+
+      if (!event.slug) {
+        toast.error("Etkinlik bilgileri eksik, kayıt iptali yapılamadı");
+        return;
+      }
+
+      const response = await api.delete(`/api/events/${event.slug}/register`);
+
+      if (response.data.success) {
+        toast.success("Etkinlik kaydınız iptal edildi");
+        await refetch();
+      } else {
+        toast.error(response.data.message || "İptal işlemi başarısız");
+      }
+    } catch (error: any) {
+      console.error("Unregistration error:", error);
+
+      if (error.response) {
+        if (error.response.status === 400) {
+          toast.error(
+            error.response?.data?.message || "Bu etkinliğe kayıtlı değilsiniz"
+          );
+        } else {
+          toast.error(
+            error.response?.data?.message || "İptal işlemi başarısız"
+          );
+        }
+      } else if (error.request) {
+        toast.error(
+          "Sunucudan yanıt alınamadı, lütfen internetinizi kontrol edin"
+        );
+      } else {
+        toast.error("Bir hata oluştu, lütfen daha sonra tekrar deneyin");
+      }
+    } finally {
+      setRegistering((prev) => ({ ...prev, [event.id]: false }));
+    }
+  };
+
+  const addToGoogleCalendarSafe = async (event: EventCardProps) => {
+    try {
+      if (event.eventDays && event.eventDays.length > 1) {
+        const firstDay = event.eventDays[0];
+        const lastDay = event.eventDays[event.eventDays.length - 1];
+
+        if (!firstDay || !lastDay) {
+          console.error("Missing first or last day");
+          return;
+        }
+
+        let firstDayDateTime, lastDayDateTime;
+
+        try {
+          const normalizeDate = (dateStr: string) => {
+            if (dateStr.includes("T")) {
+              return dateStr.split("T")[0];
+            }
+
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+              return date.toISOString().split("T")[0];
+            }
+            return dateStr;
+          };
+
+          const normalizeTime = (timeStr: string) => {
+            if (/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/.test(timeStr)) {
+              return timeStr.padStart(5, "0");
+            }
+            return timeStr;
+          };
+
+          const firstDayDate = normalizeDate(firstDay.date);
+          const firstDayTime = normalizeTime(firstDay.startTime);
+
+          firstDayDateTime = new Date(`${firstDayDate}T${firstDayTime}:00`);
+
+          if (isNaN(firstDayDateTime.getTime())) {
+            const dateComponents = firstDayDate.split(/[-\/]/);
+            const timeComponents = firstDayTime.split(":");
+
+            if (dateComponents.length >= 3 && timeComponents.length >= 2) {
+              firstDayDateTime = new Date(
+                parseInt(dateComponents[0], 10),
+                parseInt(dateComponents[1], 10) - 1,
+                parseInt(dateComponents[2], 10),
+                parseInt(timeComponents[0], 10),
+                parseInt(timeComponents[1], 10)
+              );
+            } else {
+              throw new Error("Invalid date or time components");
+            }
+          }
+
+          const lastDayDate = normalizeDate(lastDay.date);
+
+          if (lastDay.endTime) {
+            const lastDayTime = normalizeTime(lastDay.endTime);
+            lastDayDateTime = new Date(`${lastDayDate}T${lastDayTime}:00`);
+
+            if (isNaN(lastDayDateTime.getTime())) {
+              const dateComponents = lastDayDate.split(/[-\/]/);
+              const timeComponents = lastDayTime.split(":");
+
+              if (dateComponents.length >= 3 && timeComponents.length >= 2) {
+                lastDayDateTime = new Date(
+                  parseInt(dateComponents[0], 10),
+                  parseInt(dateComponents[1], 10) - 1,
+                  parseInt(dateComponents[2], 10),
+                  parseInt(timeComponents[0], 10),
+                  parseInt(timeComponents[1], 10)
+                );
+              } else {
+                throw new Error("Invalid date or time components");
+              }
+            }
+          } else if (lastDay.startTime) {
+            const lastDayTime = normalizeTime(lastDay.startTime);
+            lastDayDateTime = new Date(`${lastDayDate}T${lastDayTime}:00`);
+
+            if (isNaN(lastDayDateTime.getTime())) {
+              const dateComponents = lastDayDate.split(/[-\/]/);
+              const timeComponents = lastDayTime.split(":");
+
+              if (dateComponents.length >= 3 && timeComponents.length >= 2) {
+                lastDayDateTime = new Date(
+                  parseInt(dateComponents[0], 10),
+                  parseInt(dateComponents[1], 10) - 1,
+                  parseInt(dateComponents[2], 10),
+                  parseInt(timeComponents[0], 10),
+                  parseInt(timeComponents[1], 10)
+                );
+              } else {
+                throw new Error("Invalid date or time components");
+              }
+            }
+
+            lastDayDateTime = new Date(
+              lastDayDateTime.getTime() + 2 * 60 * 60 * 1000
+            );
+          } else {
+            lastDayDateTime = new Date(`${lastDayDate}T23:59:00`);
+          }
+        } catch (e) {
+          console.error("Date parsing error:", e);
+          toast.error("Takvim tarihi işlenirken bir hata oluştu");
+          return;
+        }
+
+        if (
+          isNaN(firstDayDateTime.getTime()) ||
+          isNaN(lastDayDateTime.getTime())
+        ) {
+          console.error("Invalid date values:", {
+            firstDay: firstDayDateTime,
+            lastDay: lastDayDateTime,
+            firstDayOriginal: firstDay.date,
+            lastDayOriginal: lastDay.date,
+          });
+          toast.error("Geçersiz tarih veya saat bilgisi");
+          return;
+        }
+
+        const formatGoogleCalendarDate = (date: Date) => {
+          return date.toISOString().replace(/[-:]/g, "").replace(/\.\d+/g, "");
+        };
+
+        const startDate = formatGoogleCalendarDate(firstDayDateTime);
+        const endDate = formatGoogleCalendarDate(lastDayDateTime);
+
+        let details = event.description || "";
+        details += "\n\n== Etkinlik Programı ==\n";
+
+        for (let i = 0; i < event.eventDays.length; i++) {
+          const day = event.eventDays[i];
+          details += `\n${i + 1}. Gün: ${day.date} - ${day.startTime}\n`;
+
+          if (
+            day.eventType === EventType.IN_PERSON ||
+            day.eventType === EventType.HYBRID
+          ) {
+            details += day.location ? `Konum: ${day.location}\n` : "";
+          }
+
+          if (
+            day.eventType === EventType.ONLINE ||
+            day.eventType === EventType.HYBRID
+          ) {
+            details += day.onlineUrl
+              ? `Çevrimiçi Bağlantı: ${day.onlineUrl}\n`
+              : "";
+          }
+        }
+
+        const eventUrl = `${window.location.origin}/events/${event.slug}`;
+        details += `\n\nEtkinlik Detayları: ${eventUrl}`;
+
+        let primaryLocation = "";
+        for (const day of event.eventDays) {
+          if (
+            (day.eventType === EventType.IN_PERSON ||
+              day.eventType === EventType.HYBRID) &&
+            day.location
+          ) {
+            primaryLocation = day.location;
+            break;
+          }
+        }
+
+        const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+          event.title
+        )}&dates=${startDate}/${endDate}&details=${encodeURIComponent(
+          details
+        )}&location=${encodeURIComponent(primaryLocation)}`;
+
+        window.open(googleCalendarUrl, "_blank");
+        return;
+      }
+
+      const firstDay = getFirstEventDay(event);
+      if (!firstDay) {
+        console.error("Missing event day information");
+        return;
+      }
+
+      // Debug info
+      console.log("Calendar Safe Date Debug:", {
+        date: firstDay.date,
+        startTime: firstDay.startTime,
+        endTime: firstDay.endTime,
+      });
+
+      // Helper for date normalization
+      const normalizeDate = (dateStr: string): string => {
+        try {
+          // Check if it's already ISO format with T separator
+          if (dateStr.includes("T")) {
+            return dateStr.split("T")[0]; // Get only the date part
+          }
+
+          // Check if it's ISO format date only
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return dateStr;
+          }
+
+          // Try to parse and convert
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            return date.toISOString().split("T")[0];
+          }
+
+          return dateStr;
+        } catch (err) {
+          console.error("Date normalization error:", err);
+          return dateStr;
+        }
+      };
+
+      // Helper for time normalization
+      const normalizeTime = (timeStr: string): string => {
+        // Ensure HH:MM format (add leading zeros if needed)
+        if (/^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr)) {
+          const [hours, minutes] = timeStr.split(":");
+          return `${hours.padStart(2, "0")}:${minutes}`;
+        }
+        return timeStr;
+      };
+
+      // Normalize date and time
+      let dateStr = normalizeDate(firstDay.date);
+      const startTime = normalizeTime(firstDay.startTime);
+
+      if (!dateStr || !startTime) {
+        console.error("Missing date or start time");
+        toast.error("Etkinlik tarih veya saat bilgisi eksik");
+        return;
+      }
+
+      // Multiple approaches to create a valid date
+      let startDateTime;
+      try {
+        // Approach 1: ISO string with T separator
+        startDateTime = new Date(`${dateStr}T${startTime}:00`);
+
+        // Validate result
+        if (isNaN(startDateTime.getTime())) {
+          console.log("Approach 1 failed, trying second approach");
+
+          // Approach 2: Manual Date constructor
+          const [year, month, day] = dateStr.split(/[-\/]/);
+          const [hours, minutes] = startTime.split(":");
+
+          if (!year || !month || !day) {
+            console.error("Invalid date components:", { dateStr });
+            throw new Error("Invalid date format");
+          }
+
+          if (!hours || !minutes) {
+            console.error("Invalid time components:", { startTime });
+            throw new Error("Invalid time format");
+          }
+
+          // Create date with manual components
+          startDateTime = new Date(
+            parseInt(year, 10),
+            parseInt(month, 10) - 1, // Months are 0-based
+            parseInt(day, 10),
+            parseInt(hours, 10),
+            parseInt(minutes, 10)
+          );
+
+          // Check if approach 2 worked
+          if (isNaN(startDateTime.getTime())) {
+            throw new Error("Approach 2 failed to create valid date");
+          }
+        }
+      } catch (e) {
+        console.error("Date parsing failed for start time:", e, {
+          dateStr,
+          startTime,
+        });
+        toast.error("Geçersiz tarih veya saat formatı");
+        return;
+      }
+
+      if (isNaN(startDateTime.getTime())) {
+        console.error("Invalid start date/time after all attempts:", {
+          dateStr,
+          startTime,
+        });
+        toast.error("Geçersiz başlangıç tarihi veya saati");
+        return;
+      }
+
+      // Similar robust approach for end time
+      let endDateTime;
+      const endTime = firstDay.endTime ? normalizeTime(firstDay.endTime) : null;
+
+      try {
+        if (endTime) {
+          // Try ISO format
+          endDateTime = new Date(`${dateStr}T${endTime}:00`);
+
+          if (isNaN(endDateTime.getTime())) {
+            // Try with manual date creation
+            const [year, month, day] = dateStr.split(/[-\/]/);
+            const [hours, minutes] = endTime.split(":");
+
+            endDateTime = new Date(
+              parseInt(year, 10),
+              parseInt(month, 10) - 1,
+              parseInt(day, 10),
+              parseInt(hours, 10),
+              parseInt(minutes, 10)
+            );
+          }
+        } else {
+          // Add 2 hours to start time
+          endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+        }
+      } catch (e) {
+        console.warn("End time parsing failed, using default:", e);
+        endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+      }
+
+      if (isNaN(endDateTime.getTime())) {
+        console.warn("Invalid end date/time, using default");
+        endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+      }
+
+      // Rest of the function - format dates for calendar
+      const formatGoogleCalendarDate = (date: Date) => {
+        return date.toISOString().replace(/[-:]/g, "").replace(/\.\d+/g, "");
+      };
+
+      const startDate = formatGoogleCalendarDate(startDateTime);
+      const endDate = formatGoogleCalendarDate(endDateTime);
+
+      // Set up location and details
+      let location = "";
+      if (
+        firstDay.eventType === EventType.IN_PERSON ||
+        firstDay.eventType === EventType.HYBRID
+      ) {
+        location = firstDay.location || event.location || "";
+      }
+
+      let details = event.description || "";
+
+      // Add specific info based on event type
+      if (firstDay.eventType === EventType.IN_PERSON) {
+        details += location
+          ? `\n\nKonum: ${location}`
+          : "\n\nFiziksel Etkinlik";
+      } else if (firstDay.eventType === EventType.ONLINE) {
+        details += firstDay.onlineUrl
+          ? `\n\nÇevrimiçi Bağlantı: ${firstDay.onlineUrl}`
+          : "\n\nÇevrimiçi Etkinlik";
+      } else if (firstDay.eventType === EventType.HYBRID) {
+        if (location) details += `\n\nKonum: ${location}`;
+        if (firstDay.onlineUrl)
+          details += `\n\nÇevrimiçi Bağlantı: ${firstDay.onlineUrl}`;
+        details +=
+          "\n\nHibrit Etkinlik (Hem fiziksel hem çevrimiçi katılım mümkündür)";
+      }
+
+      // Add link back to event page
+      const eventUrl = `${window.location.origin}/events/${event.slug}`;
+      details += `\n\nEtkinlik Detayları: ${eventUrl}`;
+
+      // Create and open Calendar URL
+      const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+        event.title
+      )}&dates=${startDate}/${endDate}&details=${encodeURIComponent(
+        details
+      )}&location=${encodeURIComponent(location)}`;
+
+      window.open(googleCalendarUrl, "_blank");
+    } catch (error) {
+      console.error("Google Calendar error:", error);
+      toast.error("Takvime eklenirken bir hata oluştu");
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
@@ -416,7 +954,9 @@ export default function EventsPage() {
         <TabsList>
           <TabsTrigger value="upcoming">Yaklaşan Etkinlikler</TabsTrigger>
           <TabsTrigger value="past">Geçmiş Etkinlikler</TabsTrigger>
-          {canCreateEvent && <TabsTrigger value="my">Etkinliklerim</TabsTrigger>}
+          {canCreateEvent && (
+            <TabsTrigger value="my">Etkinliklerim</TabsTrigger>
+          )}
           {isAdmin && <TabsTrigger value="all">Tüm Etkinlikler</TabsTrigger>}
         </TabsList>
       </Tabs>
@@ -511,25 +1051,26 @@ export default function EventsPage() {
                   className="object-cover transition-transform hover:scale-105"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
-                {(isAdmin || tab === "my") && event.status !== EventStatus.APPROVED && (
-                  <div className="absolute top-2 left-2">
-                    <Badge
-                      variant={
-                        event.status === EventStatus.PENDING_APPROVAL
-                          ? "warning"
+                {(isAdmin || tab === "my") &&
+                  event.status !== EventStatus.APPROVED && (
+                    <div className="absolute top-2 left-2">
+                      <Badge
+                        variant={
+                          event.status === EventStatus.PENDING_APPROVAL
+                            ? "warning"
+                            : event.status === EventStatus.REJECTED
+                            ? "destructive"
+                            : "outline"
+                        }
+                      >
+                        {event.status === EventStatus.PENDING_APPROVAL
+                          ? "Onay Bekliyor"
                           : event.status === EventStatus.REJECTED
-                          ? "destructive"
-                          : "outline"
-                      }
-                    >
-                      {event.status === EventStatus.PENDING_APPROVAL
-                        ? "Onay Bekliyor"
-                        : event.status === EventStatus.REJECTED
-                        ? "Reddedildi"
-                        : event.status}
-                    </Badge>
-                  </div>
-                )}
+                          ? "Reddedildi"
+                          : event.status}
+                      </Badge>
+                    </div>
+                  )}
               </div>
               <CardHeader className="p-4 pb-2">
                 {renderEventDateInfo(event)}
@@ -551,9 +1092,52 @@ export default function EventsPage() {
               </CardContent>
 
               <CardFooter className="mt-auto p-4 pt-2 flex flex-col gap-2">
-                <Button asChild className="w-full h-7 text-xs">
-                  <Link href={`/events/${event.slug}`}>Detayları Gör</Link>
-                </Button>
+                {!isUserAuthor(event) &&
+                  !isEventPast(event) &&
+                  event.status === EventStatus.APPROVED && (
+                    <div className="flex gap-2 w-full">
+                      <Button
+                        variant={isRegistered(event) ? "outline" : "secondary"}
+                        className="flex-1 h-8 text-xs"
+                        onClick={(e) =>
+                          isRegistered(event)
+                            ? handleUnregister(event, e)
+                            : handleRegister(event, e)
+                        }
+                        disabled={registering[event.id]}
+                      >
+                        {registering[event.id] ? (
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        ) : isRegistered(event) ? (
+                          <>
+                            <UserCheck className="mr-1 h-4 w-4" /> Kayıtlısın
+                          </>
+                        ) : (
+                          <>
+                            <UserCheck className="mr-1 h-4 w-4" /> Katıl
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-8 text-xs"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          addToGoogleCalendarSafe(event);
+                        }}
+                      >
+                        <Calendar className="mr-1 h-4 w-4" /> Takvime Ekle
+                      </Button>
+                    </div>
+                  )}
+
+                <div className="flex gap-2 w-full">
+                  <Button asChild className="w-full h-9 text-xs">
+                    <Link href={`/events/${event.slug}`}>Detayları Gör</Link>
+                  </Button>
+                </div>
 
                 {(isAdmin || isUserAuthor(event)) && (
                   <div className="flex gap-2 w-full">
