@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import Event, { EventStatus } from '@/models/Event';
+import Event, { EventStatus, IEvent } from '@/models/Event';
 import User from '@/models/User';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { Schema } from 'mongoose';
@@ -28,7 +28,7 @@ export async function POST(
     await connectToDatabase();
     
     // Etkinliği bul
-    const event = await Event.findOne({ slug });
+    const event = await Event.findOne({ slug }).lean() as IEvent | null;
     
     if (!event) {
       return encryptedJson(
@@ -46,7 +46,7 @@ export async function POST(
     }
     
     // Etkinlik tarihi geçmiş mi kontrol et
-    if (new Date(event.eventDate) < new Date()) {
+    if (new Date(event.eventDate!) < new Date()) {
       return encryptedJson(
         { success: false, message: 'Bu etkinlik sona ermiştir' },
         { status: 400 }
@@ -128,7 +128,7 @@ export async function DELETE(
     }
     
     // Etkinlik tarihi geçmiş mi kontrol et
-    if (new Date(event.eventDate) < new Date()) {
+    if (new Date(event.eventDate!) < new Date()) {
       return encryptedJson(
         { success: false, message: 'Geçmiş etkinliklerden kaydınızı silemezsiniz' },
         { status: 400 }

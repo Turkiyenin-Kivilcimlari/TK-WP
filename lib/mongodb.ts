@@ -15,6 +15,8 @@ export const connectToDatabase = async () => {
     
     // Kullanım dışı olan seçenekleri kaldırıldı (Node.js Driver 4.0.0+ için gerekli değil)
     const options = {} as mongoose.ConnectOptions;
+
+    mongoose.connection.setMaxListeners(30)
     
     // Şema kayıt sorunlarını önlemek için strictQuery'yi false olarak ayarla
     mongoose.set('strictQuery', false);

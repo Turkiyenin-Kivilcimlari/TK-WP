@@ -28,7 +28,7 @@ import api from "@/lib/api";
 
 function Header({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname();
-  
+
   const navigationItems = [
     {
       title: "Ana Sayfa",
@@ -49,33 +49,35 @@ function Header({ children }: { children?: React.ReactNode }) {
     {
       title: "İletişim",
       href: "/contact",
-    }
+    },
   ];
 
   // Bir yolun aktif olup olmadığını kontrol eden yardımcı fonksiyon
   const isActive = (path: string) => {
-    if (path === '/' && pathname === '/') return true;
-    if (path !== '/' && pathname.startsWith(path)) return true;
+    if (path === "/" && pathname === "/") return true;
+    if (path !== "/" && pathname.startsWith(path)) return true;
     return false;
   };
 
   const [isOpen, setOpen] = useState(false);
   const { theme, setTheme } = useTheme();
-  
+
   const { data: session, status } = useSession();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState({
     name: "",
     profileImage: "",
   });
-  
+
   // Session değişikliklerini izle
   useEffect(() => {
     setIsLoggedIn(status === "authenticated");
-    
+
     if (session?.user) {
       setUserData({
-        name: `${session.user.name || ''} ${session.user.lastname || ''}`.trim(),
+        name: `${session.user.name || ""} ${
+          session.user.lastname || ""
+        }`.trim(),
         profileImage: session.user.avatar || "",
       });
     } else {
@@ -85,50 +87,55 @@ function Header({ children }: { children?: React.ReactNode }) {
         profileImage: "",
       });
     }
-    
+
     // EventBus'a profil güncellemelerini dinleyici ekle
     const handleProfileUpdate = () => {
       // Manuel session yenileme
       const refreshSessionData = async () => {
         try {
-          const response = await api.get('/api/auth/session');
+          const response = await api.get("/api/auth/session");
           if (response.status === 200) {
             const sessionData = response.data;
             if (sessionData?.user) {
               setUserData({
-                name: `${sessionData.user.name || ''} ${sessionData.user.lastname || ''}`.trim(),
+                name: `${sessionData.user.name || ""} ${
+                  sessionData.user.lastname || ""
+                }`.trim(),
                 profileImage: sessionData.user.avatar || "",
               });
             }
           }
-        } catch (error) {
-          console.error("Session yenilenirken hata:", error);
-        }
+        } catch (error) {}
       };
-      
+
       refreshSessionData();
     };
 
     // Özel olayları dinle
-    window.addEventListener('profile-updated', handleProfileUpdate);
-    
+    window.addEventListener("profile-updated", handleProfileUpdate);
+
     return () => {
-      window.removeEventListener('profile-updated', handleProfileUpdate); // Düzeltildi - removeEventListener kullanılmalı
+      window.removeEventListener("profile-updated", handleProfileUpdate); // Düzeltildi - removeEventListener kullanılmalı
     };
   }, [session, status]);
 
   // Kullanıcı rollerine göre yetkiler
-  const isAdmin = isLoggedIn && (session?.user?.role === UserRole.ADMIN || 
-                                session?.user?.role === UserRole.SUPERADMIN);
-  
+  const isAdmin =
+    isLoggedIn &&
+    (session?.user?.role === UserRole.ADMIN ||
+      session?.user?.role === UserRole.SUPERADMIN);
+
   // Süper yönetici kontrolü
-  const isSuperAdmin = isLoggedIn && session?.user?.role === UserRole.SUPERADMIN;
+  const isSuperAdmin =
+    isLoggedIn && session?.user?.role === UserRole.SUPERADMIN;
 
   // Function to generate fallback avatar if user has no profile image
   const getProfileImage = () => {
     if (userData.profileImage) return userData.profileImage;
     // Return a placeholder image URL
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name || 'User')}&background=random`;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      userData.name || "User"
+    )}&background=random`;
   };
 
   // Component for user profile display
@@ -142,20 +149,27 @@ function Header({ children }: { children?: React.ReactNode }) {
           </Avatar>
           <span>{userData.name}</span>
           {isSuperAdmin && (
-            <Shield className="h-4 w-4 text-destructive" aria-label="Süper Yönetici" />
+            <Shield
+              className="h-4 w-4 text-destructive"
+              aria-label="Süper Yönetici"
+            />
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="z-[200]">
         <DropdownMenuItem>
-          <Link href="/profile" className="w-full">Profil</Link>
+          <Link href="/profile" className="w-full">
+            Profil
+          </Link>
         </DropdownMenuItem>
         {isAdmin && (
           <DropdownMenuItem>
-            <Link href="/admin/dashboard" className="w-full">Yönetim Paneli</Link>
+            <Link href="/admin/dashboard" className="w-full">
+              Yönetim Paneli
+            </Link>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })}>
+        <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
           Çıkış Yap
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -193,8 +207,9 @@ function Header({ children }: { children?: React.ReactNode }) {
   // Tema değiştirme butonunu render eden fonksiyon
   const ThemeToggleButton = () => {
     // İkon göstermek için istemci tarafında olmamız gerekiyor
-    const icon = !mounted ? null : (theme === "dark" ? 
-      <Sun className="h-4 w-4" /> : 
+    const icon = !mounted ? null : theme === "dark" ? (
+      <Sun className="h-4 w-4" />
+    ) : (
       <Moon className="h-4 w-4" />
     );
 
@@ -217,12 +232,23 @@ function Header({ children }: { children?: React.ReactNode }) {
         <div className="container mx-auto py-2 flex gap-2 flex-row lg:grid lg:grid-cols-12 items-center">
           {/* Logo ve Başlık - Sol taraf */}
           <div className="flex lg:col-span-3 justify-start items-center pl-3 lg:pl-0">
-            <Link href="/" className="text-m lg:text-xl font-bold flex items-center gap-2">
-              <Image src="https://res.cloudinary.com/dkqu2s9gz/image/upload/v1742649496/eewobokrrfmwt5maygoh.png" alt="Logo" width={48} height={48} className="object-contain" />
-              <span className="text-lg lg:text-xl">Türkiye'nin Kıvılcımları</span>
+            <Link
+              href="/"
+              className="text-m lg:text-xl font-bold flex items-center gap-2"
+            >
+              <Image
+                src="https://res.cloudinary.com/dkqu2s9gz/image/upload/v1742649496/eewobokrrfmwt5maygoh.png"
+                alt="Logo"
+                width={48}
+                height={48}
+                className="object-contain"
+              />
+              <span className="text-lg lg:text-xl">
+                Türkiye'nin Kıvılcımları
+              </span>
             </Link>
           </div>
-          
+
           {/* Navigasyon Menüsü - Orta kısım */}
           <div className="justify-center items-center gap-2 lg:gap-4 lg:flex hidden lg:col-span-6">
             <NavigationMenu className="flex justify-center items-center">
@@ -231,10 +257,14 @@ function Header({ children }: { children?: React.ReactNode }) {
                   <NavigationMenuItem key={item.title}>
                     <Link href={item.href} legacyBehavior passHref>
                       <NavigationMenuLink asChild>
-                        <Button 
+                        <Button
                           variant={isActive(item.href) ? "default" : "ghost"}
                           size="default"
-                          className={isActive(item.href) ? "bg-primary text-primary-foreground" : ""}
+                          className={
+                            isActive(item.href)
+                              ? "bg-primary text-primary-foreground"
+                              : ""
+                          }
                         >
                           {item.title}
                         </Button>
@@ -245,17 +275,22 @@ function Header({ children }: { children?: React.ReactNode }) {
               </NavigationMenuList>
             </NavigationMenu>
           </div>
-          
+
           {/* Kullanıcı ve Tema Kontrolleri - Sağ taraf */}
           <div className="hidden md:flex lg:col-span-3 justify-end w-full gap-2 ml-auto">
             {isLoggedIn ? <UserProfileSection /> : <AuthButtons />}
             <ThemeToggleButton />
           </div>
-          
+
           {/* Mobil Menü Açma Düğmesi */}
           <div className="flex ml-auto mr-0 md:hidden items-center justify-end gap-2">
             <ThemeToggleButton />
-            <Button variant="ghost" size="sm" onClick={() => setOpen(!isOpen)} className="p-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOpen(!isOpen)}
+              className="p-0"
+            >
               {isOpen ? (
                 <X className="w-5 h-5" />
               ) : (
@@ -274,7 +309,11 @@ function Header({ children }: { children?: React.ReactNode }) {
                       <Link href={item.href} onClick={() => setOpen(false)}>
                         <Button
                           variant={isActive(item.href) ? "default" : "ghost"}
-                          className={`w-full justify-start text-base ${isActive(item.href) ? "bg-primary text-primary-foreground" : ""}`}
+                          className={`w-full justify-start text-base ${
+                            isActive(item.href)
+                              ? "bg-primary text-primary-foreground"
+                              : ""
+                          }`}
                         >
                           {item.title}
                         </Button>
@@ -288,34 +327,51 @@ function Header({ children }: { children?: React.ReactNode }) {
                     <>
                       <div className="flex items-center gap-2 p-2">
                         <Avatar className="w-8 h-8">
-                          <AvatarImage src={userData.profileImage} alt="Profile" />
-                          <AvatarFallback>{userData.name.substring(0, 2)}</AvatarFallback>
+                          <AvatarImage
+                            src={userData.profileImage}
+                            alt="Profile"
+                          />
+                          <AvatarFallback>
+                            {userData.name.substring(0, 2)}
+                          </AvatarFallback>
                         </Avatar>
                         <span className="font-medium">{userData.name}</span>
                         {isSuperAdmin && (
-                          <Shield className="h-4 w-4 text-destructive" aria-label="Süper Yönetici" />
+                          <Shield
+                            className="h-4 w-4 text-destructive"
+                            aria-label="Süper Yönetici"
+                          />
                         )}
                       </div>
                       <Link href="/profile" onClick={() => setOpen(false)}>
-                        <Button variant="outline" className="w-full justify-between">
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                        >
                           <span>Profil</span>
                           <MoveRight className="w-4 h-4 stroke-1" />
                         </Button>
                       </Link>
                       {isAdmin && (
-                        <Link href="/admin/dashboard" onClick={() => setOpen(false)}>
-                          <Button variant="outline" className="w-full justify-between">
+                        <Link
+                          href="/admin/dashboard"
+                          onClick={() => setOpen(false)}
+                        >
+                          <Button
+                            variant="outline"
+                            className="w-full justify-between"
+                          >
                             <span>Yönetim Paneli</span>
                             <MoveRight className="w-4 h-4 stroke-1" />
                           </Button>
                         </Link>
                       )}
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         className="w-full justify-between"
                         onClick={() => {
                           setOpen(false);
-                          signOut({ callbackUrl: '/' });
+                          signOut({ callbackUrl: "/" });
                         }}
                       >
                         <span>Çıkış Yap</span>
@@ -324,26 +380,35 @@ function Header({ children }: { children?: React.ReactNode }) {
                     </>
                   ) : (
                     <>
-                        <a href="/signin" onClick={(e) => {
-                        e.preventDefault();
-                        setOpen(false);
-                        window.location.href = "/signin";
-                        }}>
-                        <Button variant="outline" className="w-full justify-between">
+                      <a
+                        href="/signin"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setOpen(false);
+                          window.location.href = "/signin";
+                        }}
+                      >
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                        >
                           <span>Giriş Yap</span>
                           <MoveRight className="w-4 h-4 stroke-1" />
                         </Button>
-                        </a>
-                        <a href="/signup" onClick={(e) => {
-                        e.preventDefault();
-                        setOpen(false);
-                        window.location.href = "/signup";
-                        }}>
+                      </a>
+                      <a
+                        href="/signup"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setOpen(false);
+                          window.location.href = "/signup";
+                        }}
+                      >
                         <Button className="w-full justify-between">
                           <span>Kayıt Ol</span>
                           <MoveRight className="w-4 h-4 stroke-1" />
                         </Button>
-                        </a>
+                      </a>
                     </>
                   )}
                 </div>

@@ -1,11 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import Comment from '@/models/Comment';
 import Article from '@/models/Article';
-import { UserRole } from '@/models/User';
 import mongoose from 'mongoose';
 import { encryptedJson } from '@/lib/response';
+
+// Dynamic rendering için yapılandırma
+export const dynamic = 'force-dynamic';
 
 // Tüm yorumları getirme (sadece admin için)
 export async function GET(req: NextRequest) {
@@ -13,34 +15,29 @@ export async function GET(req: NextRequest) {
     // Admin işlemi olduğu için 2FA kontrolü ekliyoruz
     const adminCheck = await checkAdminAuthWithTwoFactor(req);
     if (adminCheck) return adminCheck;
-    
-    // Veritabanı bağlantısını kurmak için çağrıyı burada yapalım - öncelikli olarak
+
+    // Veritabanı bağlantısını kuralım
     await connectToDatabase();
-    
-    // Modellerimizin yüklenmesini sağlayalım (alternatif olarak)
-    if (mongoose.models.Article === undefined) {
-      require('@/models/Article');
-    }
 
     // URL parametrelerini al
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search');
     const author = searchParams.get('author');
     const article = searchParams.get('article');
-    
+
     // Arama sorgusu oluştur
     let query: any = {};
-    
+
     // İçerik araması
     if (search) {
       query.content = { $regex: search, $options: 'i' };
     }
-    
+
     // Yazar filtresi
     if (author && author !== 'all') {
       query.author = new mongoose.Types.ObjectId(author);
     }
-    
+
     // Makale filtresi
     if (article && article !== 'all') {
       query.article = new mongoose.Types.ObjectId(article);
@@ -48,16 +45,24 @@ export async function GET(req: NextRequest) {
 
     // Yorumları getir
     const comments = await Comment.find(query)
-      .populate('author', 'name lastname') // email kaldırıldı
+      .populate('author', 'name lastname')
       .populate({
         path: 'article',
         select: 'title',
         model: 'Article'
       })
-      .populate('parent', '_id')
+      .populate('parent', '_id content')
+      .populate({
+        path: 'parent',
+        populate: {
+          path: 'author',
+          select: 'name lastname',
+          model: 'User'
+        }
+      })
       .sort({ createdAt: -1 });
 
-    // Formatla
+    // Yorumları formatla
     const formattedComments = await Promise.all(comments.map(async comment => {
       const formattedComment = comment.toObject() as any;
       
@@ -70,7 +75,7 @@ export async function GET(req: NextRequest) {
         const author = formattedComment.author;
         formattedComment.authorId = author._id.toString();
         formattedComment.authorName = `${author.name || ''} ${author.lastname || ''}`.trim();
-        delete formattedComment.author._id;
+        delete formattedComment.author;
       }
       
       // Makale bilgilerini düzenle
@@ -86,38 +91,31 @@ export async function GET(req: NextRequest) {
         formattedComment.parentId = formattedComment.parent._id.toString();
         formattedComment.isReply = true;
         
-        // Üst yorumu bulmak için fonksiyon
-        const parentComment = await Comment.findById(formattedComment.parentId)
-          .select('content author')
-          .populate('author', 'name lastname');
+        // Üst yorumun içeriği ve yazarı
+        if (formattedComment.parent.content) {
+          formattedComment.parentContent = formattedComment.parent.content;
           
-        if (parentComment) {
-          const parentAuthor = parentComment.author as any;
-          formattedComment.parentAuthorName = `${parentAuthor.name || ''} ${parentAuthor.lastname || ''}`.trim();
-          formattedComment.parentContent = parentComment.content;
+          if (formattedComment.parent.author) {
+            const parentAuthor = formattedComment.parent.author;
+            formattedComment.parentAuthorName = `${parentAuthor.name || ''} ${parentAuthor.lastname || ''}`.trim();
+          }
         }
       } else {
         formattedComment.isReply = false;
       }
-      
       delete formattedComment.parent;
-      
-      // Varsayılan olarak tüm yorumlar onaylı
-      if (formattedComment.isApproved === undefined) {
-        formattedComment.isApproved = true;
-      }
       
       return formattedComment;
     }));
-    
+
     return encryptedJson({
       success: true,
       comments: formattedComments
     });
-    
   } catch (error: any) {
+    console.error('Admin comments error:', error);
     return encryptedJson(
-      { success: false, message: 'Bir hata oluştu' },
+      { success: false, message: 'Bir hata oluştu', error: error.message },
       { status: 500 }
     );
   }
@@ -144,14 +142,13 @@ export async function DELETE(req: NextRequest) {
 
     // Yorumu kontrol et
     const comment = await Comment.findById(commentId);
-    
     if (!comment) {
       return encryptedJson(
         { success: false, message: 'Yorum bulunamadı' },
         { status: 404 }
       );
     }
-    
+
     // Eğer ana yorum ise, alt yorumlarını da sil
     if (!comment.parent) {
       await Comment.deleteMany({ parent: commentId });
@@ -164,10 +161,10 @@ export async function DELETE(req: NextRequest) {
       success: true,
       message: 'Yorum başarıyla silindi'
     });
-    
   } catch (error: any) {
+    console.error('Admin delete comment error:', error);
     return encryptedJson(
-      { success: false, message: 'Bir hata oluştu' },
+      { success: false, message: 'Bir hata oluştu', error: error.message },
       { status: 500 }
     );
   }
