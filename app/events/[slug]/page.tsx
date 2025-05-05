@@ -120,10 +120,10 @@ export default function EventDetailPage({
         setEvent(eventResponse.data.event);
 
       } else {
-        toast.error(response.data.message || "Kayıt işlemi başarısız");
+        toast.error("Kayıt işlemi başarısız");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Bir hata oluştu");
+      toast.error("Bir hata oluştu");
     } finally {
       setIsRegistering(false);
     }
@@ -140,10 +140,10 @@ export default function EventDetailPage({
         const eventResponse = await api.get(`/api/events/${slug}`);
         setEvent(eventResponse.data.event);
       } else {
-        toast.error(response.data.message || "İptal işlemi başarısız");
+        toast.error("İptal işlemi başarısız");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Bir hata oluştu");
+      toast.error("Bir hata oluştu");
     } finally {
       setIsRegistering(false);
     }
@@ -162,11 +162,6 @@ export default function EventDetailPage({
         return;
       }
 
-      console.log("Calendar Date Debug:", {
-        date: firstDay.date,
-        startTime: firstDay.startTime,
-        endTime: firstDay.endTime,
-      });
 
       const normalizeDate = (dateStr: string): string => {
         try {
@@ -181,7 +176,6 @@ export default function EventDetailPage({
 
           return dateStr;
         } catch (err) {
-          console.error("Date normalization error:", err);
           return dateStr;
         }
       };
@@ -199,7 +193,6 @@ export default function EventDetailPage({
         startDateTime = new Date(`${dateStr}T${startTime}:00`);
 
         if (isNaN(startDateTime.getTime())) {
-          console.log("Method 1 failed, trying Method 2");
 
           const [year, month, day] = dateStr.split(/[-T]/);
           const [hours, minutes] = startTime.split(":");
@@ -218,14 +211,9 @@ export default function EventDetailPage({
 
           if (isNaN(startDateTime.getTime())) {
             throw new Error("Method 2 failed to produce a valid date");
-          } else {
-            console.log("Method 2 succeeded:", startDateTime.toISOString());
           }
-        } else {
-          console.log("Method 1 succeeded:", startDateTime.toISOString());
         }
       } catch (e) {
-        console.error("All date parsing methods failed:", e);
         toast.error(
           "Geçersiz başlangıç tarihi veya saati. Lütfen etkinlik bilgilerini kontrol ediniz."
         );
@@ -233,10 +221,6 @@ export default function EventDetailPage({
       }
 
       if (isNaN(startDateTime.getTime())) {
-        console.error("Invalid start date/time after all attempts:", {
-          dateStr,
-          startTime,
-        });
         toast.error("Geçersiz başlangıç tarihi veya saati");
         return;
       }
@@ -262,12 +246,10 @@ export default function EventDetailPage({
           endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
         }
       } catch (e) {
-        console.warn("End time parsing failed, using default:", e);
         endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
       }
 
       if (isNaN(endDateTime.getTime())) {
-        console.warn("Invalid end date/time, using default");
         endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
       }
 
@@ -313,7 +295,6 @@ export default function EventDetailPage({
 
       window.open(googleCalendarUrl, "_blank");
     } catch (error) {
-      console.error("Google Calendar link creation failed:", error);
       toast.error("Takvim olayı oluşturulamadı");
     }
   };
@@ -685,14 +666,16 @@ export default function EventDetailPage({
             <h3 className="text-sm font-medium text-muted-foreground mb-1">
               Etkinlik Organizatörü
             </h3>
-            <div className="flex items-center">
+            <Link
+              href={`/users/${event.author?.slug}`} className="flex items-center"
+            >
               <User className="h-4 w-4 mr-2" />
               <p>
                 {event.author
                   ? `${event.author.name} ${event.author.lastname}`
                   : "Belirtilmemiş"}
               </p>
-            </div>
+            </Link>
           </div>
 
           <div>
@@ -1094,12 +1077,14 @@ export default function EventDetailPage({
         <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
           {renderEventDateInfo()}
           {event.author && (
-            <div className="flex items-center">
+            <Link
+              href={`/u/${event.author.slug}`}
+              className="flex items-center">
               <User className="h-4 w-4 mr-2" />
               <span>
                 {event.author.name} {event.author.lastname}
               </span>
-            </div>
+              </Link>
           )}
         </div>
         {event.participants &&

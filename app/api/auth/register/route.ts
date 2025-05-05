@@ -12,32 +12,31 @@ import { encryptedJson } from '@/lib/response';
 const registerSchema = z.object({
   name: z.string().min(2, 'Ad en az 2 karakter olmalıdır'),
   lastname: z.string().min(2, 'Soyad en az 2 karakter olmalıdır'),
-  phone: z.string().min(10, 'Geçerli bir telefon numarası giriniz'),
+  phone: z.string().min(10, 'Geçerli bir telefon numarası giriniz').optional(),
   email: z.string().email('Geçerli bir e-posta adresi giriniz'),
   password: z
     .string()
     .min(8, 'Şifre en az 8 karakter olmalıdır'),
   turnstileToken: z.string().optional(),
-  allowEmails: z.boolean().default(true)
+  allowEmails: z.boolean().default(true),
+  title: z.string().optional()
 });
 
 export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
     
-    const body = await req.json();
+    const { name, lastname, email, phone, password, allowEmails, title, turnstileToken } = await req.json();
     
     // İstek verilerini doğrula
     try {
-      registerSchema.parse(body);
+      registerSchema.parse({ name, lastname, email, phone, password, allowEmails, title, turnstileToken });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return encryptedJson({ success: false}, { status: 400 });
       }
       throw error;
     }
-    
-    const { name, lastname, email, password, phone, allowEmails } = body;
     
     // E-posta adresi kullanımda mı kontrol et
     const existingUser = await User.findOne({ email });
@@ -50,16 +49,19 @@ export async function POST(req: NextRequest) {
     }
     
     // Yeni kullanıcı oluştur
-    const user = await User.create({
+    const user = new User({
       name,
       lastname,
       email,
+      phone: phone || '',
       password,
-      phone,
+      allowEmails: allowEmails !== undefined ? allowEmails : true,
+      title: title || '', // Title alanını ekleyelim
       role: UserRole.MEMBER, // Varsayılan olarak üye rolü
       emailVerified: false, // E-posta henüz doğrulanmadı
-      allowEmails: allowEmails ?? true, // Yeni alan ekleniyor, varsayılan true
     });
+    
+    await user.save();
     
     // Mongoose document olarak belirtelim
     const userDoc = user as unknown as { _id: Types.ObjectId } & typeof user;
@@ -73,6 +75,7 @@ export async function POST(req: NextRequest) {
       lastname: userDoc.lastname,
       email: userDoc.email,
       phone: userDoc.phone,
+      title: userDoc.title || '', // Title alanını ekleyelim
       role: userDoc.role,
       allowEmails: userDoc.allowEmails,
     };

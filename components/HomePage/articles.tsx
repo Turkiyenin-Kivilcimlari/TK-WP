@@ -18,6 +18,7 @@ interface Article {
     name: string;
     lastname: string;
     avatar: string;
+    slug: string;
   };
   likeCount: number;
   dislikeCount: number;
@@ -107,6 +108,7 @@ export function Articles() {
               name: item.author?.name,
               lastname: item.author?.lastname, // Soyadı bilgisini ekleyelim
               avatar: item.author?.avatar,
+              slug: item.author?.slug,
             },
             // API'den farklı şekillerde gelebilecek beğeni sayılarını kontrol edelim
             likeCount: item.likeCount,
