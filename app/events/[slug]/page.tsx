@@ -15,6 +15,9 @@ import {
   User,
   Trash2,
   Loader2,
+  UserCheck,
+  CalendarPlus,
+  CalendarClock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -63,6 +66,7 @@ export default function EventDetailPage({
   const [event, setEvent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const userRole = session?.user?.role;
@@ -87,6 +91,233 @@ export default function EventDetailPage({
     fetchEvent();
   }, [slug]);
 
+  const isUserRegistered = () => {
+    if (!userId || !event?.participants) return false;
+    return event.participants.some(
+      (participant: any) => participant.userId === userId
+    );
+  };
+
+  const isUserAuthor = () => {
+    return userId && event?.author?.id === userId;
+  };
+
+  const handleRegister = async () => {
+    if (!session?.user) {
+      toast.error("Etkinliğe katılabilmek için giriş yapmalısınız");
+      router.push(`/signin?callbackUrl=/events/${slug}`);
+      return;
+    }
+
+    try {
+      setIsRegistering(true);
+      const response = await api.post(`/api/events/${slug}/register`);
+
+      if (response.data.success) {
+        toast.success("Etkinliğe başarıyla kaydoldunuz");
+
+        const eventResponse = await api.get(`/api/events/${slug}`);
+        setEvent(eventResponse.data.event);
+
+      } else {
+        toast.error(response.data.message || "Kayıt işlemi başarısız");
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Bir hata oluştu");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const handleUnregister = async () => {
+    try {
+      setIsRegistering(true);
+      const response = await api.delete(`/api/events/${slug}/register`);
+
+      if (response.data.success) {
+        toast.success("Etkinlik kaydınız iptal edildi");
+
+        const eventResponse = await api.get(`/api/events/${slug}`);
+        setEvent(eventResponse.data.event);
+      } else {
+        toast.error(response.data.message || "İptal işlemi başarısız");
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Bir hata oluştu");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const handleAddToCalendar = () => {
+    try {
+      if (!event) {
+        toast.error("Etkinlik bilgileri eksik, takvim olayı oluşturulamadı");
+        return;
+      }
+
+      const firstDay = getFirstEventDay();
+      if (!firstDay) {
+        toast.error("Etkinlik gün bilgileri eksik, takvim olayı oluşturulamadı");
+        return;
+      }
+
+      console.log("Calendar Date Debug:", {
+        date: firstDay.date,
+        startTime: firstDay.startTime,
+        endTime: firstDay.endTime,
+      });
+
+      const normalizeDate = (dateStr: string): string => {
+        try {
+          if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+            return dateStr.split("T")[0];
+          }
+
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            return date.toISOString().split("T")[0];
+          }
+
+          return dateStr;
+        } catch (err) {
+          console.error("Date normalization error:", err);
+          return dateStr;
+        }
+      };
+
+      let dateStr = normalizeDate(firstDay.date);
+
+      const startTime = firstDay.startTime;
+      if (!startTime) {
+        toast.error("Etkinlik başlangıç saati eksik");
+        return;
+      }
+
+      let startDateTime;
+      try {
+        startDateTime = new Date(`${dateStr}T${startTime}:00`);
+
+        if (isNaN(startDateTime.getTime())) {
+          console.log("Method 1 failed, trying Method 2");
+
+          const [year, month, day] = dateStr.split(/[-T]/);
+          const [hours, minutes] = startTime.split(":");
+
+          if (!year || !month || !day || !hours || !minutes) {
+            throw new Error("Invalid date/time components");
+          }
+
+          startDateTime = new Date(
+            parseInt(year, 10),
+            parseInt(month, 10) - 1,
+            parseInt(day, 10),
+            parseInt(hours, 10),
+            parseInt(minutes, 10)
+          );
+
+          if (isNaN(startDateTime.getTime())) {
+            throw new Error("Method 2 failed to produce a valid date");
+          } else {
+            console.log("Method 2 succeeded:", startDateTime.toISOString());
+          }
+        } else {
+          console.log("Method 1 succeeded:", startDateTime.toISOString());
+        }
+      } catch (e) {
+        console.error("All date parsing methods failed:", e);
+        toast.error(
+          "Geçersiz başlangıç tarihi veya saati. Lütfen etkinlik bilgilerini kontrol ediniz."
+        );
+        return;
+      }
+
+      if (isNaN(startDateTime.getTime())) {
+        console.error("Invalid start date/time after all attempts:", {
+          dateStr,
+          startTime,
+        });
+        toast.error("Geçersiz başlangıç tarihi veya saati");
+        return;
+      }
+
+      let endDateTime;
+      try {
+        if (firstDay.endTime) {
+          endDateTime = new Date(`${dateStr}T${firstDay.endTime}:00`);
+
+          if (isNaN(endDateTime.getTime())) {
+            const [year, month, day] = dateStr.split(/[-T]/);
+            const [hours, minutes] = firstDay.endTime.split(":");
+
+            endDateTime = new Date(
+              parseInt(year, 10),
+              parseInt(month, 10) - 1,
+              parseInt(day, 10),
+              parseInt(hours, 10),
+              parseInt(minutes, 10)
+            );
+          }
+        } else {
+          endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+        }
+      } catch (e) {
+        console.warn("End time parsing failed, using default:", e);
+        endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+      }
+
+      if (isNaN(endDateTime.getTime())) {
+        console.warn("Invalid end date/time, using default");
+        endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+      }
+
+      const formatGoogleCalendarDate = (date: Date) => {
+        return date.toISOString().replace(/[-:]/g, "").replace(/\.\d+/g, "");
+      };
+
+      const startDate = formatGoogleCalendarDate(startDateTime);
+      const endDate = formatGoogleCalendarDate(endDateTime);
+
+      let location = "";
+      if (
+        firstDay.eventType === EventType.IN_PERSON ||
+        firstDay.eventType === EventType.HYBRID
+      ) {
+        location = firstDay.location || event.location || "";
+      }
+
+      let details = event.description || "";
+
+      if (firstDay.eventType === EventType.IN_PERSON) {
+        details += location ? `\n\nKonum: ${location}` : "\n\nFiziksel Etkinlik";
+      } else if (firstDay.eventType === EventType.ONLINE) {
+        details += firstDay.onlineUrl
+          ? `\n\nÇevrimiçi Bağlantı: ${firstDay.onlineUrl}`
+          : "\n\nÇevrimiçi Etkinlik";
+      } else if (firstDay.eventType === EventType.HYBRID) {
+        if (location) details += `\n\nKonum: ${location}`;
+        if (firstDay.onlineUrl)
+          details += `\n\nÇevrimiçi Bağlantı: ${firstDay.onlineUrl}`;
+        details +=
+          "\n\nHibrit Etkinlik (Hem fiziksel hem çevrimiçi katılım mümkündür)";
+      }
+
+      const eventUrl = `${window.location.origin}/events/${slug}`;
+      details += `\n\nEtkinlik Detayları: ${eventUrl}`;
+
+      const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+        event.title
+      )}&dates=${startDate}/${endDate}&details=${encodeURIComponent(
+        details
+      )}&location=${encodeURIComponent(location)}`;
+
+      window.open(googleCalendarUrl, "_blank");
+    } catch (error) {
+      console.error("Google Calendar link creation failed:", error);
+      toast.error("Takvim olayı oluşturulamadı");
+    }
+  };
+
   const handleDeleteEvent = async () => {
     try {
       setIsDeleting(true);
@@ -104,6 +335,36 @@ export default function EventDetailPage({
   const canEdit = isAdmin || isAuthor;
 
   const canDelete = isAdmin || isAuthor;
+
+  const registered = isUserRegistered();
+
+  const canRegister = !isAuthor && event?.status === EventStatus.APPROVED;
+
+  const isEventPast = () => {
+    try {
+      if (event?.eventDays && event.eventDays.length > 0) {
+        const lastDay = event.eventDays[event.eventDays.length - 1];
+
+        let eventEndDateTime: Date;
+        if (lastDay.endTime) {
+          eventEndDateTime = new Date(`${lastDay.date}T${lastDay.endTime}`);
+        } else {
+          const startDateTime = new Date(
+            `${lastDay.date}T${lastDay.startTime}`
+          );
+          eventEndDateTime = new Date(
+            startDateTime.getTime() + 2 * 60 * 60 * 1000
+          );
+        }
+
+        return eventEndDateTime < new Date();
+      }
+
+      return false;
+    } catch (error) {
+      return false;
+    }
+  };
 
   const getFirstEventDay = () => {
     if (event?.eventDays && event.eventDays.length > 0) {
@@ -674,6 +935,42 @@ export default function EventDetailPage({
     );
   };
 
+  const renderParticipants = () => {
+    if (!event || !event.participants) return null;
+
+    const count = event.participantCount || event.participants.length;
+    if (count === 0) return null;
+
+    return (
+      <div className="mt-6">
+        <h3 className="text-lg font-medium mb-2">Katılımcılar ({count})</h3>
+        <Badge variant="outline" className="text-sm py-1 px-2">
+          <UserCheck className="h-4 w-4 mr-1" />
+          {count} kişi katılıyor
+        </Badge>
+
+        {isAdmin && (
+          <div className="mt-4 p-4 bg-muted rounded-md">
+            <h4 className="text-sm font-medium mb-2">
+              Katılımcı Listesi (Admin)
+            </h4>
+            <div className="space-y-2">
+              {event.participants.map((participant: any, index: number) => (
+                <div key={index} className="flex items-center gap-2 text-sm">
+                  <User className="h-4 w-4" />
+                  <span>
+                    {participant.name} {participant.lastname} (
+                    {participant.email})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8 px-4 text-center">
@@ -805,6 +1102,16 @@ export default function EventDetailPage({
             </div>
           )}
         </div>
+        {event.participants &&
+          event.participants.length > 0 &&
+          (isAdmin || isAuthor) && (
+            <div className="mb-6">
+              <Badge variant="outline" className="text-sm py-1 px-2">
+                <UserCheck className="h-4 w-4 mr-1" />
+                {event.participants.length} kişi katılıyor
+              </Badge>
+            </div>
+          )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -827,10 +1134,58 @@ export default function EventDetailPage({
           </div>
 
           {renderEventDays()}
+
+          
         </div>
 
-        <div>{renderEventDetails()}</div>
+        <div>
+          {renderEventDetails()}
+
+          {!isLoading &&
+            !error &&
+            event &&
+            !isUserAuthor() &&
+            !isEventPast() &&
+            event?.status === EventStatus.APPROVED && (
+              <Card className="p-6 mt-6">
+                <h3 className="text-lg font-semibold mb-4">Etkinlik Katılımı</h3>
+                <div className="space-y-3">
+                  <Button
+                    className="w-full justify-start"
+                    variant={registered ? "outline" : "default"}
+                    onClick={registered ? handleUnregister : handleRegister}
+                    disabled={isRegistering}
+                  >
+                    {isRegistering ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : registered ? (
+                      <UserCheck className="mr-2 h-4 w-4" />
+                    ) : (
+                      <CalendarPlus className="mr-2 h-4 w-4" />
+                    )}
+                    {registered ? "Kaydı İptal Et" : "Etkinliğe Katıl"}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={handleAddToCalendar}
+                  >
+                    <CalendarClock className="mr-2 h-4 w-4" />
+                    Takvime Ekle
+                  </Button>
+                </div>
+                {registered && (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Etkinliğe kaydolduğunuz için teşekkürler!
+                  </p>
+                )}
+              </Card>
+            )}
+        </div>
       </div>
+
+      {renderParticipants()}
     </div>
   );
 }

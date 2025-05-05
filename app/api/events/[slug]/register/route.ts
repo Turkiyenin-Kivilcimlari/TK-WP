@@ -3,7 +3,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Event, { EventStatus, IEvent } from '@/models/Event';
 import User from '@/models/User';
 import { authenticateUser } from '@/middleware/authMiddleware';
-import { Schema } from 'mongoose';
+import { Types } from 'mongoose';
 import { encryptedJson } from '@/lib/response';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +28,7 @@ export async function POST(
     await connectToDatabase();
     
     // Etkinliği bul
-    const event = await Event.findOne({ slug }).lean() as IEvent | null;
+    const event = await Event.findOne({ slug });
     
     if (!event) {
       return encryptedJson(
@@ -46,11 +46,18 @@ export async function POST(
     }
     
     // Etkinlik tarihi geçmiş mi kontrol et
-    if (new Date(event.eventDate!) < new Date()) {
-      return encryptedJson(
-        { success: false, message: 'Bu etkinlik sona ermiştir' },
-        { status: 400 }
-      );
+    const lastDay = event.eventDays && event.eventDays.length > 0 
+      ? event.eventDays[event.eventDays.length - 1] 
+      : null;
+      
+    if (lastDay) {
+      const lastDayDate = new Date(lastDay.date);
+      if (lastDayDate < new Date()) {
+        return encryptedJson(
+          { success: false, message: 'Bu etkinlik sona ermiştir' },
+          { status: 400 }
+        );
+      }
     }
     
     // Kullanıcı zaten kayıtlı mı kontrol et
@@ -74,20 +81,25 @@ export async function POST(
         { status: 404 }
       );
     }
+    
     // Kullanıcıyı etkinliğe kaydet
     event.participants.push({
-      userId: new Schema.Types.ObjectId(user._id ? user._id.toString() : token.id),
+      userId: new Types.ObjectId(user._id ? user._id.toString() : token.id),
       name: user.name,
       lastname: user.lastname,
       email: user.email,
       registeredAt: new Date()
     });
     
+    // participantCount alanını güncelle
+    event.participantCount = event.participants.length;
+    
     await event.save();
     
     return encryptedJson({
       success: true,
-      message: 'Etkinliğe başarıyla kaydoldunuz'
+      message: 'Etkinliğe başarıyla kaydoldunuz',
+      participantCount: event.participantCount
     });
     
   } catch (error: any) {
@@ -127,14 +139,6 @@ export async function DELETE(
       );
     }
     
-    // Etkinlik tarihi geçmiş mi kontrol et
-    if (new Date(event.eventDate!) < new Date()) {
-      return encryptedJson(
-        { success: false, message: 'Geçmiş etkinliklerden kaydınızı silemezsiniz' },
-        { status: 400 }
-      );
-    }
-    
     // Kullanıcı kayıtlı mı kontrol et
     const participantIndex = event.participants.findIndex(
       (participant) => participant.userId.toString() === token.id
@@ -150,11 +154,15 @@ export async function DELETE(
     // Kullanıcıyı etkinlik katılımcılarından çıkar
     event.participants.splice(participantIndex, 1);
     
+    // participantCount alanını güncelle
+    event.participantCount = event.participants.length;
+    
     await event.save();
     
     return encryptedJson({
       success: true,
-      message: 'Etkinlik kaydınız iptal edildi'
+      message: 'Etkinlik kaydınız iptal edildi',
+      participantCount: event.participantCount
     });
     
   } catch (error: any) {

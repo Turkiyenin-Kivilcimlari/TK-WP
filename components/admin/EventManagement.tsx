@@ -117,7 +117,9 @@ export function EventManagement({
           onClick={() => setIsRejectDialogOpen(true)}
           disabled={isRejecting}
           variant="secondary"
-          className="flex items-center gap-2"
+          size="sm"
+          className="flex items-center gap-2 bg-secondary hover:bg-secondary/60 transition-colors"
+          title="Etkinliği reddet"
         >
           {isRejecting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -132,6 +134,7 @@ export function EventManagement({
         onClick={() => setIsDeleteAlertOpen(true)}
         disabled={isDeleting}
         variant="destructive"
+        size="sm"
         className="flex items-center gap-2"
       >
         {isDeleting ? (

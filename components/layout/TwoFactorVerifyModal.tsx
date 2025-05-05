@@ -26,7 +26,9 @@ import {
 export function TwoFactorVerifyModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [token, setToken] = useState('');
-  const { data: session, status } = useSession(); // status değişkenini ekledik
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [wasVerified, setWasVerified] = useState(false); // Doğrulama durumunu takip etmek için
+  const { data: session, status, update: updateSession } = useSession(); // update fonksiyonu eklendi
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -34,7 +36,7 @@ export function TwoFactorVerifyModal() {
     twoFactorStatus,
     isLoading,
     verifyTwoFactor,
-    isVerifying
+    refreshStatus
   } = useTwoFactor();
 
   const isAdmin = session?.user?.role === UserRole.ADMIN || session?.user?.role === UserRole.SUPERADMIN;
@@ -53,25 +55,35 @@ export function TwoFactorVerifyModal() {
     // Admin kullanıcı ve 2FA gerekiyorsa açık tut
     if (isAdmin) {
       if (!twoFactorStatus) {
-        // İlk yüklemede durum henüz alınmamışsa, modalı açık tutma
+        // İlk yüklemede durum henüz alınmamışsa, bekle
         return;
       }
       
-      // 2FA etkin değilse veya doğrulanmamışsa modal açık olmalı
-      const needsVerification = twoFactorStatus.enabled && !twoFactorStatus.verified;
-      setIsOpen(needsVerification);
+      // Eğer doğrulama başarıyla yapıldıysa, artık modalı gösterme
+      if (wasVerified) {
+        setIsOpen(false);
+        return;
+      }
       
-      // Admin ve doğrulama gerekiyorsa, toast mesajı göster
-      if (needsVerification && !isOpen) {
-        toast.warning('Doğrulama gerekli', { 
-          description: 'Yönetici işlemlerine erişmek için iki faktörlü doğrulama yapmalısınız',
-          duration: 5000
-        });
+      // 2FA durumunu doğrudan kontrol et
+      if (twoFactorStatus.enabled && !twoFactorStatus.verified) {
+        console.log(twoFactorStatus.enabled,"   ", twoFactorStatus.verified);
+        // Sadece kapalıysa aç, aynı state'i sürekli güncellemekten kaçın
+        if (!isOpen) {
+          console.log("2FA verification needed, opening modal");
+          setIsOpen(true);
+        }
+      } else {
+        // Sadece açıksa kapat, aynı state'i sürekli güncellemekten kaçın
+        if (isOpen) {
+          console.log("2FA verification not needed, closing modal");
+          setIsOpen(false);
+        }
       }
     } else {
       setIsOpen(false);
     }
-  }, [twoFactorStatus, isAdmin, router, status, isOpen]);
+  }, [twoFactorStatus, isAdmin, status, wasVerified, isOpen]);
 
   // Modal kapandığında kodunu temizle
   useEffect(() => {
@@ -81,31 +93,69 @@ export function TwoFactorVerifyModal() {
   }, [isOpen]);
 
   const handleVerify = async () => {
-    if (!token) return;
+    if (!token || token.length !== 6) return;
+    
     try {
+      setIsVerifying(true);
       const result = await verifyTwoFactor(token);
       
-      // Başarılı doğrulamadan sonra, kullanıcı admin sayfasına gitmek istiyorsa yönlendir
       if (result && result.success) {
-        const requireTwoFA = searchParams.get('requireTwoFA');
-        if (requireTwoFA === 'true') {
-          // Kısa bir gecikme ile admin paneline yönlendir
-          setTimeout(() => {
-            toast.success('Admin Paneline Yönlendiriliyorsunuz', {
-              description: 'İki faktörlü doğrulama başarılı. Admin paneline erişebilirsiniz.'
-            });
-          }, 500);
+        console.log("Verification successful, updating status:", result);
+        
+        // Başarılı doğrulama durumunu kaydet
+        setWasVerified(true);
+        
+        // Cookie'yi manuel olarak güncelle
+        if (typeof window !== 'undefined') {
+          // Önce cookie'yi sil
+          document.cookie = "two-factor-status=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+          
+          // Yeni güncelleme için tüm alanları kopyala ve "verified" değerini true yap
+          const updatedStatus = { 
+            enabled: true,
+            verified: true,
+            required: true,
+            isAdmin: true,
+            lastVerification: new Date().toISOString(),
+            sessionTimeoutMins: 180
+          };
+          
+          // Debug için kontrol
+          console.log("Manuel güncellenen cookie değerleri:", updatedStatus);
+          
+          // Cookie ayarlama
+          document.cookie = `two-factor-status=${JSON.stringify(updatedStatus)}; path=/; max-age=10800; SameSite=Lax`;
         }
+        
+        // Session'ı güncelle
+        await updateSession();
+        
+        // Modal'ı kapat
+        setIsOpen(false);
+        
+        // Bir süre bekleyerek tüm güncellemelerin tamamlanmasını sağla
+        setTimeout(async () => {
+          // 2FA durumunu yenile
+          await refreshStatus();
+          
+          // Konsolu temizle (debug için)
+          console.clear();
+          
+          // Toast mesajı göster
+          toast.success('Doğrulama başarılı', {
+            description: 'İki faktörlü kimlik doğrulama başarılı. Admin paneline erişebilirsiniz.'
+          });
+        }, 500);
       }
     } catch (error) {
-      // Hata durumunda token'ı temizle
       setToken('');
       toast.error('Doğrulama başarısız', {
         description: 'Lütfen kodu kontrol edin ve tekrar deneyin.'
       });
+    } finally {
+      setIsVerifying(false);
+      setToken('');
     }
-    
-    setToken('');
   };
 
   // Enter tuşuna basıldığında otomatik doğrula

@@ -68,7 +68,7 @@ export async function PUT(req: NextRequest) {
     
     // İstek gövdesini al
     const body = await req.json();
-    const { name, lastname, phone, avatar } = body;
+    const { name, lastname, phone, avatar, allowEmails } = body;
     
     
     await connectToDatabase();
@@ -89,6 +89,7 @@ export async function PUT(req: NextRequest) {
     if (name !== undefined) updateData.name = name;
     if (lastname !== undefined) updateData.lastname = lastname;
     if (phone !== undefined) updateData.phone = phone;
+    if (allowEmails !== undefined) updateData.allowEmails = allowEmails;
     
     // Avatar özel işlemi - açıkça boş string gönderilirse, sil
     if (avatar === "") {
@@ -146,7 +147,8 @@ export async function PUT(req: NextRequest) {
         email: updatedUser.email,
         phone: updatedUser.phone,
         avatar: updatedUser.avatar || "",
-        role: updatedUser.role
+        role: updatedUser.role,
+        allowEmails: updatedUser.allowEmails
       }
     });
   } catch (error) {

@@ -45,34 +45,31 @@ export async function GET(
         location: day.location || "",
         onlineUrl: day.onlineUrl || "",
       })) : [],
-      // Eski model için uyumluluğu koruyalım
-      location: Array.isArray(event.eventDays) && event.eventDays.length > 0
-        ? event.eventDays[0].location || ""
-        : "",
-      onlineUrl: Array.isArray(event.eventDays) && event.eventDays.length > 0
-        ? event.eventDays[0].onlineUrl || ""
-        : "",
-      coverImage: event.coverImage,
+      location: event.eventDays && event.eventDays.length > 0 ? event.eventDays[0].location || "" : "",
+      onlineUrl: event.eventDays && event.eventDays.length > 0 ? event.eventDays[0].onlineUrl || "" : "",
+      participants: event.participants?.map((p: any) => ({
+        userId: p.userId.toString(),
+        name: p.name,
+        lastname: p.lastname,
+        email: p.email,
+        registeredAt: p.registeredAt,
+      })) || [],
+      participantCount: event.participantCount || event.participants?.length || 0,
+      coverImage: event.coverImage || "",
       status: event.status,
-      author: event.author ? {
-        id: typeof event.author === 'string'
-          ? event.author
-          : (event.author as any)._id.toString(),
-        name: (event.author as any).name,
-        lastname: (event.author as any).lastname,
-        avatar: (event.author as any).avatar
-      } : null,
-      rejectionReason: event.rejectionReason,
       createdAt: event.createdAt,
-      updatedAt: event.updatedAt
+      updatedAt: event.updatedAt,
+      author: event.author && typeof event.author === 'object' && 'name' in event.author ? {
+        id: event.author._id.toString(),
+        name: event.author.name,
+        lastname: 'lastname' in event.author ? event.author.lastname : '',
+        avatar: 'avatar' in event.author ? event.author.avatar || null : null
+      } : null
     };
     
-    return encryptedJson({
-      success: true,
-      event: eventData
-    });
+    return encryptedJson({ success: true, event: eventData });
   } catch (error) {
-    return encryptedJson({ success: false, message: 'Etkinlik getirilemedi' }, { status: 500 });
+    return encryptedJson({ success: false, message: 'Bir hata oluştu' }, { status: 500 });
   }
 }
 

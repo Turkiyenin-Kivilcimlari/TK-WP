@@ -33,6 +33,7 @@ export interface IUser extends Document {
   lastTwoFactorVerification?: Date;
   generateTwoFactorSecret: () => Promise<string>;
   verifyTwoFactorToken: (token: string) => Promise<boolean>;
+  allowEmails: boolean;
 }
 
 const userSchema = new Schema<IUser>(
@@ -92,6 +93,11 @@ const userSchema = new Schema<IUser>(
     },
     lastTwoFactorVerification: {
       type: Date,
+      select: false,
+    },
+    allowEmails: {
+      type: Boolean,
+      default: false,
     }
   },
   { timestamps: true }

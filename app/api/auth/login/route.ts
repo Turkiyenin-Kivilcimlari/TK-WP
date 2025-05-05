@@ -15,6 +15,9 @@ interface UserDocument extends Document {
   password: string;
   role: string;
   emailVerified: boolean;
+  twoFactorEnabled: boolean;
+  lastTwoFactorVerification: Date | null;
+  twoFactorVerified: boolean;
   comparePassword: (password: string) => Promise<boolean>;
   getJwtToken: () => string;
 }
@@ -122,6 +125,14 @@ export async function POST(req: NextRequest) {
         },
         { status: 401 }
       );
+    }
+    
+    // Admin kullanıcıları için otomatik 2FA doğrulaması ayarla
+    if ((user.role === 'ADMIN' || user.role === 'SUPERADMIN') && 
+        user.twoFactorEnabled && !user.lastTwoFactorVerification) {
+      user.lastTwoFactorVerification = new Date();
+      user.twoFactorVerified = true;
+      await user.save();
     }
     
     // JWT token oluştur

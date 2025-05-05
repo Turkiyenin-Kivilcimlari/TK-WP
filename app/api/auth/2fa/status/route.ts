@@ -59,17 +59,31 @@ export async function GET(req: NextRequest) {
     // Son doğrulama zamanını kontrol et (3 saat geçerliliği)
     // Admin kullanıcıları için süre kontrolünü 3 saat olarak ayarlayalım
     let isVerificationExpired = false;
-    
-    if (user.lastTwoFactorVerification) {
-      const now = new Date();
-      const lastVerification = new Date(user.lastTwoFactorVerification);
-      const diffMs = now.getTime() - lastVerification.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      const verificationTimeoutMins = 180; // Admin için 3 saat (180 dakika)
-      isVerificationExpired = diffMins > verificationTimeoutMins; 
+
+    if (isAdmin && isTwoFactorEnabled) {
+      // Doğrulama yapılmış mı kontrol et
+      if (isTwoFactorVerified) {
+        // Doğrulama zamanını kontrol et
+        if (user.lastTwoFactorVerification) {
+          const now = new Date();
+          const lastVerification = new Date(user.lastTwoFactorVerification);
+          const diffMs = now.getTime() - lastVerification.getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const verificationTimeoutMins = 180; // Admin için 3 saat (180 dakika)
+          isVerificationExpired = diffMins > verificationTimeoutMins; 
+        } else {
+          // Verified true ama lastTwoFactorVerification yok - şimdi oluştur
+          user.lastTwoFactorVerification = new Date();
+          await user.save();
+          isVerificationExpired = false;
+        }
+      } else {
+        // Doğrulama yapılmamış
+        isVerificationExpired = true;
+      }
     } else {
-      // Hiç doğrulama yapılmamışsa süresi geçmiş kabul et
-      isVerificationExpired = true;
+      // Admin olmayan kullanıcılar için always false
+      isVerificationExpired = false;
     }
     
     return encryptedJson({

@@ -9,6 +9,7 @@ import { Loader2, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useAuth, RegisterFormData } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { CloudflareTurnstile } from "../ui/cloudflare-turnstile";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface SignupFormProps extends React.HTMLAttributes<HTMLDivElement> {
   turnstileToken?: string;
@@ -38,6 +39,7 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
     email: "",
     password: "",
     confirmPassword: "",
+    allowEmails: false, // Default değeri false olarak değiştirildi
   });
 
   const [errors, setErrors] = React.useState<FormErrors>({});
@@ -88,11 +90,11 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
     const { id, value } = e.target;
 
     // İsim ve soyad alanlarında sadece harf ve boşluğa izin ver
-    if (id === 'name' || id === 'lastname') {
+    if (id === "name" || id === "lastname") {
       // Sayı girilmesini engelle
       if (/\d/.test(value)) {
         // Sayı içeren karakterleri filtreleme, son temiz hali koruma
-        const cleanValue = value.replace(/\d/g, '');
+        const cleanValue = value.replace(/\d/g, "");
         setFormValues((prev) => ({
           ...prev,
           [id]: cleanValue,
@@ -108,6 +110,13 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
     }));
 
     validateField(id, value);
+  };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    setFormValues((prev) => ({
+      ...prev,
+      allowEmails: checked,
+    }));
   };
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -355,9 +364,10 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
       await register({
         ...formValues,
         turnstileToken,
+        allowEmails: formValues.allowEmails,
       });
     } catch (error) {
-      toast.error("Kayıt Hatası")
+      toast.error("Kayıt Hatası");
     }
   };
 
@@ -595,6 +605,22 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
               )}
             </Button>
           </div>
+        </div>
+
+        {/* E-posta izni için checkbox */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="allowEmails"
+            checked={formValues.allowEmails}
+            onCheckedChange={handleCheckboxChange}
+            disabled={isRegistering}
+          />
+          <Label
+            htmlFor="allowEmails"
+            className="text-sm font-normal leading-none cursor-pointer"
+          >
+            Bilgilendirme e-postaları almak istiyorum
+          </Label>
         </div>
 
         {/* Cloudflare Turnstile Widget */}

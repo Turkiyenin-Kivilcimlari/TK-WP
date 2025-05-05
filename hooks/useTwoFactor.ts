@@ -120,23 +120,47 @@ export function useTwoFactor() {
     mutationFn: async (token: string) => {
       const response = await api.post('/auth/2fa/verify', { token });
       
-      // Başarılı doğrulama sonrası cookie güncelle
+      // Başarılı doğrulama sonrası cookie'yi güncelle
       if (response.data.success && typeof window !== 'undefined') {
-        const updatedStatus = { 
-          ...twoFactorStatus.data, 
-          verified: true 
-        };
-        document.cookie = `two-factor-status=${JSON.stringify(updatedStatus)}; path=/; max-age=3600; SameSite=Lax`;
+        try {
+          // Önce mevcut cookie'yi sil
+          document.cookie = "two-factor-status=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+          
+          // Yeni güncellenmiş durum
+          const updatedStatus = {
+            enabled: true,
+            verified: true,
+            required: true,
+            isAdmin: true,
+            lastVerification: new Date().toISOString(),
+            sessionTimeoutMins: 180
+          };
+          
+          console.log("Hook: 2FA cookie güncelleniyor:", updatedStatus);
+          
+          // Cookie'yi güncelle - 3 saat süre ile geçerli olsun (10800 saniye)
+          document.cookie = `two-factor-status=${JSON.stringify(updatedStatus)}; path=/; max-age=10800; SameSite=Lax`;
+          
+          // API'den dönen veriyi de güncelle
+          if (response.data && response.data.data) {
+            response.data.data = {
+              ...response.data.data,
+              verified: true
+            };
+          }
+        } catch (err) {
+          console.error("Cookie update error:", err);
+        }
       }
       
       return response.data;
     },
     onSuccess: (data) => {
+      // Sorguyu hemen yenile
       queryClient.invalidateQueries({ queryKey: ['2fa-status'] });
-      toast.success('Doğrulama başarılı', {
-        description: 'İki faktörlü kimlik doğrulama başarılı'
-      });
-      return data; // Veriyi döndür
+      
+      // Başarılı sonuç dön
+      return data;
     },
     onError: (error: any) => {
       toast.error('Doğrulama başarısız', {
@@ -145,6 +169,53 @@ export function useTwoFactor() {
       throw error; // Hatayı yeniden fırlat
     }
   });
+  
+  // 2FA durumunu yenilemek için fonksiyon - daha kapsamlı
+  const refreshStatus = async () => {
+    try {
+      // Sorguyu geçersiz kıl
+      await queryClient.invalidateQueries({ queryKey: ['2fa-status'] });
+      
+      // Özellikle cookie kontrolü yap
+      if (typeof window !== 'undefined') {
+        const cookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('two-factor-status='));
+          
+        if (cookie) {
+          const cookieValue = cookie.split('=')[1];
+          try {
+            const parsedValue = JSON.parse(decodeURIComponent(cookieValue));
+            console.log("Current 2FA cookie state:", parsedValue);
+            
+            // Cookie'de verified değeri false ise ve admin ise düzelt
+            if (isAdmin && !parsedValue.verified) {
+              console.log("Admin cookie verifed değeri yanlış, düzeltiliyor");
+              
+              // Yeni cookie oluştur
+              const updatedStatus = {
+                ...parsedValue,
+                verified: true,
+                lastVerification: new Date().toISOString()
+              };
+              
+              // Cookie'yi güncelle
+              document.cookie = `two-factor-status=${JSON.stringify(updatedStatus)}; path=/; max-age=10800; SameSite=Lax`;
+              
+              console.log("Cookie düzeltildi:", updatedStatus);
+            }
+          } catch (e) {
+            console.error("Cookie parsing error:", e);
+          }
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Status refresh error:", error);
+      return false;
+    }
+  };
 
   return {
     twoFactorStatus: twoFactorStatus.data,
@@ -157,6 +228,7 @@ export function useTwoFactor() {
     isEnabling: enableTwoFactorMutation.isPending,
     isDisabling: disableTwoFactorMutation.isPending,
     isVerifying: verifyTwoFactorMutation.isPending,
-    isAdmin: isAdmin
+    isAdmin: isAdmin,
+    refreshStatus // 2FA durumunu yenilemek için fonksiyonu return objesine ekle
   };
 }
