@@ -4,7 +4,7 @@ import { UserRole } from "@/models/User";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -25,7 +25,7 @@ import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { emitProfileUpdated } from '@/lib/events';
 import { Checkbox } from "@/components/ui/checkbox";
-
+import { Textarea } from "@/components/ui/textarea";
 
 export default function ProfileContent() {
   const { data: session, update: updateSession } = useSession();
@@ -38,13 +38,19 @@ export default function ProfileContent() {
     phone: "",
     avatar: "",
     allowEmails: false,
+    slug: "",
+    about: "",
+    title: "",
   });
-  
+
+  const [isCheckingSlug, setIsCheckingSlug] = useState(false);
+  const [isSlugTaken, setIsSlugTaken] = useState(false);
+  const slugCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+
   const { uploadImage, isUploading, deleteImage, isDeleting } = useUploadImage();
 
-  // Kullanıcı verilerini al
   const { data: userData, isLoading, refetch } = useQuery({
-    queryKey: ["user-profile", session?.user?.id], // Use ID instead of email for better caching
+    queryKey: ["user-profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user) throw new Error("Kullanıcı bulunamadı");
       try {
@@ -57,11 +63,10 @@ export default function ProfileContent() {
         throw error;
       }
     },
-    enabled: !!session?.user, // Only run query when session exists
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !!session?.user,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // userData değiştiğinde formData'yı güncelle
   useEffect(() => {
     if (userData) {
       setFormData({
@@ -70,13 +75,172 @@ export default function ProfileContent() {
         phone: userData.phone || "",
         avatar: userData.avatar || "",
         allowEmails: userData.allowEmails !== undefined ? userData.allowEmails : true,
+        slug: userData.slug || "",
+        about: userData.about || "",
+        title: userData.title || "",
       });
     }
   }, [userData]);
 
+  const handleCancel = () => {
+    if (userData) {
+      setFormData({
+        name: userData.name || "",
+        lastname: userData.lastname || "",
+        phone: userData.phone || "",
+        avatar: userData.avatar || "",
+        allowEmails: userData.allowEmails !== undefined ? userData.allowEmails : true,
+        slug: userData.slug || "",
+        about: userData.about || "",
+        title: userData.title || "",
+      });
+    }
+    setIsEditing(false);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    const filteredValue = value
+      .replace(/\d/g, "")
+      .replace(/\s{2,}/g, " ");
+    setFormData((prev) => ({ ...prev, title: filteredValue }));
+  };
+
+  const handleNameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const onlyLetters = value.replace(/[^A-Za-zğüşıöçĞÜŞİÖÇ\s]/g, '');
+    const capitalized = onlyLetters.replace(/(^|\s)([a-zğüşıöç])/g, function(match) {
+      return match.toUpperCase();
+    });
+    setFormData((prev) => ({ ...prev, [name]: capitalized }));
+  };
+
+  const checkSlugAvailability = async (slug: string) => {
+    if (!slug || slug.length < 3) {
+      setIsSlugTaken(false);
+      return;
+    }
+
+    try {
+      setIsCheckingSlug(true);
+      const response = await api.get(`/api/check-slug?slug=${encodeURIComponent(slug)}`);
+
+      if (response.data.taken && response.data.userId !== session?.user?.id) {
+        setIsSlugTaken(true);
+        toast.error("Bu profil URL'si zaten kullanımda", {
+          description: "Lütfen farklı bir URL seçin",
+        });
+      } else {
+        setIsSlugTaken(false);
+      }
+    } catch (error) {
+      setIsSlugTaken(false);
+    } finally {
+      setIsCheckingSlug(false);
+    }
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Check if the user is trying to input consecutive hyphens
+    if (value.includes('--')) {
+      // Just return the current value with normalized hyphens to prevent consecutive hyphens
+      const normalizedValue = formData.slug.replace(/-+/g, '-');
+      return;
+    }
+
+    // Directly handle hyphen input specially
+    const lastChar = value.charAt(value.length - 1);
+    if (lastChar === '-' && formData.slug === value.slice(0, -1)) {
+      // Only allow hyphen if previous character is not also a hyphen
+      const previousChar = formData.slug.charAt(formData.slug.length - 1);
+      if (previousChar !== '-') {
+        setFormData((prev) => ({ ...prev, slug: value }));
+        
+        if (slugCheckTimeout.current) {
+          clearTimeout(slugCheckTimeout.current);
+        }
+        
+        if (value && value !== userData?.slug) {
+          slugCheckTimeout.current = setTimeout(() => {
+            checkSlugAvailability(value);
+          }, 500);
+        }
+      }
+      return;
+    }
+
+    const turkishCharsMap: Record<string, string> = {
+      'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'ö': 'o', 'ç': 'c',
+      'Ğ': 'g', 'Ü': 'u', 'Ş': 's', 'İ': 'i', 'Ö': 'o', 'Ç': 'c'
+    };
+
+    let normalized = value
+      .toLowerCase()
+      .replace(/[üşıöçğÜŞİÖÇĞ]/g, char => turkishCharsMap[char] || char);
+
+    normalized = normalized
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9_-]/g, "") 
+      .replace(/-+/g, "-")  // This consolidates multiple hyphens into one
+      .replace(/^-+|-+$/g, "");
+
+    setFormData((prev) => ({ ...prev, slug: normalized }));
+
+    if (slugCheckTimeout.current) {
+      clearTimeout(slugCheckTimeout.current);
+    }
+
+    if (normalized && normalized !== userData?.slug) {
+      slugCheckTimeout.current = setTimeout(() => {
+        checkSlugAvailability(normalized);
+      }, 500);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (slugCheckTimeout.current) {
+        clearTimeout(slugCheckTimeout.current);
+      }
+    };
+  }, []);
+
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const validChars = value.replace(/[^\d+() ]/g, "");
+    const singleSpaces = validChars.replace(/\s+/g, " ");
+    let formattedNumber = "";
+    let lastCharWasDigit = false;
+    let lastCharWasSpace = false;
+
+    for (let i = 0; i < singleSpaces.length; i++) {
+      const char = singleSpaces[i];
+
+      if (/\d/.test(char)) {
+        formattedNumber += char;
+        lastCharWasDigit = true;
+        lastCharWasSpace = false;
+      } else if (char === " ") {
+        if (lastCharWasDigit && !lastCharWasSpace) {
+          formattedNumber += char;
+          lastCharWasSpace = true;
+          lastCharWasDigit = false;
+        }
+      } else {
+        formattedNumber += char;
+        lastCharWasDigit = false;
+        lastCharWasSpace = false;
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, phone: formattedNumber }));
   };
 
   const handleCheckboxChange = (checked: boolean) => {
@@ -92,11 +256,24 @@ export default function ProfileContent() {
       return;
     }
 
+    if (isCheckingSlug) {
+      toast.error("Lütfen bekleyin", {
+        description: "Profil URL'si kontrol ediliyor"
+      });
+      return;
+    }
+
+    if (isSlugTaken) {
+      toast.error("Bu profil URL'si zaten kullanımda", {
+        description: "Lütfen farklı bir URL seçin"
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await api.put(`/users/me`, formData);
-      
-      // Session'ı güncelle
+
       await updateSession({
         ...session,
         user: {
@@ -106,18 +283,16 @@ export default function ProfileContent() {
           avatar: formData.avatar
         }
       });
-      
-      // Profil güncellemesini bildir
+
       emitProfileUpdated({
         id: session?.user?.id,
         name: formData.name,
         lastname: formData.lastname,
         avatar: formData.avatar
       });
-      
-      // Uygulama genelinde oturum yenilemesini tetikleyelim
+
       router.refresh();
-      
+
       toast.success("Profil güncellendi", {
         description: "Profil bilgileriniz başarıyla güncellendi."
       });
@@ -132,12 +307,10 @@ export default function ProfileContent() {
     }
   };
 
-  // Resim yükleme işleyicisi
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Dosya boyutu kontrolü (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Dosya boyutu çok büyük", {
         description: "Lütfen 5MB'dan küçük bir resim seçin."
@@ -145,7 +318,6 @@ export default function ProfileContent() {
       return;
     }
 
-    // Dosya türü kontrolü
     if (!file.type.startsWith('image/')) {
       toast.error("Geçersiz dosya türü", {
         description: "Lütfen bir resim dosyası seçin."
@@ -156,80 +328,57 @@ export default function ProfileContent() {
     const loadingToast = toast.loading("Fotoğraf yükleniyor...");
 
     try {
-      // Yükleme öncesi bir önizleme oluştur (opsiyonel)
       const localPreviewUrl = URL.createObjectURL(file);
-      
-      // Resmi yükle
-      // Define interfaces
-      interface ProfileImage {
-        success: boolean;
-        url: string;
-      }
 
-      interface ProfileUpdateData {
-        id?: string;
-        name?: string;
-        lastname?: string;
-        avatar?: string;
-      }
+      try {
+        uploadImage(file, {
+          onSuccess: async (data: { success: boolean; url: string }) => {
+            if (data.success && data.url) {
+              try {
+                setFormData(prev => ({ ...prev, avatar: data.url }));
 
-            try {
-              uploadImage(file, {
-                onSuccess: async (data: ProfileImage) => {
-                  if (data.success && data.url) {
-                    
-                    try {
-                      // Form state'ini API'ye güncellenmeden önce güncelle 
-                      // Bu sayede kullanıcı anında değişikliği görecek
-                      setFormData(prev => ({ ...prev, avatar: data.url }));
-                      
-                      // Ayrıca veritabanına da kaydet
-                      const updateResponse = await api.put(`/users/me`, { 
-                        ...formData, 
-                        avatar: data.url 
-                      });
-                      
-                      
-                      // Session'ı güncelle
-                      await updateSession({
-                        ...session,
-                        user: {
-                          ...session?.user,
-                          avatar: data.url
-                        }
-                      });
-                      
-                      // Profil avatar güncellemesini bildir
-                      emitProfileUpdated({
-                        id: session?.user?.id,
-                        name: userData?.name,
-                        lastname: userData?.lastname,
-                        avatar: data.url
-                      } as ProfileUpdateData);
-                      
-                      // Verileri yeniden yükle
-                      await refetch();
-                      
-                      toast.success("Resim yüklendi", {
-                        description: "Profil fotoğrafı başarıyla yüklendi."
-                      });
-                    } catch (updateError: unknown) {
-                      toast.error("Resim yüklendi ancak profiliniz güncellenemedi", {
-                        description: "Lütfen sayfayı yenileyip tekrar deneyin."
-                      });
-                    }
-                  } else {
-                    toast.error("Resim yüklenirken bir hata oluştu", {
-                      description: "Sunucu yanıtında URL bilgisi eksik"
-                    });
+                const updateResponse = await api.put(`/users/me`, {
+                  ...formData,
+                  avatar: data.url
+                });
+
+                await updateSession({
+                  ...session,
+                  user: {
+                    ...session?.user,
+                    avatar: data.url
                   }
-                }
-              });
-            } catch (uploadError) {
-              toast.error("Resim yüklenemedi", {
-                description: "Bir hata oluştu. Lütfen tekrar deneyin."
+                });
+
+                emitProfileUpdated({
+                  id: session?.user?.id,
+                  name: userData?.name,
+                  lastname: userData?.lastname,
+                  avatar: data.url
+                });
+
+                await refetch();
+
+                toast.success("Resim yüklendi", {
+                  description: "Profil fotoğrafı başarıyla yüklendi."
+                });
+              } catch (updateError: unknown) {
+                toast.error("Resim yüklendi ancak profiliniz güncellenemedi", {
+                  description: "Lütfen sayfayı yenileyip tekrar deneyin."
+                });
+              }
+            } else {
+              toast.error("Resim yüklenirken bir hata oluştu", {
+                description: "Sunucu yanıtında URL bilgisi eksik"
               });
             }
+          }
+        });
+      } catch (uploadError) {
+        toast.error("Resim yüklenemedi", {
+          description: "Bir hata oluştu. Lütfen tekrar deneyin."
+        });
+      }
     } catch (error) {
       toast.error("Resim yüklenemedi", {
         description: "Bir hata oluştu. Lütfen tekrar deneyin."
@@ -239,40 +388,29 @@ export default function ProfileContent() {
     }
   };
 
-  // Profil fotoğrafını kaldırma işleyicisi
   const handleRemoveImage = async () => {
-    // Mevcut avatar URL'si var mı kontrol et
     if (!formData.avatar) {
       return;
     }
-    
+
     const loadingToast = toast.loading("Profil fotoğrafı kaldırılıyor...");
-    
+
     try {
-      // Bu adımları sırayla dene ve hata olursa loglayıp devam et
-      
-      // Eski avatar URL'sini saklayalım
       const oldAvatarUrl = formData.avatar;
-      
-      // 1. Önce veritabanındaki kayıttan temizleyelim, bu en önemli adım
+
       try {
-        
-        // Ekstra alan ekleyerek güncelleyelim ki istek farklı olsun
-        const updateResponse = await api.put(`/users/me`, { 
-          ...formData, 
+        const updateResponse = await api.put(`/users/me`, {
+          ...formData,
           avatar: "",
-          _avatarRemoved: true // Sunucu tarafında avatar'ın kasıtlı olarak boşaltıldığını belirtmek için
+          _avatarRemoved: true
         });
-        
-        
+
         if (!updateResponse.data.success) {
           toast.error("İşleminiz yapılırken bir hata oluştu")
         }
-        
-        // Form state'ini güncelleyelim ki UI hemen değişsin
+
         setFormData(prev => ({ ...prev, avatar: "" }));
-        
-        // Session'ı güncelle
+
         await updateSession({
           ...session,
           user: {
@@ -281,39 +419,31 @@ export default function ProfileContent() {
           }
         });
 
-        // Profil avatar kaldırıldığını bildir
         emitProfileUpdated({
           id: session?.user?.id,
           name: userData?.name,
           lastname: userData?.lastname,
           avatar: ""
         });
-        
+
       } catch (dbError) {
         toast.error("İşlem sırasında bir hata oluştu");
       }
-      
-      // 2. Şimdi Cloudinary'den dosyayı silmeyi deneyelim
-      // Bu adım başarısız olsa bile kullanıcı deneyimi bozulmasın
+
       try {
         const cloudinaryResponse = await deleteImage(oldAvatarUrl);
       } catch (cloudinaryError) {
-        // Bu hatayı sadece loglayalım, kritik değil
-
       }
-      
-      // 3. Son kontrol - veriler gerçekten güncellenmiş mi kontrol edelim
+
       try {
-        // Önbelleği temizleyerek güncel veri alalım
         const freshData = await refetch();
-        
+
       } catch (refetchError) {
         toast.error("İşlem sırasında bir hata oluştu");
       }
-      
-      // Başarı mesajı göster
+
       toast.success("Profil fotoğrafı kaldırıldı");
-      
+
     } catch (error: any) {
       toast.error("Hata", {
         description: "Profil fotoğrafı kaldırılamadı."
@@ -331,7 +461,6 @@ export default function ProfileContent() {
     );
   }
 
-  // Kullanıcı rolü kontrolü - session veya userData'dan alır
   const userRole = userData?.role || session?.user?.role;
   const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
 
@@ -346,7 +475,6 @@ export default function ProfileContent() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {/* Profil Fotoğrafı */}
             <div className="flex flex-col items-center space-y-4 mb-6">
               <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/20">
                 {formData.avatar ? (
@@ -362,12 +490,12 @@ export default function ProfileContent() {
                   </div>
                 )}
               </div>
-              
+
               {isEditing && (
                 <div className="flex flex-col items-center">
                   <Button
-                    type="button" 
-                    variant="outline" 
+                    type="button"
+                    variant="outline"
                     size="sm"
                     className="flex items-center gap-2"
                     onClick={() => document.getElementById('avatar-upload')?.click()}
@@ -400,11 +528,11 @@ export default function ProfileContent() {
                       disabled={isDeleting}
                     >
                       {isDeleting ? (
-                          <>
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                            Kaldırılıyor...
-                          </>
-                        ) : (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          Kaldırılıyor...
+                        </>
+                      ) : (
                         "Fotoğrafı kaldır"
                       )}
                     </Button>
@@ -420,10 +548,15 @@ export default function ProfileContent() {
                   id="name"
                   name="name"
                   value={formData.name}
-                  onChange={handleChange}
+                  onChange={handleNameInput}
                   disabled={!isEditing || isSubmitting}
                   required
                 />
+                {isEditing && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sadece harf ve boşluk kullanılabilir
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastname">Soyad</Label>
@@ -431,10 +564,15 @@ export default function ProfileContent() {
                   id="lastname"
                   name="lastname"
                   value={formData.lastname}
-                  onChange={handleChange}
+                  onChange={handleNameInput}
                   disabled={!isEditing || isSubmitting}
                   required
                 />
+                {isEditing && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sadece harf ve boşluk kullanılabilir
+                  </p>
+                )}
               </div>
             </div>
 
@@ -453,13 +591,93 @@ export default function ProfileContent() {
                 id="phone"
                 name="phone"
                 value={formData.phone}
-                onChange={handleChange}
+                onChange={handlePhoneNumberChange}
                 disabled={!isEditing || isSubmitting}
                 placeholder="Telefon numarası"
               />
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sadece rakam, +, (), ve boşluk kullanılabilir
+                </p>
+              )}
             </div>
 
-            {/* E-posta izni için checkbox ekle */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label htmlFor="slug">Profil URL'si</Label>
+                {isEditing && (
+                  <span className="text-xs text-muted-foreground">
+                    * Profil adresiniz: {window && `${window.location.origin}/u/${formData.slug || 'kullanici'}`}
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  id="slug"
+                  name="slug"
+                  value={formData.slug}
+                  onChange={handleSlugChange}
+                  disabled={!isEditing || isSubmitting}
+                  placeholder="profil-adresi"
+                  className={`font-mono text-sm ${isSlugTaken ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                />
+                {isCheckingSlug && (
+                  <div className="absolute right-3 top-2.5">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sadece küçük harfler, rakamlar ve kısa çizgiler kullanabilirsiniz. Boş bırakırsanız otomatik oluşturulur.
+                  {isSlugTaken && <span className="text-red-500 block mt-1">Bu profil URL'si başka bir kullanıcı tarafından kullanılıyor.</span>}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="title">Unvan</Label>
+              <Input
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleTitleChange}
+                placeholder="Unvanınız (örn: Yazılım Geliştirici, Öğrenci)"
+                disabled={!isEditing}
+              />
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sadece harf ve tek boşluk kullanılabilir, sayı kullanılamaz
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="about">Hakkında</Label>
+                <span className="text-xs text-muted-foreground">
+                  {formData.about?.length || 0}/1000 karakter
+                </span>
+              </div>
+              <Textarea
+                id="about"
+                name="about"
+                value={formData.about}
+                onChange={(e) => setFormData((prev) => ({ ...prev, about: e.target.value }))}
+                disabled={!isEditing || isSubmitting}
+                placeholder="Kendiniz hakkında kısa bilgi..."
+                rows={7}
+                maxLength={1000}
+                className="resize-y min-h-[100px]"
+              />
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Profilinizde görünecek kısa bir biyografi yazabilirsiniz. Alanı büyütmek için sağ alt köşesinden sürükleyebilirsiniz. 
+                  Maksimum 1000 karakter yazabilirsiniz.
+                </p>
+              )}
+            </div>
+
             {isEditing && (
               <div className="flex items-center space-x-2 mt-4">
                 <Checkbox 
@@ -494,7 +712,7 @@ export default function ProfileContent() {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => setIsEditing(false)}
+                  onClick={handleCancel}
                   disabled={isSubmitting}
                 >
                   İptal

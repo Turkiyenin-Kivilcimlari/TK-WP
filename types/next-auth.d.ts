@@ -7,6 +7,7 @@ declare module "next-auth" {
     name: string;
     email: string;
     role: UserRole;
+    slug?: string;
     requiresTwoFactor?: boolean;
   }
 
@@ -16,6 +17,7 @@ declare module "next-auth" {
       name: string;
       email: string;
       role: UserRole;
+      slug?: string;
       requiresTwoFactor?: boolean;
     }
   }
