@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { isEventPast } from "@/lib/eventHelpers";
 
 interface LocationSectionProps {
   eventDays?: EventDay[];
@@ -109,6 +110,11 @@ export default function EventDetailPage({
       return;
     }
 
+    if (event && isEventPast(event)) {
+      toast.error("Bu etkinliğin tarihi geçmiş, katılamazsınız");
+      return;
+    }
+
     try {
       setIsRegistering(true);
       const response = await api.post(`/api/events/${slug}/register`);
@@ -156,12 +162,16 @@ export default function EventDetailPage({
         return;
       }
 
+      if (isEventPast(event)) {
+        toast.error("Bu etkinliğin tarihi geçmiş, takvime ekleyemezsiniz");
+        return;
+      }
+
       const firstDay = getFirstEventDay();
       if (!firstDay) {
         toast.error("Etkinlik gün bilgileri eksik, takvim olayı oluşturulamadı");
         return;
       }
-
 
       const normalizeDate = (dateStr: string): string => {
         try {
@@ -320,32 +330,6 @@ export default function EventDetailPage({
   const registered = isUserRegistered();
 
   const canRegister = !isAuthor && event?.status === EventStatus.APPROVED;
-
-  const isEventPast = () => {
-    try {
-      if (event?.eventDays && event.eventDays.length > 0) {
-        const lastDay = event.eventDays[event.eventDays.length - 1];
-
-        let eventEndDateTime: Date;
-        if (lastDay.endTime) {
-          eventEndDateTime = new Date(`${lastDay.date}T${lastDay.endTime}`);
-        } else {
-          const startDateTime = new Date(
-            `${lastDay.date}T${lastDay.startTime}`
-          );
-          eventEndDateTime = new Date(
-            startDateTime.getTime() + 2 * 60 * 60 * 1000
-          );
-        }
-
-        return eventEndDateTime < new Date();
-      }
-
-      return false;
-    } catch (error) {
-      return false;
-    }
-  };
 
   const getFirstEventDay = () => {
     if (event?.eventDays && event.eventDays.length > 0) {
@@ -1130,37 +1114,48 @@ export default function EventDetailPage({
             !error &&
             event &&
             !isUserAuthor() &&
-            !isEventPast() &&
             event?.status === EventStatus.APPROVED && (
               <Card className="p-6 mt-6">
                 <h3 className="text-lg font-semibold mb-4">Etkinlik Katılımı</h3>
-                <div className="space-y-3">
-                  <Button
-                    className="w-full justify-start"
-                    variant={registered ? "outline" : "default"}
-                    onClick={registered ? handleUnregister : handleRegister}
-                    disabled={isRegistering}
-                  >
-                    {isRegistering ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : registered ? (
-                      <UserCheck className="mr-2 h-4 w-4" />
-                    ) : (
-                      <CalendarPlus className="mr-2 h-4 w-4" />
-                    )}
-                    {registered ? "Kaydı İptal Et" : "Etkinliğe Katıl"}
-                  </Button>
+                <div className="space-y-3 w-full">
+                  {!isEventPast(event) ? (
+                    <Button
+                      className="w-full justify-start"
+                      onClick={isUserRegistered() ? handleUnregister : handleRegister}
+                      disabled={isRegistering}
+                    >
+                      {isRegistering ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : isUserRegistered() ? (
+                        <UserCheck className="mr-2 h-4 w-4" />
+                      ) : (
+                        <CalendarPlus className="mr-2 h-4 w-4" />
+                      )}
+                      {isUserRegistered() ? "Kaydı İptal Et" : "Etkinliğe Katıl"}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full justify-start" 
+                      variant="outline" 
+                      disabled
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      Etkinlik tarihi geçmiş
+                    </Button>
+                  )}
 
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={handleAddToCalendar}
-                  >
-                    <CalendarClock className="mr-2 h-4 w-4" />
-                    Takvime Ekle
-                  </Button>
+                  {!isEventPast(event) && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={handleAddToCalendar}
+                    >
+                      <CalendarClock className="mr-2 h-4 w-4" />
+                      Takvime Ekle
+                    </Button>
+                  )}
                 </div>
-                {registered && (
+                {isUserRegistered() && (
                   <p className="text-xs text-muted-foreground mt-3">
                     Etkinliğe kaydolduğunuz için teşekkürler!
                   </p>

@@ -146,7 +146,7 @@ export const StickyScroll = ({
       animate={{
         backgroundColor: themeBaseColor, // Her zaman tema rengi olacak
       }}
-      className="relative flex h-[40rem] justify-center space-x-10 overflow-y-auto no-scrollbar rounded-md p-10"
+      className="relative flex h-[36rem] justify-center space-x-10 overflow-y-auto no-scrollbar rounded-md p-10"
       ref={ref}
     >
       <div className="div relative flex items-start px-4">
