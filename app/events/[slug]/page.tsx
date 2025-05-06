@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { isEventPast } from "@/lib/eventHelpers";
 
 interface LocationSectionProps {
   eventDays?: EventDay[];
@@ -109,6 +110,11 @@ export default function EventDetailPage({
       return;
     }
 
+    if (event && isEventPast(event)) {
+      toast.error("Bu etkinliğin tarihi geçmiş, katılamazsınız");
+      return;
+    }
+
     try {
       setIsRegistering(true);
       const response = await api.post(`/api/events/${slug}/register`);
@@ -120,10 +126,10 @@ export default function EventDetailPage({
         setEvent(eventResponse.data.event);
 
       } else {
-        toast.error(response.data.message || "Kayıt işlemi başarısız");
+        toast.error("Kayıt işlemi başarısız");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Bir hata oluştu");
+      toast.error("Bir hata oluştu");
     } finally {
       setIsRegistering(false);
     }
@@ -140,10 +146,10 @@ export default function EventDetailPage({
         const eventResponse = await api.get(`/api/events/${slug}`);
         setEvent(eventResponse.data.event);
       } else {
-        toast.error(response.data.message || "İptal işlemi başarısız");
+        toast.error("İptal işlemi başarısız");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Bir hata oluştu");
+      toast.error("Bir hata oluştu");
     } finally {
       setIsRegistering(false);
     }
@@ -156,17 +162,16 @@ export default function EventDetailPage({
         return;
       }
 
+      if (isEventPast(event)) {
+        toast.error("Bu etkinliğin tarihi geçmiş, takvime ekleyemezsiniz");
+        return;
+      }
+
       const firstDay = getFirstEventDay();
       if (!firstDay) {
         toast.error("Etkinlik gün bilgileri eksik, takvim olayı oluşturulamadı");
         return;
       }
-
-      console.log("Calendar Date Debug:", {
-        date: firstDay.date,
-        startTime: firstDay.startTime,
-        endTime: firstDay.endTime,
-      });
 
       const normalizeDate = (dateStr: string): string => {
         try {
@@ -181,7 +186,6 @@ export default function EventDetailPage({
 
           return dateStr;
         } catch (err) {
-          console.error("Date normalization error:", err);
           return dateStr;
         }
       };
@@ -199,7 +203,6 @@ export default function EventDetailPage({
         startDateTime = new Date(`${dateStr}T${startTime}:00`);
 
         if (isNaN(startDateTime.getTime())) {
-          console.log("Method 1 failed, trying Method 2");
 
           const [year, month, day] = dateStr.split(/[-T]/);
           const [hours, minutes] = startTime.split(":");
@@ -218,14 +221,9 @@ export default function EventDetailPage({
 
           if (isNaN(startDateTime.getTime())) {
             throw new Error("Method 2 failed to produce a valid date");
-          } else {
-            console.log("Method 2 succeeded:", startDateTime.toISOString());
           }
-        } else {
-          console.log("Method 1 succeeded:", startDateTime.toISOString());
         }
       } catch (e) {
-        console.error("All date parsing methods failed:", e);
         toast.error(
           "Geçersiz başlangıç tarihi veya saati. Lütfen etkinlik bilgilerini kontrol ediniz."
         );
@@ -233,10 +231,6 @@ export default function EventDetailPage({
       }
 
       if (isNaN(startDateTime.getTime())) {
-        console.error("Invalid start date/time after all attempts:", {
-          dateStr,
-          startTime,
-        });
         toast.error("Geçersiz başlangıç tarihi veya saati");
         return;
       }
@@ -262,12 +256,10 @@ export default function EventDetailPage({
           endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
         }
       } catch (e) {
-        console.warn("End time parsing failed, using default:", e);
         endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
       }
 
       if (isNaN(endDateTime.getTime())) {
-        console.warn("Invalid end date/time, using default");
         endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
       }
 
@@ -313,7 +305,6 @@ export default function EventDetailPage({
 
       window.open(googleCalendarUrl, "_blank");
     } catch (error) {
-      console.error("Google Calendar link creation failed:", error);
       toast.error("Takvim olayı oluşturulamadı");
     }
   };
@@ -339,32 +330,6 @@ export default function EventDetailPage({
   const registered = isUserRegistered();
 
   const canRegister = !isAuthor && event?.status === EventStatus.APPROVED;
-
-  const isEventPast = () => {
-    try {
-      if (event?.eventDays && event.eventDays.length > 0) {
-        const lastDay = event.eventDays[event.eventDays.length - 1];
-
-        let eventEndDateTime: Date;
-        if (lastDay.endTime) {
-          eventEndDateTime = new Date(`${lastDay.date}T${lastDay.endTime}`);
-        } else {
-          const startDateTime = new Date(
-            `${lastDay.date}T${lastDay.startTime}`
-          );
-          eventEndDateTime = new Date(
-            startDateTime.getTime() + 2 * 60 * 60 * 1000
-          );
-        }
-
-        return eventEndDateTime < new Date();
-      }
-
-      return false;
-    } catch (error) {
-      return false;
-    }
-  };
 
   const getFirstEventDay = () => {
     if (event?.eventDays && event.eventDays.length > 0) {
@@ -685,14 +650,16 @@ export default function EventDetailPage({
             <h3 className="text-sm font-medium text-muted-foreground mb-1">
               Etkinlik Organizatörü
             </h3>
-            <div className="flex items-center">
+            <Link
+              href={`/users/${event.author?.slug}`} className="flex items-center"
+            >
               <User className="h-4 w-4 mr-2" />
               <p>
                 {event.author
                   ? `${event.author.name} ${event.author.lastname}`
                   : "Belirtilmemiş"}
               </p>
-            </div>
+            </Link>
           </div>
 
           <div>
@@ -1094,12 +1061,14 @@ export default function EventDetailPage({
         <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
           {renderEventDateInfo()}
           {event.author && (
-            <div className="flex items-center">
+            <Link
+              href={`/u/${event.author.slug}`}
+              className="flex items-center">
               <User className="h-4 w-4 mr-2" />
               <span>
                 {event.author.name} {event.author.lastname}
               </span>
-            </div>
+              </Link>
           )}
         </div>
         {event.participants &&
@@ -1145,37 +1114,48 @@ export default function EventDetailPage({
             !error &&
             event &&
             !isUserAuthor() &&
-            !isEventPast() &&
             event?.status === EventStatus.APPROVED && (
               <Card className="p-6 mt-6">
                 <h3 className="text-lg font-semibold mb-4">Etkinlik Katılımı</h3>
-                <div className="space-y-3">
-                  <Button
-                    className="w-full justify-start"
-                    variant={registered ? "outline" : "default"}
-                    onClick={registered ? handleUnregister : handleRegister}
-                    disabled={isRegistering}
-                  >
-                    {isRegistering ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : registered ? (
-                      <UserCheck className="mr-2 h-4 w-4" />
-                    ) : (
-                      <CalendarPlus className="mr-2 h-4 w-4" />
-                    )}
-                    {registered ? "Kaydı İptal Et" : "Etkinliğe Katıl"}
-                  </Button>
+                <div className="space-y-3 w-full">
+                  {!isEventPast(event) ? (
+                    <Button
+                      className="w-full justify-start"
+                      onClick={isUserRegistered() ? handleUnregister : handleRegister}
+                      disabled={isRegistering}
+                    >
+                      {isRegistering ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : isUserRegistered() ? (
+                        <UserCheck className="mr-2 h-4 w-4" />
+                      ) : (
+                        <CalendarPlus className="mr-2 h-4 w-4" />
+                      )}
+                      {isUserRegistered() ? "Kaydı İptal Et" : "Etkinliğe Katıl"}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full justify-start" 
+                      variant="outline" 
+                      disabled
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      Etkinlik tarihi geçmiş
+                    </Button>
+                  )}
 
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={handleAddToCalendar}
-                  >
-                    <CalendarClock className="mr-2 h-4 w-4" />
-                    Takvime Ekle
-                  </Button>
+                  {!isEventPast(event) && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={handleAddToCalendar}
+                    >
+                      <CalendarClock className="mr-2 h-4 w-4" />
+                      Takvime Ekle
+                    </Button>
+                  )}
                 </div>
-                {registered && (
+                {isUserRegistered() && (
                   <p className="text-xs text-muted-foreground mt-3">
                     Etkinliğe kaydolduğunuz için teşekkürler!
                   </p>

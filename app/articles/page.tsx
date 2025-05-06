@@ -60,6 +60,7 @@ interface Article {
     name: string;
     lastname: string;
     avatar?: string;
+    slug?: string; // Yazarın slug'ını ekledik
   };
   blocks?: any[];
   tags?: string[];
@@ -464,6 +465,7 @@ function ArticlesWithSearchParams() {
                   {/* Yazar ve tarih - Boyutları küçültüldü */}
                   <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
+                      <Link href={`/u/${article.author?.slug}`} className="flex items-center gap-1">
                       <Avatar className="h-5 w-5">
                         <AvatarImage
                           src={article.author?.avatar || ""}
@@ -474,6 +476,7 @@ function ArticlesWithSearchParams() {
                         </AvatarFallback>
                       </Avatar>
                       <span>{getAuthorName(article.author)}</span>
+                      </Link>
                     </div>
                     <span>
                       {formatDate(article.publishedAt || article.createdAt)}

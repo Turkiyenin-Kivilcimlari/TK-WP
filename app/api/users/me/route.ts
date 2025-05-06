@@ -5,6 +5,7 @@ import { authenticateUser } from '@/middleware/authMiddleware';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { encryptedJson } from '@/lib/response';
+import slugify from 'slugify';
 
 // Force this route to be dynamically rendered
 export const dynamic = 'force-dynamic';
@@ -68,8 +69,7 @@ export async function PUT(req: NextRequest) {
     
     // İstek gövdesini al
     const body = await req.json();
-    const { name, lastname, phone, avatar, allowEmails } = body;
-    
+    const { name, lastname, phone, avatar, allowEmails, slug, about, title } = body;
     
     await connectToDatabase();
     
@@ -90,6 +90,58 @@ export async function PUT(req: NextRequest) {
     if (lastname !== undefined) updateData.lastname = lastname;
     if (phone !== undefined) updateData.phone = phone;
     if (allowEmails !== undefined) updateData.allowEmails = allowEmails;
+    if (about !== undefined) updateData.about = about;
+    if (title !== undefined) updateData.title = title; // Title alanını ekleyelim
+    
+    // Slug özel işlemi - geçerli slug kontrolü
+    if (slug !== undefined) {
+      if (slug) {
+        // Slug belirtilmişse, başka kullanıcı tarafından kullanılıp kullanılmadığını kontrol et
+        const slugExists = await User.findOne({ 
+          slug, 
+          _id: { $ne: userId } 
+        });
+        
+        if (slugExists) {
+          return encryptedJson(
+            { success: false, message: 'Bu profil URL\'si başka bir kullanıcı tarafından kullanılıyor' },
+            { status: 400 }
+          );
+        }
+        
+        // Slug geçerli karakterler içeriyor mu kontrol et
+        const slugRegex = /^[a-z0-9-]+$/;
+        if (!slugRegex.test(slug)) {
+          return encryptedJson(
+            { success: false, message: 'Profil URL\'si yalnızca küçük harfler, sayılar ve tire içerebilir' },
+            { status: 400 }
+          );
+        }
+        
+        updateData.slug = slug;
+      } else if (slug === "") {
+        // Slug boş gönderilmişse, ad ve soyadından otomatik oluştur
+        const baseSlug = slugify(`${user.name} ${user.lastname}`);
+        
+        // Benzersiz slug oluştur
+        let newSlug = baseSlug;
+        let counter = 1;
+        
+        while (true) {
+          const slugExists = await User.findOne({ 
+            slug: newSlug, 
+            _id: { $ne: userId } 
+          });
+          
+          if (!slugExists) break;
+          
+          newSlug = `${baseSlug}-${counter}`;
+          counter++;
+        }
+        
+        updateData.slug = newSlug;
+      }
+    }
     
     // Avatar özel işlemi - açıkça boş string gönderilirse, sil
     if (avatar === "") {
@@ -97,7 +149,6 @@ export async function PUT(req: NextRequest) {
     } else if (avatar) {
       updateData.avatar = avatar;
     }
-    
     
     // Kullanıcıyı güncelle
     const updatedUser = await User.findByIdAndUpdate(
@@ -126,7 +177,8 @@ export async function PUT(req: NextRequest) {
         lastname: updatedUser.lastname,
         email: updatedUser.email,
         avatar: updatedUser.avatar || "",
-        role: updatedUser.role
+        role: updatedUser.role,
+        slug: updatedUser.slug,
       };
       
       // Veri şeması tutarlılığını sağla
@@ -134,7 +186,6 @@ export async function PUT(req: NextRequest) {
         session.user.avatar = "";
       }
     }
-    
     
     // Güncellenmiş kullanıcı bilgilerini döndür
     return encryptedJson({ 
@@ -148,7 +199,10 @@ export async function PUT(req: NextRequest) {
         phone: updatedUser.phone,
         avatar: updatedUser.avatar || "",
         role: updatedUser.role,
-        allowEmails: updatedUser.allowEmails
+        allowEmails: updatedUser.allowEmails,
+        slug: updatedUser.slug,
+        about: updatedUser.about || "",
+        title: updatedUser.title || "" // Title alanını ekleyelim
       }
     });
   } catch (error) {

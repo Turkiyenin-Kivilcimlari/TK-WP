@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileContent from "@/components/user/ProfileContent";
 import { UserRole } from "@/models/User";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Profil - Türkiye'nin Kıvılcımları",
@@ -17,12 +17,16 @@ export const metadata: Metadata = {
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user) {
+  // Oturum kontrolü - kullanıcı giriş yapmamışsa giriş sayfasına yönlendir
+  if (!session || !session.user) {
+    // Kullanıcının girmeye çalıştığı sayfayı callbackUrl olarak ekleyerek giriş sayfasına yönlendir
     redirect("/signin?callbackUrl=/profile");
+    // Kod buradan sonra çalışmayacağı için return kullanmaya gerek yok
   }
 
+
   // Kullanıcı rolü kontrolü - session'dan alır
-  const userRole = session?.user?.role;
+  const userRole = session.user.role;
   const isAdmin =
     userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
 
@@ -30,7 +34,7 @@ export default async function ProfilePage() {
     <div className="container max-w-screen-lg mx-auto py-8 px-4 md:px-8">
       <h1 className="text-2xl md:text-3xl font-bold mb-8">Profil Ayarları</h1>
 
-      <Tabs defaultValue="security" className="w-full">
+      <Tabs defaultValue="general" className="w-full">
         <TabsList className="mb-8">
           <TabsTrigger value="general">Genel Bilgiler</TabsTrigger>
           <TabsTrigger value="security">Güvenlik</TabsTrigger>

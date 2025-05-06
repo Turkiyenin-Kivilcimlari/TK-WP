@@ -30,7 +30,7 @@ export async function GET(
     }
     
     // Get the article with the author information
-    const article = await Article.findOne({ slug }).populate('author', 'name lastname avatar');
+    const article = await Article.findOne({ slug }).populate('author', 'name lastname avatar slug ');
     
     if (!article) {
       return encryptedJson(
