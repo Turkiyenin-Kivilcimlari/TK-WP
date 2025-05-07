@@ -65,7 +65,7 @@ export default function AboutPage() {
       <Separator className="my-12" />
       
       <div className="mb-16">
-        <h2 className="text-3xl font-bold text-center mb-10">Ekibimiz</h2>
+        <h2 className="text-3xl font-bold text-center mb-10">Yönetim Ekibimiz</h2>
           <Staff />
       </div>
     </div>

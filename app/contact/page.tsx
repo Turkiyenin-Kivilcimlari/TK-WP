@@ -12,9 +12,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Send, Instagram, Linkedin, Youtube } from "lucide-react";
 import { toast } from "sonner";
 import api from '@/lib/api';
+import React from "react";
+
+// Sosyal medya bağlantıları - lucide-react ikonlarıyla
+const socialLinks = [
+  { name: "E-posta", icon: "Mail", href: "mailto:info@turkiyeninkivilcimlari.com" },
+  { name: "Instagram", icon: "Instagram", href: "https://www.instagram.com/turkiyeninkivilcimlari/" },
+  { name: "LinkedIn", icon: "LinkedIn", href: "https://www.linkedin.com/company/turkiyeninkivilcimlari" },
+  { name: "YouTube", icon: "YouTube", href: "https://www.youtube.com/@TurkiyeninKivilcimlari" },
+  { name: "Discord", icon: "Discord", href: "https://discord.gg/PkqsRjKhK8" },
+];
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -30,17 +40,13 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Bir alan değiştiğinde çalışacak fonksiyon
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
 
-    // İsim alanına sayı girilmesini engelle
     if (name === "name") {
-      // Sayı içeren karakterleri filtreleme
       const filteredValue = value.replace(/\d/g, '');
-      
       setFormData({
         ...formData,
         [name]: filteredValue,
@@ -52,7 +58,6 @@ export default function ContactPage() {
       });
     }
 
-    // Alan dokunulmuş olarak işaretliyoruz
     if (!touchedFields[name]) {
       setTouchedFields({
         ...touchedFields,
@@ -61,7 +66,6 @@ export default function ContactPage() {
     }
   };
 
-  // Input alanından çıkıldığında (blur) çalışacak fonksiyon
   const handleBlur = (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -73,11 +77,9 @@ export default function ContactPage() {
     });
   };
 
-  // formData değiştiğinde ve alan dokunulduğunda hataları kontrol et
   useEffect(() => {
     const newErrors: { [key: string]: string } = {};
 
-    // İsim alanı kontrolü
     if (touchedFields.name) {
       if (!formData.name.trim()) {
         newErrors.name = "İsim alanı zorunludur";
@@ -88,7 +90,6 @@ export default function ContactPage() {
       }
     }
 
-    // E-posta alanı kontrolü
     if (touchedFields.email) {
       if (!formData.email.trim()) {
         newErrors.email = "E-posta alanı zorunludur";
@@ -97,7 +98,6 @@ export default function ContactPage() {
       }
     }
 
-    // Konu alanı kontrolü
     if (touchedFields.subject) {
       if (!formData.subject.trim()) {
         newErrors.subject = "Konu alanı zorunludur";
@@ -106,7 +106,6 @@ export default function ContactPage() {
       }
     }
 
-    // Mesaj alanı kontrolü
     if (touchedFields.message) {
       if (!formData.message.trim()) {
         newErrors.message = "Mesaj alanı zorunludur";
@@ -118,16 +117,13 @@ export default function ContactPage() {
     setErrors(newErrors);
   }, [formData, touchedFields]);
 
-  // Form gönderilmeden önce tüm alanların doğrulamasını yap
   const validateForm = () => {
-    // Tüm alanları dokunulmuş olarak işaretle
     const allTouched = Object.keys(formData).reduce((acc, key) => {
       return { ...acc, [key]: true };
     }, {});
 
     setTouchedFields(allTouched);
 
-    // Hatalar varsa false döndür
     return (
       Object.keys(errors).length === 0 &&
       formData.name.trim() !== "" &&
@@ -150,7 +146,6 @@ export default function ContactPage() {
     setIsSubmitting(true);
 
     try {
-      // API'ye form verilerini gönder - fetch yerine api.post kullanıyoruz
       const response = await api.post("/api/contact", formData);
 
       if (!response.data.success) {
@@ -162,7 +157,6 @@ export default function ContactPage() {
           "Mesajınız başarıyla iletildi. En kısa sürede size dönüş yapacağız.",
       });
 
-      // Formu temizle
       setFormData({
         name: "",
         email: "",
@@ -170,7 +164,6 @@ export default function ContactPage() {
         message: "",
       });
 
-      // Dokunulmuş alanları sıfırla
       setTouchedFields({});
     } catch (error: any) {
       toast.error("Form gönderilirken bir hata oluştu.");
@@ -345,7 +338,7 @@ export default function ContactPage() {
                       <div>
                         <h4 className="font-semibold">E-posta</h4>
                         <p className="text-sm text-muted-foreground">
-                          contact@turkiyeninkivilcimlari.com
+                          info@turkiyeninkivilcimlari.com
                         </p>
                       </div>
                     </div>
@@ -383,86 +376,44 @@ export default function ContactPage() {
           <Card>
             <CardHeader>
               <CardTitle>Sosyal Medya</CardTitle>
+              <CardDescription>Bizi sosyal medya hesaplarımızdan takip edin</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-3">
-                <Button variant="outline" size="icon" aria-label="Twitter">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-5 w-5"
+                <div className="flex flex-wrap gap-3">
+                {socialLinks.map((social) => {
+                  return (
+                  <Button 
+                    key={social.name}
+                    variant="outline" 
+                    size="icon" 
+                    asChild
+                    className="transition-all duration-300 hover:scale-110 hover:shadow-md hover:bg-primary/10"
                   >
-                    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
-                  </svg>
-                </Button>
-                <Button variant="outline" size="icon" aria-label="LinkedIn">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-5 w-5"
-                  >
-                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-                    <rect width="4" height="12" x="2" y="9"></rect>
-                    <circle cx="4" cy="4" r="2"></circle>
-                  </svg>
-                </Button>
-                <Button variant="outline" size="icon" aria-label="Instagram">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-5 w-5"
-                  >
-                    <rect
-                      width="20"
-                      height="20"
-                      x="2"
-                      y="2"
-                      rx="5"
-                      ry="5"
-                    ></rect>
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
-                  </svg>
-                </Button>
-                <Button variant="outline" size="icon" aria-label="YouTube">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-5 w-5"
-                  >
-                    <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"></path>
-                    <path d="m10 15 5-3-5-3z"></path>
-                  </svg>
-                </Button>
-              </div>
+                    <a 
+                    href={social.href}
+                    aria-label={`${social.name} hesabımız`}
+                    target="_blank" 
+                    rel="noreferrer"
+                    >
+                    {social.name === "Discord" ? (
+                      <svg className="h-5 w-5" viewBox="0 -28.5 256 256" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M216.856339,16.5966031 C200.285002,8.84328665 182.566144,3.2084988 164.041564,0 C161.766523,4.11318106 159.108624,9.64549908 157.276099,14.0464379 C137.583995,11.0849896 118.072967,11.0849896 98.7430163,14.0464379 C96.9108417,9.64549908 94.1925838,4.11318106 91.8971895,0 C73.3526068,3.2084988 55.6133949,8.86399117 39.0420583,16.6376612 C5.61752293,67.146514 -3.4433191,116.400813 1.08711069,164.955721 C23.2560196,181.510915 44.7403634,191.567697 65.8621325,198.148576 C71.0772151,190.971126 75.7283628,183.341335 79.7352139,175.300261 C72.104019,172.400575 64.7949724,168.822202 57.8887866,164.667963 C59.7209612,163.310589 61.5131304,161.891452 63.2445898,160.431257 C105.36741,180.133187 151.134928,180.133187 192.754523,160.431257 C194.506336,161.891452 196.298154,163.310589 198.110326,164.667963 C191.183787,168.842556 183.854737,172.420929 176.223542,175.320965 C180.230393,183.341335 184.861538,190.991831 190.096624,198.16893 C211.238746,191.588051 232.743023,181.531619 254.911949,164.955721 C260.227747,108.668201 245.831087,59.8662432 216.856339,16.5966031 Z M85.4738752,135.09489 C72.8290281,135.09489 62.4592217,123.290155 62.4592217,108.914901 C62.4592217,94.5396472 72.607595,82.7145587 85.4738752,82.7145587 C98.3405064,82.7145587 108.709962,94.5189427 108.488529,108.914901 C108.508531,123.290155 98.3405064,135.09489 85.4738752,135.09489 Z M170.525237,135.09489 C157.88039,135.09489 147.510584,123.290155 147.510584,108.914901 C147.510584,94.5396472 157.658606,82.7145587 170.525237,82.7145587 C183.391518,82.7145587 193.761324,94.5189427 193.539891,108.914901 C193.539891,123.290155 183.391518,135.09489 170.525237,135.09489 Z" fill="currentColor" fillRule="nonzero" />
+                      </svg>
+                    ) : social.name === "E-posta" ? (
+                      <Mail className="h-5 w-5" strokeWidth={1.5} />
+                    ) : social.name === "Instagram" ? (
+                      <Instagram className="h-5 w-5" />
+                    ) : social.name === "LinkedIn" ? (
+                      <Linkedin className="h-5 w-5" />
+                    ) : social.name === "YouTube" ? (
+                      <Youtube className="h-5 w-5" />
+                    ) : null}
+                    </a>
+                  </Button>
+                  );
+                })}
+                </div>
+              
             </CardContent>
           </Card>
         </div>
