@@ -3,13 +3,13 @@
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { UserRole } from "@/models/User";
-import { BoardManagement } from "@/components/admin/BoardManagement";
+import { CommunityTeamManagement } from "@/components/admin/CommunityTeamManagement";
 import { useTwoFactor } from "@/hooks/useTwoFactor";
 
-export default function AdminBoardPage() {
+export default function AdminCommunityTeamPage() {
   const { data: session, status } = useSession();
   const { twoFactorStatus, isLoading: isTwoFactorLoading } = useTwoFactor();
 
@@ -31,40 +31,38 @@ export default function AdminBoardPage() {
     
     // Admin ise ve 2FA etkin değilse veya doğrulanmamışsa ana sayfaya yönlendir
     if (isAdmin && (!twoFactorStatus.enabled || !twoFactorStatus.verified)) {
-      redirect("/");
+      redirect("/admin/verify-2fa?returnUrl=/admin/community-team");
+      return null;
     }
   }
 
-  // Hala yükleniyor - Cloudinary ve board verileri veya 2FA durumu yükleniyor
+  // Oturum yükleniyorsa veya 2FA durumu kontrol ediliyorsa
   if (status === "loading" || isTwoFactorLoading) {
     return (
-      <div className="container mx-auto py-10 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="justify-center items-center">
-        <div className="container mx-auto py-8 max-w-7xl">
+    <div className="container py-8 px-4 max-w-7xl mx-auto">
       <div className="mb-6">
-        <Button variant="outline" asChild>
-          <Link href="/admin/dashboard">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Yönetim Paneline Dön
-          </Link>
-        </Button>
-      </div>
-      
-      <div className="mb-10">
-        <h1 className="text-3xl font-bold mb-2">Yönetim Kurulu Yönetimi</h1>
-        <p className="text-muted-foreground">
-          Yönetim kurulu üyelerini düzenleyebilir, ekleyebilir veya kaldırabilirsiniz.
+        <div className="flex items-center justify-between">
+          <Button variant="outline" asChild>
+            <Link href="/admin/dashboard">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Yönetim Paneline Dön
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold">Topluluk Takım Yönetimi</h1>
+        </div>
+        <p className="mt-2 text-muted-foreground">
+          Topluluk takım üyelerini yönetin, üniversite logolarını ekleyin ve sıralamalarını değiştirin.
         </p>
       </div>
 
-      <BoardManagement />
-    </div>
+      <CommunityTeamManagement />
     </div>
   );
 }

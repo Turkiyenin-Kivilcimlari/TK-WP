@@ -31,7 +31,7 @@ export default async function ProfilePage() {
     userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
 
   return (
-    <div className="container max-w-screen-lg mx-auto py-8 px-4 md:px-8">
+    <div className="container max-w-7xl mx-auto py-8 px-4 md:px-8">
       <h1 className="text-2xl md:text-3xl font-bold mb-8">Profil Ayarları</h1>
 
       <Tabs defaultValue="general" className="w-full">

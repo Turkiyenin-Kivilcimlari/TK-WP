@@ -59,13 +59,32 @@ function Staff() {
   }, []);
 
   if (isLoading) {
-    return <div className="space-y-4 mx-auto py-12 px-4">
-      <Skeleton className="h-40 w-full rounded-lg" />
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
+    return (
+      <div className="md:max-w-4xl max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-20 relative z-0">
+        <div className="relative grid grid-cols-1 md:grid-cols-2 gap-20">
+          <div>
+            <div className="relative h-80 w-full">
+              <Skeleton className="h-full w-full rounded-3xl" />
+            </div>
+          </div>
+          <div className="flex justify-between flex-col py-4">
+            <div>
+              <Skeleton className="h-8 w-2/3 mb-2" />
+              <Skeleton className="h-4 w-1/3 mb-3" />
+              <div className="space-y-2 mt-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </div>
+            <div className="flex gap-4 pt-12 mt-5 md:pt-0">
+              <Skeleton className="h-7 w-7 rounded-full" />
+              <Skeleton className="h-7 w-7 rounded-full" />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>;
+    );
   }
 
   if (error) {

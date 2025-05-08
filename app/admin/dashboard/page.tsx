@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   MessageSquare,
   Shield,
+  Layers,
 } from "lucide-react";
 import { UserRole } from "@/models/User";
 import {
@@ -398,6 +399,23 @@ export default function AdminDashboardPage() {
               </Button>
             </CardFooter>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="h-5 w-5" /> Topluluk Temsilcileri
+              </CardTitle>
+              <CardDescription>
+                Temsilcileri yönet ve düzenle
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button asChild className="w-full">
+                <Link href="/admin/community-team">Topluluk Temsilcileri</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
         </div>
 
         <div className="flex justify-center mt-10">

@@ -189,7 +189,7 @@ export default function CommentsPage() {
   // (fetchComments, fetchAuthors, fetchArticles and deleteComment)
 
   return (
-    <div className="container mx-auto py-10 px-4">
+    <div className="container max-w-7xl mx-auto py-10 px-4">
       <Card className="w-full">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

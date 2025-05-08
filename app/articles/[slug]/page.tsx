@@ -318,14 +318,21 @@ export default function ArticleDetailPage() {
           );
 
         case "heading":
-          const HeadingTag = `h${
-            block.level || 2
-          }` as keyof JSX.IntrinsicElements;
-          return (
-            <HeadingTag key={block.id || index} className="font-bold my-6">
-              {block.content}
-            </HeadingTag>
-          );
+          const headingLevel = block.level || 2;
+          switch (headingLevel) {
+            case 1:
+              return <h1 key={block.id || index} className="font-bold my-6">{block.content}</h1>;
+            case 2:
+              return <h2 key={block.id || index} className="font-bold my-6">{block.content}</h2>;
+            case 3:
+              return <h3 key={block.id || index} className="font-bold my-6">{block.content}</h3>;
+            case 4:
+              return <h4 key={block.id || index} className="font-bold my-6">{block.content}</h4>;
+            case 5:
+              return <h5 key={block.id || index} className="font-bold my-6">{block.content}</h5>;
+            default:
+              return <h6 key={block.id || index} className="font-bold my-6">{block.content}</h6>;
+          }
 
         case "image":
           return (

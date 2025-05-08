@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -12,6 +12,8 @@ export function ErrorHandler() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { twoFactorStatus } = useTwoFactor();
+  // Add state to track when 2FA modal should be forced open
+  const [forceOpenModal, setForceOpenModal] = useState(false);
   
   // URL'de 2FA gereksinimi parametresi varsa
   useEffect(() => {
@@ -24,7 +26,8 @@ export function ErrorHandler() {
         duration: 5000
       });
       
-      // TwoFactorVerifyModal otomatik olarak gösterilecek (component içindeki useEffect sayesinde)
+      // Force open the 2FA modal when required
+      setForceOpenModal(true);
     }
   }, [searchParams, session]);
   
@@ -48,6 +51,9 @@ export function ErrorHandler() {
             });
           }
           else if (errorType === '2fa_verification_required') {
+            // Force open the 2FA modal when verification is required
+            setForceOpenModal(true);
+            
             toast.error('Doğrulama gerekli', {
               description: 'Yönetici işlemlerine erişmek için önce iki faktörlü doğrulama kodunu girmeniz gerekiyor.',
               action: {
@@ -68,5 +74,10 @@ export function ErrorHandler() {
     };
   }, [router, session]);
 
-  return <TwoFactorVerifyModal />; // TwoFactorVerifyModal'ı her zaman render et
+  // Add a handler for when verification is completed
+  const handleVerificationComplete = () => {
+    setForceOpenModal(false);
+  };
+
+  return <TwoFactorVerifyModal forceOpen={forceOpenModal} onVerificationComplete={handleVerificationComplete} />; 
 }

@@ -454,7 +454,7 @@ export default function ContentManagementPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container max-w-7xl mx-auto py-8 px-4">
       <div className="text-center mb-6">
         <h1 className="text-3xl font-bold">İçerik Yönetimi</h1>
         <p className="text-muted-foreground mt-1">

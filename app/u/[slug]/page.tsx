@@ -223,7 +223,7 @@ export default function UserProfilePage() {
   const isOwnProfile = session?.user?.id === user.id;
 
   return (
-    <div className="container mx-auto py-12 px-4 max-w-5xl">
+    <div className="container mx-auto py-12 px-4 max-w-6xl">
       <Card className="mb-8">
         <CardHeader className="pb-4">
           <div className="flex items-center space-x-4">

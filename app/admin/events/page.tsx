@@ -278,7 +278,7 @@ export default function AdminEventsPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto max-w-7xl py-8 px-4">
       <div className="mb-6">
         <Button variant="outline" asChild>
           <Link href="/admin/dashboard">

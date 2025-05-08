@@ -119,7 +119,7 @@ export default function UsersPage() {
   
   return (
     <div className="flex min-h-screen justify-center">
-      <div className="container py-8 px-4 md:py-12 md:px-3">
+      <div className="container max-w-7xl py-8 px-4 md:py-12 md:px-3">
         <div className="text-center mb-6">
           <h1 className="text-2xl md:text-3xl font-bold">Kullanıcı Yönetimi</h1>
         </div>
