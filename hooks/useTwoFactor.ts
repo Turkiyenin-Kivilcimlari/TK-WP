@@ -22,16 +22,28 @@ export function useTwoFactor() {
           return { enabled: false, verified: false, required: false, isAdmin: false };
         }
         
+        // API'den güncel 2FA durumunu al 
         const response = await api.get('/auth/2fa/status');
+        const statusData = response.data.data;
         
-        // 2FA durumunu cookie olarak sakla (sadece client tarafında)
-        if (typeof window !== 'undefined') {
-          document.cookie = `two-factor-status=${JSON.stringify(response.data.data)}; path=/; max-age=3600; SameSite=Lax`;
+        // Doğrulama süresi kontrolü - API yanıtındaki verileri kullan
+        if (isAdmin && statusData.enabled && statusData.verified && statusData.lastVerification) {
+          const now = new Date();
+          const lastVerification = new Date(statusData.lastVerification);
+          const diffMs = now.getTime() - lastVerification.getTime();
+          const diffMins = Math.floor(diffMs / (1000 * 60));
+          const timeoutMins = statusData.sessionTimeoutMins || 180; // Varsayılan 3 saat
+          
+          
         }
         
-        return response.data.data;
-      } catch (error: any) {
+        // 2FA durumunu cookie olarak sakla - API'den gelen güncel veri ile
+        if (typeof window !== 'undefined') {
+          document.cookie = `two-factor-status=${JSON.stringify(statusData)}; path=/; max-age=10800; SameSite=Lax`;
+        }
         
+        return statusData;
+      } catch (error: any) {
         // 401 - Yetkisiz hatası durumunda oturum sorununu ele al
         if (error.response?.status === 401) {
           // Varsayılan değerleri döndür - oturum yok
@@ -120,36 +132,13 @@ export function useTwoFactor() {
     mutationFn: async (token: string) => {
       const response = await api.post('/auth/2fa/verify', { token });
       
-      // Başarılı doğrulama sonrası cookie'yi güncelle
+      // Başarılı doğrulama sonrası cookie'yi güncelle - API yanıtına güven
       if (response.data.success && typeof window !== 'undefined') {
         try {
-          // Önce mevcut cookie'yi sil
-          document.cookie = "two-factor-status=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
-          
-          // Yeni güncellenmiş durum
-          const updatedStatus = {
-            enabled: true,
-            verified: true,
-            required: true,
-            isAdmin: true,
-            lastVerification: new Date().toISOString(),
-            sessionTimeoutMins: 180
-          };
-          
-          console.log("Hook: 2FA cookie güncelleniyor:", updatedStatus);
-          
-          // Cookie'yi güncelle - 3 saat süre ile geçerli olsun (10800 saniye)
-          document.cookie = `two-factor-status=${JSON.stringify(updatedStatus)}; path=/; max-age=10800; SameSite=Lax`;
-          
-          // API'den dönen veriyi de güncelle
-          if (response.data && response.data.data) {
-            response.data.data = {
-              ...response.data.data,
-              verified: true
-            };
-          }
+          // API'den dönen veriyi kullan, kendi başımıza yapılandırmaktan kaçın
+          await refreshStatus(); // API'den en güncel durumu al
         } catch (err) {
-          console.error("Cookie update error:", err);
+
         }
       }
       
@@ -173,46 +162,10 @@ export function useTwoFactor() {
   // 2FA durumunu yenilemek için fonksiyon - daha kapsamlı
   const refreshStatus = async () => {
     try {
-      // Sorguyu geçersiz kıl
+      // Sorguyu geçersiz kıl - API'den en güncel veriyi al
       await queryClient.invalidateQueries({ queryKey: ['2fa-status'] });
-      
-      // Özellikle cookie kontrolü yap
-      if (typeof window !== 'undefined') {
-        const cookie = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('two-factor-status='));
-          
-        if (cookie) {
-          const cookieValue = cookie.split('=')[1];
-          try {
-            const parsedValue = JSON.parse(decodeURIComponent(cookieValue));
-            console.log("Current 2FA cookie state:", parsedValue);
-            
-            // Cookie'de verified değeri false ise ve admin ise düzelt
-            if (isAdmin && !parsedValue.verified) {
-              console.log("Admin cookie verifed değeri yanlış, düzeltiliyor");
-              
-              // Yeni cookie oluştur
-              const updatedStatus = {
-                ...parsedValue,
-                verified: true,
-                lastVerification: new Date().toISOString()
-              };
-              
-              // Cookie'yi güncelle
-              document.cookie = `two-factor-status=${JSON.stringify(updatedStatus)}; path=/; max-age=10800; SameSite=Lax`;
-              
-              console.log("Cookie düzeltildi:", updatedStatus);
-            }
-          } catch (e) {
-            console.error("Cookie parsing error:", e);
-          }
-        }
-      }
-      
       return true;
     } catch (error) {
-      console.error("Status refresh error:", error);
       return false;
     }
   };

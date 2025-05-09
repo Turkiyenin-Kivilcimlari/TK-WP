@@ -1,61 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { Types } from 'mongoose';
 
-// Ekip kategorileri enum
-export enum TeamCategory {
-  ORGANIZATIONAL_DEVELOPMENT = "ORGANIZATIONAL_DEVELOPMENT", // Organizasyonel Gelişim Ekibi
-  COMMUNITY_MANAGERS = "COMMUNITY_MANAGERS", // Topluluk Yöneticileri
-  SOCIAL_MEDIA = "SOCIAL_MEDIA", // Sosyal Medya & Tanıtım Ekibi
-  WEBSITE_DEVELOPMENT = "WEBSITE_DEVELOPMENT", // Website Geliştirme Ekibi
-  CONTENT = "CONTENT", // İçerik Ekibi
-}
-
-export interface ICommunityTeam extends Document {
-  name: string; // Kişinin adı
-  title: string; // Ünvanı/görevi
-  category: TeamCategory; // Hangi ekipte olduğu
-  description?: string; // Kişi hakkında kısa açıklama (opsiyonel)
-  image: string; // Cloudinary'deki resim URL'i
-  order: number; // Sıralama için
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const CommunityTeamSchema = new Schema<ICommunityTeam>(
-  {
-    name: {
-      type: String,
-      required: [true, 'İsim zorunludur'],
-      trim: true,
-    },
-    title: {
-      type: String,
-      required: [true, 'Ünvan zorunludur'],
-      trim: true,
-    },
-    category: {
-      type: String,
-      enum: Object.values(TeamCategory),
-      required: [true, 'Kategori zorunludur'],
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    image: {
-      type: String,
-      required: [true, 'Resim zorunludur'],
-    },
-    order: {
-      type: Number,
-      default: 0,
-    },
-  },
-  { timestamps: true }
-);
-
-export const CommunityTeam = mongoose.models.CommunityTeam || mongoose.model<ICommunityTeam>('CommunityTeam', CommunityTeamSchema);
-
 // CommunityTeam üye arayüzü
 export interface ICommunityTeamMember extends Document {
   userId: Types.ObjectId;
@@ -69,7 +14,6 @@ export interface ICommunityTeamMember extends Document {
   role: string;
   slug?: string;
   order?: number;
-  category?: TeamCategory; // Hangi ekipte olduğu
 }
 
 // CommunityTeam üye şeması

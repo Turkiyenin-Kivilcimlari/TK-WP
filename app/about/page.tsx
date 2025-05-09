@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Staff } from "@/components/Community/staff";
 import { TeamMembers } from "@/components/Community/teamMembers";
+import { Supporters } from "@/components/Community/supporters";
 
 export default function AboutPage() {
   return (
@@ -79,6 +80,15 @@ export default function AboutPage() {
           Yönetim Ekibimiz
         </h2>
         <Staff />
+      </div>
+
+      <Separator className="my-12" />
+
+      <div className="mb-16">
+        <h2 className="text-3xl font-bold text-center mb-10">
+          Topluluk Destekçilerimiz
+        </h2>
+        <Supporters />
       </div>
 
       <Separator className="my-12" />

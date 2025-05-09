@@ -45,6 +45,20 @@ export function TwoFactorVerifyModal({ forceOpen = false, onVerificationComplete
 
   const isAdmin = session?.user?.role === UserRole.ADMIN || session?.user?.role === UserRole.SUPERADMIN;
 
+  // Doğrulama süresinin dolup dolmadığını kontrol eden yardımcı fonksiyon
+  const isVerificationExpired = () => {
+    if (twoFactorStatus?.lastVerification) {
+      const now = new Date();
+      const lastVerification = new Date(twoFactorStatus.lastVerification);
+      const diffMs = now.getTime() - lastVerification.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const timeoutMins = twoFactorStatus.sessionTimeoutMins || 180; // Varsayılan 3 saat (180 dakika)
+      
+      return diffMins >= timeoutMins;
+    }
+    return true; // Doğrulama zamanı yoksa süresi dolmuş kabul edelim
+  };
+
   // Admin ve 2FA durumuna göre modalı göster
   useEffect(() => {
     // Oturum yükleniyorsa bekle
@@ -75,18 +89,15 @@ export function TwoFactorVerifyModal({ forceOpen = false, onVerificationComplete
         return;
       }
       
-      // 2FA durumunu doğrudan kontrol et
-      if (twoFactorStatus.enabled && !twoFactorStatus.verified) {
-        console.log(twoFactorStatus.enabled,"   ", twoFactorStatus.verified);
+      // 2FA durumunu doğrudan kontrol et - doğrulama yapılmamış VEYA doğrulama süresi dolmuşsa
+      if (twoFactorStatus.enabled && (!twoFactorStatus.verified || isVerificationExpired())) {
         // Sadece kapalıysa aç, aynı state'i sürekli güncellemekten kaçın
         if (!isOpen) {
-          console.log("2FA verification needed, opening modal");
           setIsOpen(true);
         }
       } else {
         // Sadece açıksa kapat, aynı state'i sürekli güncellemekten kaçın
         if (isOpen) {
-          console.log("2FA verification not needed, closing modal");
           setIsOpen(false);
         }
       }
@@ -111,7 +122,6 @@ export function TwoFactorVerifyModal({ forceOpen = false, onVerificationComplete
       const result = await verifyTwoFactor(token);
       
       if (result && result.success) {
-        console.log("Verification successful, updating status:", result);
         
         // Başarılı doğrulama durumunu kaydet
         setWasVerified(true);
@@ -131,8 +141,6 @@ export function TwoFactorVerifyModal({ forceOpen = false, onVerificationComplete
             sessionTimeoutMins: 180
           };
           
-          // Debug için kontrol
-          console.log("Manuel güncellenen cookie değerleri:", updatedStatus);
           
           // Cookie ayarlama
           document.cookie = `two-factor-status=${JSON.stringify(updatedStatus)}; path=/; max-age=10800; SameSite=Lax`;
@@ -154,8 +162,6 @@ export function TwoFactorVerifyModal({ forceOpen = false, onVerificationComplete
           // 2FA durumunu yenile
           await refreshStatus();
           
-          // Konsolu temizle (debug için)
-          console.clear();
           
           // Toast mesajı göster
           toast.success('Doğrulama başarılı', {

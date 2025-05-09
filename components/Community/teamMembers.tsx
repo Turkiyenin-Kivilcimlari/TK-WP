@@ -53,7 +53,7 @@ export function TeamMembers() {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-        {[...Array(8)].map((_, i) => (
+        {[...Array(4)].map((_, i) => (
           <div key={i} className="p-4">
             <Skeleton className="h-[20rem] w-full rounded-lg" />
           </div>
