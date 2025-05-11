@@ -13,7 +13,6 @@ export interface ICommunityTeamMember extends Document {
   universityLogo?: string; // Üniversite logosu (Cloudinary'de saklanan)
   role: string;
   slug?: string;
-  order?: number;
 }
 
 // CommunityTeam üye şeması
@@ -53,9 +52,6 @@ const CommunityTeamMemberSchema = new Schema<ICommunityTeamMember>({
   },
   slug: {
     type: String
-  },
-  order: {
-    type: Number
   }
 }, {
   timestamps: true

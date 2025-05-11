@@ -35,6 +35,7 @@ export function TeamMembers() {
         const response = await api.get("/api/public/teams/members");
         
         if (response.data && response.data.success) {
+          // API'den gelen verileri doğrudan kullan - sıralama API tarafında yapılıyor
           setTeamMembers(response.data.members || []);
         } else {
           setError("Takım üyeleri yüklenemedi");

@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
 
     await connectToDatabase();
     
-    // Tüm takım üyelerini getir
-    const teamMembers = await CommunityTeamMember.find({}).sort({ order: 1 });
+    // Tüm takım üyelerini getir ve üniversite adına göre sırala
+    const teamMembers = await CommunityTeamMember.find({}).sort({ university: 1 });
     
     return encryptedJson({
       success: true,
@@ -105,8 +105,7 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Mevcut üye sayısını bul ve yeni sıralama numarası için kullan
-    const totalMembers = await CommunityTeamMember.countDocuments({});
+    // Order alanı ile ilgili kod kaldırıldı
     
     // Yeni takım üyesini oluştur
     const newTeamMember = new CommunityTeamMember({
@@ -118,8 +117,7 @@ export async function POST(req: NextRequest) {
       photo, // Özel fotoğraf
       university, // Üniversite bilgisi
       role: user.role,
-      slug: user.slug,
-      order: totalMembers + 1
+      slug: user.slug
     });
     
     await newTeamMember.save();

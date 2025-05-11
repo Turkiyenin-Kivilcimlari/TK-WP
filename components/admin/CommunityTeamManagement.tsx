@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Trash, ArrowUp, ArrowDown, UserPlus, Image as ImageIcon, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash, UserPlus, Image as ImageIcon, Pencil } from "lucide-react";
 import { ICommunityTeamMember } from "@/models/CommunityTeam";
 import {
   Dialog,
@@ -49,7 +49,6 @@ import Image from "next/image";
 export function CommunityTeamManagement() {
   const [teamMembers, setTeamMembers] = useState<ICommunityTeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isReordering, setIsReordering] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -77,16 +76,7 @@ export function CommunityTeamManagement() {
     try {
       setIsLoading(true);
       const response = await api.get("/api/admin/community-team");
-
-      // Üyeleri sıralarına göre sırala
-      const sortedMembers = response.data.teamMembers.sort((a: any, b: any) => {
-        if (a.order === b.order) {
-          return a._id.localeCompare(b._id);
-        }
-        return (a.order || Number.MAX_SAFE_INTEGER) - (b.order || Number.MAX_SAFE_INTEGER);
-      });
-
-      setTeamMembers(sortedMembers);
+      setTeamMembers(response.data.teamMembers);
     } catch (error) {
       toast.error("Takım üyeleri yüklenemedi");
     } finally {
@@ -105,7 +95,7 @@ export function CommunityTeamManagement() {
 
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Dosya boyutu çok büyük", {
-        description: "Lütfen 5MB'dan küçük bir resim seçin."
+        description: "Lütfen 5MB'dan küçük bir resim seçin.",
       });
       return;
     }
@@ -144,10 +134,10 @@ export function CommunityTeamManagement() {
       });
       return;
     }
-    
+
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Dosya boyutu çok büyük", {
-        description: "Lütfen 5MB'dan küçük bir resim seçin."
+        description: "Lütfen 5MB'dan küçük bir resim seçin.",
       });
       return;
     }
@@ -175,86 +165,6 @@ export function CommunityTeamManagement() {
     }
   };
 
-  // Üye sıralaması
-  const moveUp = async (index: number) => {
-    if (index === 0) return; // İlk eleman zaten en üstte
-    try {
-      setIsReordering(true);
-
-      // Yeni sıralamayı oluştur
-      const newTeamMembers = [...teamMembers];
-
-      // Seçilen elemanı bir üst sıraya taşı
-      const temp = newTeamMembers[index];
-      newTeamMembers[index] = newTeamMembers[index - 1];
-      newTeamMembers[index - 1] = temp;
-
-      // Sıralamayı güncelle (index 1'den başlayarak)
-      const updatedMembers = newTeamMembers.map((member, idx) => ({
-        ...member,
-        order: idx + 1,
-      })) as ICommunityTeamMember[];
-
-      // State'i güncelle
-      setTeamMembers(updatedMembers);
-
-      // API'ye sıralama güncellemesi gönder
-      const orderData = updatedMembers.map((member) => ({
-        id: member._id as string,
-        order: member.order,
-      }));
-
-      await api.post("/api/admin/community-team/reorder", { items: orderData });
-      toast.success("Üye sıralaması güncellendi");
-    } catch (error) {
-      toast.error("Sıralama güncellenirken bir hata oluştu");
-      // Hata durumunda orijinal sıralamayı geri getir
-      fetchTeamMembers();
-    } finally {
-      setIsReordering(false);
-    }
-  };
-
-  const moveDown = async (index: number) => {
-    if (index >= teamMembers.length - 1) return; // Son eleman zaten en altta
-
-    try {
-      setIsReordering(true);
-
-      // Yeni sıralamayı oluştur
-      const newTeamMembers = [...teamMembers];
-
-      // Seçilen elemanı bir alt sıraya taşı
-      const temp = newTeamMembers[index];
-      newTeamMembers[index] = newTeamMembers[index + 1];
-      newTeamMembers[index + 1] = temp;
-
-      // Sıralamayı güncelle (index 1'den başlayarak)
-      const updatedMembers = newTeamMembers.map((member, idx) => ({
-        ...member,
-        order: idx + 1,
-      })) as ICommunityTeamMember[];
-
-      // State'i güncelle
-      setTeamMembers(updatedMembers);
-
-      // API'ye sıralama güncellemesi gönder
-      const orderData = updatedMembers.map((member) => ({
-        id: member._id,
-        order: member.order,
-      }));
-
-      await api.post("/api/admin/community-team/reorder", { items: orderData });
-      toast.success("Üye sıralaması güncellendi");
-    } catch (error) {
-      toast.error("Sıralama güncellenirken bir hata oluştu");
-      // Hata durumunda orijinal sıralamayı geri getir
-      fetchTeamMembers();
-    } finally {
-      setIsReordering(false);
-    }
-  };
-
   // Form sıfırlama
   const resetForm = () => {
     setSelectedUserId("");
@@ -271,7 +181,7 @@ export function CommunityTeamManagement() {
   const loadMemberForEdit = (member: ICommunityTeamMember) => {
     try {
       console.log("Düzenlenecek üye:", member); // Debug için ekleyelim
-      
+
       // ID ve diğer alanları doğru bir şekilde ayarlayalım
       setSelectedMemberId(String(member._id || member.id || "")); // _id veya id alanını kullan
       setSelectedUserId(String(member.userId || ""));
@@ -281,7 +191,7 @@ export function CommunityTeamManagement() {
       setPhotoPreview(member.photo || "");
       setUniversityLogo(member.universityLogo || "");
       setUniversityLogoPreview(member.universityLogo || "");
-      
+
       // Değerleri yazarak kontrol edelim
       console.log("Form değerleri ayarlandı:", {
         selectedMemberId: String(member._id || member.id || ""),
@@ -289,9 +199,9 @@ export function CommunityTeamManagement() {
         title: member.title || "",
         university: member.university || "",
         photo: member.photo || "",
-        universityLogo: member.universityLogo || ""
+        universityLogo: member.universityLogo || "",
       });
-      
+
       setEditDialogOpen(true);
     } catch (err) {
       console.error("Üye verilerini yükleme hatası:", err);
@@ -313,7 +223,7 @@ export function CommunityTeamManagement() {
         title: title,
         university: university,
         photo: photo,
-        universityLogo: universityLogo
+        universityLogo: universityLogo,
       });
 
       if (response.data.success) {
@@ -340,21 +250,21 @@ export function CommunityTeamManagement() {
 
     try {
       setIsEditing(true);
-      
+
       // Console'a hangi verileri gönderdiğimizi yazdıralım (debug için)
       console.log("Güncellenecek veriler:", {
         memberId: selectedMemberId,
         title,
         university,
         photo,
-        universityLogo
+        universityLogo,
       });
-      
+
       const response = await api.put(`/api/admin/community-team/${selectedMemberId}`, {
         title,
         university,
         photo,
-        universityLogo
+        universityLogo,
       });
 
       if (response.data.success) {
@@ -377,17 +287,17 @@ export function CommunityTeamManagement() {
   // Üye silme
   const handleRemoveMember = async (id: string) => {
     if (!id) return;
-    
+
     setSelectedMemberIdToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
     if (!selectedMemberIdToDelete) return;
-    
+
     try {
       // Önce üye bilgilerini al
-      const member = teamMembers.find(m => m._id === selectedMemberIdToDelete);
+      const member = teamMembers.find((m) => m._id === selectedMemberIdToDelete);
 
       const response = await api.delete(`/api/admin/community-team/${selectedMemberIdToDelete}`);
 
@@ -400,7 +310,7 @@ export function CommunityTeamManagement() {
             console.error("Resim silinirken bir hata oluştu:", error);
           }
         }
-        
+
         // Üniversite logosu varsa Cloudinary'den sil
         if (member?.universityLogo) {
           try {
@@ -409,7 +319,7 @@ export function CommunityTeamManagement() {
             console.error("Üniversite logosu silinirken bir hata oluştu:", error);
           }
         }
-        
+
         toast.success("Topluluk temsilcisi başarıyla silindi");
         setDeleteDialogOpen(false);
         fetchTeamMembers();
@@ -433,14 +343,14 @@ export function CommunityTeamManagement() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
-            <span>Topluluk  Temsilcileri</span>
+            <span>Topluluk Temsilcileri</span>
             <Button onClick={() => setAddDialogOpen(true)} className="flex items-center">
               <UserPlus className="h-4 w-4 mr-2" />
               Üye Ekle
             </Button>
           </CardTitle>
           <CardDescription>
-            Tüm temsilcileri görüntüleyin ve yönetin. Sıralamayı değiştirmek için yukarı/aşağı butonlarını kullanabilirsiniz.
+            Tüm temsilcileri görüntüleyin ve yönetin.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -468,17 +378,13 @@ export function CommunityTeamManagement() {
           {teamMembers.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-muted-foreground">Henüz ekip üyesi eklenmemiş.</p>
-              <Button 
-                variant="outline" 
-                onClick={() => setAddDialogOpen(true)} 
-                className="mt-4"
-              >
+              <Button variant="outline" onClick={() => setAddDialogOpen(true)} className="mt-4">
                 <UserPlus className="h-4 w-4 mr-2" />
                 Üye Ekle
               </Button>
             </div>
           ) : (
-            teamMembers.map((member, index) => (
+            teamMembers.map((member) => (
               <Card key={String(member._id)} className="w-full">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -500,7 +406,9 @@ export function CommunityTeamManagement() {
                         </Avatar>
                       )}
                       <div>
-                        <CardTitle className="text-lg">{member.name} {member.lastname}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {member.name} {member.lastname}
+                        </CardTitle>
                         <CardDescription>{member.title}</CardDescription>
                         <div className="flex items-center mt-1 gap-2">
                           {/* Üniversite logosu görüntüleme - boyutu artırıldı */}
@@ -508,7 +416,7 @@ export function CommunityTeamManagement() {
                             <div className="relative h-8 w-8 mr-1">
                               <Image
                                 src={member.universityLogo}
-                                alt={`${member.university || 'Üniversite'} logosu`}
+                                alt={`${member.university || "Üniversite"} logosu`}
                                 width={32}
                                 height={32}
                                 className="object-contain"
@@ -522,22 +430,6 @@ export function CommunityTeamManagement() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        disabled={index === 0 || isReordering}
-                        onClick={() => moveUp(index)}
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        disabled={index === teamMembers.length - 1 || isReordering}
-                        onClick={() => moveDown(index)}
-                      >
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
                       {/* Düzenleme butonu */}
                       <Button
                         variant="outline"
@@ -564,10 +456,13 @@ export function CommunityTeamManagement() {
       )}
 
       {/* Üye Ekleme Dialogu */}
-      <Dialog open={addDialogOpen} onOpenChange={(open) => {
-        setAddDialogOpen(open);
-        if (!open) resetForm();
-      }}>
+      <Dialog
+        open={addDialogOpen}
+        onOpenChange={(open) => {
+          setAddDialogOpen(open);
+          if (!open) resetForm();
+        }}
+      >
         <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Topluluk Temsilcisi Ekle</DialogTitle>
@@ -601,7 +496,7 @@ export function CommunityTeamManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label htmlFor="title" className="mb-1 block">
                   Unvan
@@ -613,7 +508,7 @@ export function CommunityTeamManagement() {
                   placeholder="Örn: Frontend Geliştirici"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="university" className="mb-1 block">
                   Üniversite
@@ -625,176 +520,16 @@ export function CommunityTeamManagement() {
                   placeholder="Örn: İstanbul Teknik Üniversitesi"
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="photo" className="mb-1 block">
-                  Fotoğraf
-                </Label>
-                
-                {photoPreview ? (
-                  <div className="relative border rounded-md overflow-hidden p-2">
-                    <Image
-                      src={photoPreview}
-                      alt="Üye fotoğrafı"
-                      width={200}
-                      height={200}
-                      className="mx-auto object-contain max-h-[200px]"
-                    />
-                    <div className="flex justify-end mt-2 space-x-2">
-                      <Button 
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          document.getElementById('photo-upload')?.click();
-                        }}
-                      >
-                        Değiştir
-                      </Button>
-                      <Button 
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={async () => {
-                          if (photo) {
-                            try {
-                              await deleteImage(photo);
-                              setPhoto("");
-                              setPhotoPreview("");
-                              toast.success("Fotoğraf kaldırıldı");
-                            } catch (error) {
-                              toast.error("Fotoğraf kaldırılamadı");
-                            }
-                          }
-                        }}
-                        disabled={isDeleting || !photo}
-                      >
-                        {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Kaldır"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div 
-                    className="border-2 border-dashed rounded-md p-8 flex flex-col items-center justify-center gap-4 cursor-pointer"
-                    onClick={() => document.getElementById('photo-upload')?.click()}
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Yükleniyor...</p>
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="h-10 w-10 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground text-center">
-                          Fotoğraf yüklemek için tıklayın veya sürükleyin
-                        </p>
-                        <Button variant="outline" type="button" size="sm">
-                          Fotoğraf Seç
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )}
-                <Input
-                  id="photo-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  disabled={isUploading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="universityLogo" className="mb-1 block">
-                  Üniversite Logosu
-                </Label>
-                
-                {universityLogoPreview ? (
-                  <div className="relative border rounded-md overflow-hidden p-2">
-                    <Image
-                      src={universityLogoPreview}
-                      alt="Üniversite logosu"
-                      width={200}
-                      height={200}
-                      className="mx-auto object-contain max-h-[150px]"
-                    />
-                    <div className="flex justify-end mt-2 space-x-2">
-                      <Button 
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          document.getElementById('university-logo-upload')?.click();
-                        }}
-                      >
-                        Değiştir
-                      </Button>
-                      <Button 
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={async () => {
-                          if (universityLogo) {
-                            try {
-                              await deleteImage(universityLogo);
-                              setUniversityLogo("");
-                              setUniversityLogoPreview("");
-                              toast.success("Üniversite logosu kaldırıldı");
-                            } catch (error) {
-                              toast.error("Üniversite logosu kaldırılamadı");
-                            }
-                          }
-                        }}
-                        disabled={isDeleting || !universityLogo}
-                      >
-                        {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Kaldır"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div 
-                    className="border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center gap-2 cursor-pointer"
-                    onClick={() => document.getElementById('university-logo-upload')?.click()}
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Yükleniyor...</p>
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="h-10 w-10 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground text-center">
-                          Üniversite logosu yüklemek için tıklayın
-                        </p>
-                        <Button variant="outline" type="button" size="sm">
-                          Logo Seç
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )}
-                <Input
-                  id="university-logo-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleUniversityLogoChange}
-                  disabled={isUploading}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Önerilen: Şeffaf arka plana sahip PNG formatında logo (maksimum 5MB)
-                </p>
-              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setAddDialogOpen(false);
-              resetForm();
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddDialogOpen(false);
+                resetForm();
+              }}
+            >
               İptal
             </Button>
             <Button onClick={handleAddMember} disabled={isAdding || isUploading}>
@@ -812,8 +547,8 @@ export function CommunityTeamManagement() {
       </Dialog>
 
       {/* Üye Düzenleme Dialogu */}
-      <Dialog 
-        open={editDialogOpen} 
+      <Dialog
+        open={editDialogOpen}
         onOpenChange={(open) => {
           if (!open) {
             resetForm();
@@ -841,7 +576,7 @@ export function CommunityTeamManagement() {
                   placeholder="Örn: Frontend Geliştirici"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="university" className="mb-1 block">
                   Üniversite
@@ -1019,8 +754,8 @@ export function CommunityTeamManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setEditDialogOpen(false);
                 resetForm();
@@ -1029,8 +764,8 @@ export function CommunityTeamManagement() {
             >
               İptal
             </Button>
-            <Button 
-              onClick={handleEditMember} 
+            <Button
+              onClick={handleEditMember}
               disabled={isEditing || isUploading || !title}
               type="button"
             >

@@ -10,8 +10,8 @@ export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
     
-    // Tüm takım üyelerini getir ve sırala
-    const members = await CommunityTeamMember.find({}).sort({ order: 1 });
+    // Tüm takım üyelerini getir ve üniversite adına göre sırala
+    const members = await CommunityTeamMember.find({}).sort({ university: 1 });
     
     return encryptedJson({
       success: true,

@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     // Board üyeleri için özel boyutlandırma
     if (uploadFolder === 'board_members') {
       uploadOptions.transformation.push(
-        { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 90 },
+        { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 99 },
       );
     }
     
