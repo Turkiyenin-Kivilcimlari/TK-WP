@@ -24,6 +24,7 @@ import { tr } from "date-fns/locale";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UserRole } from "@/models/User";
 import { EventStatus, EventType } from "@/models/Event";
 import {
@@ -938,13 +939,85 @@ export default function EventDetailPage({
     );
   };
 
-  if (isLoading) {
+  const EventDetailSkeleton = () => {
     return (
-      <div className="container mx-auto py-8 px-4 text-center">
-        <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4">Etkinlik yükleniyor...</p>
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <Skeleton className="h-10 w-32 bg-primary/10" />
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24 bg-primary/10" />
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <Skeleton className="h-9 w-3/4 mb-2 bg-primary/10" />
+          <div className="flex flex-wrap items-center gap-4">
+            <Skeleton className="h-5 w-40 bg-primary/10" />
+            <Skeleton className="h-5 w-32 bg-primary/10" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="md:col-span-2">
+            <Skeleton className="h-[400px] w-full mb-6 bg-primary/10 rounded-lg" />
+            <div className="space-y-4">
+              <Skeleton className="h-6 w-full bg-primary/10" />
+              <Skeleton className="h-6 w-5/6 bg-primary/10" />
+              <Skeleton className="h-6 w-full bg-primary/10" />
+              <Skeleton className="h-6 w-4/6 bg-primary/10" />
+            </div>
+
+            <div className="mt-8">
+              <Skeleton className="h-7 w-48 mb-4 bg-primary/10" />
+              <div className="space-y-4">
+                <div>
+                  <Skeleton className="h-[120px] w-full bg-primary/10 rounded-lg" />
+                </div>
+                <div>
+                  <Skeleton className="h-[120px] w-full bg-primary/10 rounded-lg" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Card className="p-6">
+              <Skeleton className="h-7 w-40 mb-4 bg-primary/10" />
+              <div className="space-y-4">
+                <div>
+                  <Skeleton className="h-5 w-32 mb-1 bg-primary/10" />
+                  <Skeleton className="h-6 w-48 bg-primary/10" />
+                </div>
+                <div>
+                  <Skeleton className="h-5 w-32 mb-1 bg-primary/10" />
+                  <Skeleton className="h-6 w-24 bg-primary/10" />
+                </div>
+                <div>
+                  <Skeleton className="h-5 w-32 mb-1 bg-primary/10" />
+                  <Skeleton className="h-6 w-full bg-primary/10" />
+                </div>
+                <div>
+                  <Skeleton className="h-5 w-32 mb-1 bg-primary/10" />
+                  <Skeleton className="h-6 w-full bg-primary/10" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 mt-6">
+              <Skeleton className="h-7 w-40 mb-4 bg-primary/10" />
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-full bg-primary/10" />
+                <Skeleton className="h-10 w-full bg-primary/10" />
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
     );
+  };
+
+  if (isLoading) {
+    return <EventDetailSkeleton />;
   }
 
   if (error || !event) {

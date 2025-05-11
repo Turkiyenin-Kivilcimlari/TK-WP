@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 // Kullanıcı rolü için enum
@@ -184,10 +185,6 @@ export default function CommentsPage() {
     queryClient.invalidateQueries({ queryKey: ["comments"] });
   };
 
-  // These functions are redundant since we're using React Query
-  // Removing them as they're using undefined state setters
-  // (fetchComments, fetchAuthors, fetchArticles and deleteComment)
-
   return (
     <div className="container max-w-7xl mx-auto py-10 px-4">
       <Card className="w-full">
@@ -201,7 +198,7 @@ export default function CommentsPage() {
             </div>
             <Button variant="outline" asChild>
               <Link href="/admin/dashboard" className="flex items-center gap-2">
-                <ArrowLeft className="h-4 w-4" /> Dashboard
+                <ArrowLeft className="h-4 w-4" /> Yönetim Paneline Dön
               </Link>
             </Button>
           </div>
@@ -296,7 +293,65 @@ export default function CommentsPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-10">Yorumlar yükleniyor...</div>
+            <>
+              {/* Mobil görünüm skeleton (Kartlar) */}
+              <div className="md:hidden space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="mb-2">
+                    <CardContent className="pt-6">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-24 mb-2 bg-primary/20" />
+                        <Skeleton className="h-16 w-full bg-primary/20" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-3/4 bg-primary/20" />
+                          <Skeleton className="h-4 w-1/2 bg-primary/20" />
+                          <Skeleton className="h-4 w-2/5 bg-primary/20" />
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="border-t pt-4 flex justify-end">
+                      <Skeleton className="h-9 w-16 bg-primary/20" />
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Masaüstü görünüm skeleton (Tablo) */}
+              <div className="hidden md:block rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>İçerik</TableHead>
+                      <TableHead>Yazar</TableHead>
+                      <TableHead>Makale</TableHead>
+                      <TableHead>Tarih</TableHead>
+                      <TableHead className="text-right">İşlemler</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <TableRow key={i}>
+                        <TableCell className="font-medium max-w-xs">
+                          <Skeleton className="h-10 w-full bg-primary/20" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-24 bg-primary/20" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-32 bg-primary/20" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-28 bg-primary/20" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="h-8 w-8 bg-primary/20 ml-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           ) : isError ? (
             <div className="text-center py-10 text-red-500">
               <p>Yorumlar yüklenirken bir hata oluştu.</p>

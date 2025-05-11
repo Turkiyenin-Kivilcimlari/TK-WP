@@ -55,10 +55,10 @@ export default function AdminCommunityTeamPage() {
               Yönetim Paneline Dön
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">Topluluk Takım Yönetimi</h1>
+          <h1 className="text-2xl font-bold">Topluluk Temsilci Yönetimi</h1>
         </div>
         <p className="mt-2 text-muted-foreground">
-          Topluluk takım üyelerini yönetin, üniversite logolarını ekleyin ve sıralamalarını değiştirin.
+          Topluluk temsilcilerini yönetin, üniversite logolarını ekleyin ve sıralamalarını değiştirin.
         </p>
       </div>
 

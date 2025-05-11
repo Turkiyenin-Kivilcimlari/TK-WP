@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { emitProfileUpdated } from '@/lib/events';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfileContent() {
   const { data: session, update: updateSession } = useSession();
@@ -455,8 +456,52 @@ export default function ProfileContent() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-10">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="space-y-8">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-7 w-48 bg-primary/20 mb-2" />
+            <Skeleton className="h-4 w-72 bg-primary/10" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center space-y-4 mb-6">
+              <Skeleton className="h-24 w-24 rounded-full bg-primary/20" />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+                <Skeleton className="h-10 w-full bg-primary/10" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+                <Skeleton className="h-10 w-full bg-primary/10" />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+              <Skeleton className="h-10 w-full bg-primary/10" />
+            </div>
+            
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+              <Skeleton className="h-10 w-full bg-primary/10" />
+            </div>
+            
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+              <Skeleton className="h-10 w-full bg-primary/10" />
+            </div>
+            
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+              <Skeleton className="h-32 w-full bg-primary/10" />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-10 w-20 bg-primary/20" />
+          </CardFooter>
+        </Card>
       </div>
     );
   }

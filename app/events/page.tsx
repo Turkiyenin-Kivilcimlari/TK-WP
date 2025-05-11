@@ -53,6 +53,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { isEventPast } from "@/lib/eventHelpers";
@@ -693,6 +694,35 @@ export default function EventsPage() {
     }
   };
 
+  const EventSkeleton = () => {
+    return (
+      <Card className="overflow-hidden flex flex-col h-full">
+        <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+          <Skeleton className="h-full w-full absolute bg-primary/20" />
+        </div>
+        <CardHeader className="p-4 pb-2">
+          <Skeleton className="h-4 w-24 bg-primary/20 mb-2" />
+          <Skeleton className="h-5 w-full bg-primary/20" />
+        </CardHeader>
+        <CardContent className="px-4 py-2">
+          <Skeleton className="h-4 w-full bg-primary/20 mb-2" />
+          <Skeleton className="h-4 w-3/4 bg-primary/20" />
+          <div className="mt-3 space-y-2">
+            <Skeleton className="h-5 w-16 bg-primary/20" />
+            <Skeleton className="h-4 w-28 bg-primary/20" />
+          </div>
+        </CardContent>
+        <CardFooter className="mt-auto p-4 pt-2 flex flex-col gap-2">
+          <div className="flex gap-2 w-full">
+            <Skeleton className="h-8 w-full bg-primary/20" />
+            <Skeleton className="h-8 w-full bg-primary/20" />
+          </div>
+          <Skeleton className="h-9 w-full bg-primary/20" />
+        </CardFooter>
+      </Card>
+    );
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
@@ -779,8 +809,10 @@ export default function EventsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, index) => (
+            <EventSkeleton key={index} />
+          ))}
         </div>
       ) : isError ? (
         <div className="text-center p-8 bg-muted rounded-lg">

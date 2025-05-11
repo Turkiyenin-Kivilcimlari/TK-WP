@@ -22,6 +22,7 @@ import { tr } from "date-fns/locale";
 import { UserRole } from "@/models/User";
 import Link from "next/link";
 import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProfileData {
   user: {
@@ -188,10 +189,49 @@ export default function UserProfilePage() {
   // Yükleniyor durumu
   if (isLoading) {
     return (
-      <div className="container mx-auto py-12 px-4 flex justify-center">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Profil yükleniyor...</p>
+      <div className="container mx-auto py-12 px-4 max-w-6xl">
+        {/* Profil kartı skeleton */}
+        <Card className="mb-8">
+          <CardHeader className="pb-4">
+            <div className="flex items-center space-x-4">
+              <Skeleton className="h-20 w-20 rounded-full bg-primary/20" />
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-48 bg-primary/20" />
+                <Skeleton className="h-4 w-32 bg-primary/20" />
+                <Skeleton className="h-5 w-24 bg-primary/20" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full bg-primary/20 mb-2" />
+            <Skeleton className="h-4 w-5/6 bg-primary/20 mb-2" />
+            <Skeleton className="h-4 w-4/6 bg-primary/20" />
+          </CardContent>
+        </Card>
+
+        {/* Tabs skeleton */}
+        <div className="mb-6">
+          <Skeleton className="h-10 w-96 bg-primary/20" />
+        </div>
+
+        {/* İçerik skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-64 bg-primary/20" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {Array(4).fill(0).map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <Skeleton className="h-36 w-full bg-primary/20" />
+                <CardContent className="p-3">
+                  <Skeleton className="h-4 w-full bg-primary/20 mb-2" />
+                  <Skeleton className="h-4 w-5/6 bg-primary/20 mb-2" />
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-3 w-20 bg-primary/20" />
+                    <Skeleton className="h-3 w-16 bg-primary/20" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );

@@ -32,6 +32,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useUsers } from "@/hooks/useUsers";
 import { useUploadImage } from "@/hooks/useUploadImage";
 import Image from "next/image";
@@ -42,8 +52,10 @@ export function CommunityTeamManagement() {
   const [isReordering, setIsReordering] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [selectedMemberIdToDelete, setSelectedMemberIdToDelete] = useState<string>("");
   const [title, setTitle] = useState("");
   const [university, setUniversity] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -305,7 +317,7 @@ export function CommunityTeamManagement() {
       });
 
       if (response.data.success) {
-        toast.success("Takım üyesi başarıyla eklendi");
+        toast.success("Topluluk temsilcisi başarıyla eklendi");
         setAddDialogOpen(false);
         resetForm();
         fetchTeamMembers();
@@ -346,7 +358,7 @@ export function CommunityTeamManagement() {
       });
 
       if (response.data.success) {
-        toast.success("Takım üyesi başarıyla güncellendi");
+        toast.success("Topluluk temsilcisi başarıyla güncellendi");
         setEditDialogOpen(false);
         resetForm();
         fetchTeamMembers(); // Güncel listeyi yeniden yükle
@@ -364,15 +376,20 @@ export function CommunityTeamManagement() {
 
   // Üye silme
   const handleRemoveMember = async (id: string) => {
-    if (!confirm("Bu üyeyi takımdan silmek istediğinize emin misiniz?")) {
-      return;
-    }
+    if (!id) return;
+    
+    setSelectedMemberIdToDelete(id);
+    setDeleteDialogOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!selectedMemberIdToDelete) return;
+    
     try {
       // Önce üye bilgilerini al
-      const member = teamMembers.find(m => m._id === id);
+      const member = teamMembers.find(m => m._id === selectedMemberIdToDelete);
 
-      const response = await api.delete(`/api/admin/community-team/${id}`);
+      const response = await api.delete(`/api/admin/community-team/${selectedMemberIdToDelete}`);
 
       if (response.data.success) {
         // Eğer üyenin resmi varsa Cloudinary'den sil
@@ -393,7 +410,8 @@ export function CommunityTeamManagement() {
           }
         }
         
-        toast.success("Takım üyesi başarıyla silindi");
+        toast.success("Topluluk temsilcisi başarıyla silindi");
+        setDeleteDialogOpen(false);
         fetchTeamMembers();
       } else {
         toast.error(response.data.message || "Üye silinirken bir hata oluştu");
@@ -415,14 +433,14 @@ export function CommunityTeamManagement() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
-            <span>Topluluk Takım Üyeleri</span>
+            <span>Topluluk  Temsilcileri</span>
             <Button onClick={() => setAddDialogOpen(true)} className="flex items-center">
               <UserPlus className="h-4 w-4 mr-2" />
               Üye Ekle
             </Button>
           </CardTitle>
           <CardDescription>
-            Tüm takım üyelerini görüntüleyin ve yönetin. Sıralamayı değiştirmek için yukarı/aşağı butonlarını kullanabilirsiniz.
+            Tüm temsilcileri görüntüleyin ve yönetin. Sıralamayı değiştirmek için yukarı/aşağı butonlarını kullanabilirsiniz.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -434,10 +452,10 @@ export function CommunityTeamManagement() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                    <div className="h-14 w-14 rounded-full bg-primary/20 animate-pulse"></div>
                     <div>
-                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mt-2 animate-pulse"></div>
+                      <div className="h-5 bg-primary/20 rounded w-32 animate-pulse"></div>
+                      <div className="h-4 bg-primary/20 rounded w-24 mt-2 animate-pulse"></div>
                     </div>
                   </div>
                 </div>
@@ -552,9 +570,9 @@ export function CommunityTeamManagement() {
       }}>
         <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Topluluk Takım Üyesi Ekle</DialogTitle>
+            <DialogTitle>Topluluk Temsilcisi Ekle</DialogTitle>
             <DialogDescription>
-              Topluluk takımına bir üye eklemek için kullanıcı bilgilerini girin.
+              Topluluk tesmilcilerine bir üye eklemek için kullanıcı bilgilerini girin.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -805,9 +823,9 @@ export function CommunityTeamManagement() {
       >
         <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Topluluk Takım Üyesini Düzenle</DialogTitle>
+            <DialogTitle>Topluluk Temsilcisini Düzenle</DialogTitle>
             <DialogDescription>
-              Topluluk takım üyesinin bilgilerini güncelleyin.
+              Topluluk temsilcisinin bilgilerini güncelleyin.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1028,6 +1046,27 @@ export function CommunityTeamManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Temsilciyi Sil</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu temsilciyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Evet, Sil
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

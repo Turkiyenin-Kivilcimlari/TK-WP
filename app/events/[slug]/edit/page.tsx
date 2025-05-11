@@ -6,8 +6,9 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { EventForm } from "@/components/events/EventForm";
 import { UserRole } from "@/models/User";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import api from "@/lib/api";
 
@@ -53,9 +54,26 @@ export default function EditEventPage({
   // Yükleniyor durumu
   if (status === "loading" || isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Etkinlik yükleniyor...</span>
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-10 w-32 bg-primary/20" />
+        </div>
+
+        <div className="space-y-6 max-w-3xl mx-auto">
+          <Skeleton className="h-12 w-full bg-primary/20" />
+          
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full bg-primary/20" />
+            <Skeleton className="h-10 w-full bg-primary/20" />
+            <Skeleton className="h-32 w-full bg-primary/20" />
+            <Skeleton className="h-10 w-full bg-primary/20" />
+            <Skeleton className="h-10 w-2/3 bg-primary/20" />
+          </div>
+          
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-32 bg-primary/20" />
+          </div>
+        </div>
       </div>
     );
   }

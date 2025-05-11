@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import Image from "next/image";
 import { useUploadImage } from "@/hooks/useUploadImage";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function SupportersManagement() {
   const [supporters, setSupporters] = useState<ISupporter[]>([]);
@@ -349,8 +350,22 @@ export function SupportersManagement() {
         <div className="grid grid-cols-1 gap-4">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="w-full mb-4">
-              <CardContent className="h-24 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-14 w-14 rounded-full bg-primary/20" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-40 bg-primary/20" />
+                      <Skeleton className="h-4 w-32 bg-primary/20" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-9 w-9 bg-primary/20" />
+                    <Skeleton className="h-9 w-9 bg-primary/20" />
+                    <Skeleton className="h-9 w-9 bg-primary/20" />
+                    <Skeleton className="h-9 w-9 bg-primary/20" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -507,7 +522,12 @@ export function SupportersManagement() {
                         }}
                         disabled={isDeleting || !photo}
                       >
-                        {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Kaldır"}
+                        {isDeleting ? (
+                          <div className="flex items-center">
+                            <Skeleton className="h-4 w-4 rounded-full bg-primary/20 animate-pulse mr-2" />
+                            Kaldırılıyor...
+                          </div>
+                        ) : "Kaldır"}
                       </Button>
                     </div>
                   </div>
@@ -518,7 +538,7 @@ export function SupportersManagement() {
                   >
                     {isUploading ? (
                       <>
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        <Skeleton className="h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
                         <p className="text-sm text-muted-foreground">Yükleniyor...</p>
                       </>
                     ) : (
@@ -555,7 +575,7 @@ export function SupportersManagement() {
             <Button onClick={handleAddSupporter} disabled={isAdding || isUploading}>
               {isAdding ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Skeleton className="mr-2 h-4 w-4 rounded-full bg-primary/20 animate-pulse" />
                   Ekleniyor...
                 </>
               ) : (
@@ -652,7 +672,12 @@ export function SupportersManagement() {
                         }}
                         disabled={isDeleting || !photo}
                       >
-                        {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Kaldır"}
+                        {isDeleting ? (
+                          <div className="flex items-center">
+                            <Skeleton className="h-4 w-4 rounded-full bg-primary/20 animate-pulse mr-2" />
+                            Kaldırılıyor...
+                          </div>
+                        ) : "Kaldır"}
                       </Button>
                     </div>
                   </div>
@@ -663,7 +688,7 @@ export function SupportersManagement() {
                   >
                     {isUploading ? (
                       <>
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        <Skeleton className="h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
                         <p className="text-sm text-muted-foreground">Yükleniyor...</p>
                       </>
                     ) : (
@@ -708,7 +733,7 @@ export function SupportersManagement() {
             >
               {isEditing ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Skeleton className="mr-2 h-4 w-4 rounded-full bg-primary/20 animate-pulse" />
                   Güncelleniyor...
                 </>
               ) : (

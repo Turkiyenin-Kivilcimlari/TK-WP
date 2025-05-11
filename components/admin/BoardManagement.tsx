@@ -511,8 +511,8 @@ export function BoardManagement() {
           {/* Başlık kartı skeleton */}
           <Card className="mb-4">
             <CardHeader>
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mt-2 animate-pulse"></div>
+              <div className="h-6 bg-primary/20 rounded w-1/4 animate-pulse"></div>
+              <div className="h-4 bg-primary/20 rounded w-3/4 mt-2 animate-pulse"></div>
             </CardHeader>
           </Card>
 
@@ -523,28 +523,28 @@ export function BoardManagement() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     {/* Avatar skeleton */}
-                    <div className="h-14 w-14 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                    <div className="h-14 w-14 rounded-full bg-primary/20 animate-pulse"></div>
                     <div>
                       {/* İsim ve ünvan skeletonları */}
-                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mt-2 animate-pulse"></div>
+                      <div className="h-5 bg-primary/20 rounded w-32 animate-pulse"></div>
+                      <div className="h-4 bg-primary/20 rounded w-24 mt-2 animate-pulse"></div>
                     </div>
                   </div>
                   {/* Sıralama butonları skeleton */}
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-                    <div className="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                    <div className="h-8 w-8 rounded bg-primary/20 animate-pulse"></div>
+                    <div className="h-8 w-8 rounded bg-primary/20 animate-pulse"></div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 {/* Alıntı skeleton */}
-                <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-16 bg-primary/20 rounded animate-pulse"></div>
               </CardContent>
               <CardFooter className="flex justify-between">
                 {/* Düzenleme ve silme butonları skeleton */}
-                <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded w-28 animate-pulse"></div>
-                <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+                <div className="h-9 bg-primary/20 rounded w-28 animate-pulse"></div>
+                <div className="h-9 bg-primary/20 rounded w-24 animate-pulse"></div>
               </CardFooter>
             </Card>
           ))}

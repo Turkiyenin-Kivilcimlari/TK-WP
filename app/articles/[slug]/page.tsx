@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArticleStatus } from "@/models/Article";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -241,8 +242,69 @@ export default function ArticleDetailPage() {
   if (loading) {
     return (
       <div className="container mx-auto py-12 px-4 max-w-3xl">
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <div className="mb-6">
+          <Skeleton className="h-10 w-24 bg-primary/10" />
+        </div>
+        
+        <div className="space-y-8">
+          <div>
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-6 w-24 bg-primary/10" />
+              
+              <div className="flex items-center space-x-2">
+                <Skeleton className="h-8 w-32 bg-primary/10" />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4 mt-4 mb-6">
+              <Skeleton className="h-10 w-10 rounded-full bg-primary/10" />
+              <div>
+                <Skeleton className="h-5 w-32 mb-2 bg-primary/10" />
+                <Skeleton className="h-4 w-24 bg-primary/10" />
+              </div>
+            </div>
+          </div>
+          
+          <Skeleton className="h-10 w-3/4 bg-primary/10" />
+          
+          <div className="flex flex-wrap items-center gap-2 my-4">
+            <Skeleton className="h-6 w-16 bg-primary/10" />
+            <Skeleton className="h-6 w-16 bg-primary/10" />
+            <Skeleton className="h-6 w-16 bg-primary/10" />
+          </div>
+          
+          <Separator />
+          
+          <div className="space-y-6">
+            <Skeleton className="h-4 w-full bg-primary/10" />
+            <Skeleton className="h-4 w-full bg-primary/10" />
+            <Skeleton className="h-4 w-3/4 bg-primary/10" />
+            
+            <div className="my-8">
+              <Skeleton className="h-64 w-full bg-primary/10" />
+            </div>
+            
+            <Skeleton className="h-4 w-full bg-primary/10" />
+            <Skeleton className="h-4 w-full bg-primary/10" />
+            <Skeleton className="h-4 w-2/3 bg-primary/10" />
+            
+            <div className="my-6">
+              <Skeleton className="h-32 w-full bg-primary/10" />
+            </div>
+            
+            <Skeleton className="h-4 w-full bg-primary/10" />
+            <Skeleton className="h-4 w-5/6 bg-primary/10" />
+          </div>
+          
+          <Separator />
+          
+          <div className="flex justify-between">
+            <Skeleton className="h-9 w-24 bg-primary/10" />
+            <div className="flex space-x-2">
+              <Skeleton className="h-9 w-36 bg-primary/10" />
+              <Skeleton className="h-9 w-24 bg-primary/10" />
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UsersList } from "@/components/user/UsersList";
+import { UsersList } from "@/components/admin/UsersList";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { Loader2, ArrowLeft, Shield } from "lucide-react";

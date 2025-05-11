@@ -7,6 +7,7 @@ import { ArticleCard } from "@/components/HomePage/articlesCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Article {
   id: string;
@@ -167,10 +168,70 @@ export function Articles() {
   };
 
   if (loading) {
+    // Skeleton bileşeni göster
     return (
-      <div className="flex flex-col gap-4 items-center max-w-7xl mx-auto px-4 pt-4">
-        <div className="w-full flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="w-full py-6">
+        <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">
+          Son Eklenen İçerikler
+        </h1>
+
+        <div className="flex flex-row flex-wrap gap-4 justify-center w-full">
+          {/* Mobilde 1, desktop'ta 4 skeleton göster */}
+          {Array.from({ length: isMobile ? 1 : 4 }).map((_, index) => (
+            <div
+              key={index}
+              className={`${
+                isMobile
+                  ? "w-full max-w-[80%] mx-auto"
+                  : "w-[300px]"
+              }`}
+            >
+              <div className="w-full h-full border rounded-lg overflow-hidden shadow-sm p-3">
+                {/* Yazar ve tarih skeleton */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-5 w-5 rounded-full bg-primary/25" />
+                    <Skeleton className="h-3 w-20 bg-primary/20" />
+                  </div>
+                  <Skeleton className="h-3 w-16 bg-primary/20" />
+                </div>
+
+                {/* Başlık skeleton */}
+                <div className="h-[48px] mb-1">
+                  <Skeleton className="h-4 w-full bg-primary/20 mb-2" />
+                  <Skeleton className="h-4 w-3/4 bg-primary/20" />
+                </div>
+
+                {/* Açıklama skeleton */}
+                <div className="h-[54px]">
+                  <Skeleton className="h-3 w-full bg-primary/20 mb-1.5" />
+                  <Skeleton className="h-3 w-full bg-primary/20 mb-1.5" />
+                  <Skeleton className="h-3 w-2/3 bg-primary/20" />
+                </div>
+
+                {/* Resim skeleton */}
+                <Skeleton className="w-full aspect-[16/9] bg-primary/15 my-2" />
+
+                {/* İstatistikler skeleton */}
+                <div className="flex items-center justify-between mb-2 mt-auto">
+                  <Skeleton className="h-3 w-10 bg-primary/20" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-3 w-10 bg-primary/20" />
+                    <Skeleton className="h-3 w-10 bg-primary/20" />
+                  </div>
+                </div>
+
+                {/* Etiketler skeleton */}
+                <div className="flex gap-1 mb-2">
+                  <Skeleton className="h-4 w-12 bg-primary/20" />
+                  <Skeleton className="h-4 w-12 bg-primary/20" />
+                </div>
+
+                {/* Buton skeleton */}
+                <Skeleton className="h-7 w-full bg-primary/25" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -197,8 +258,8 @@ export function Articles() {
   };
 
   return (
-    <div className="w-full py-6"> {/* Üst marjini biraz azalttım */}
-      <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center"> {/* Marjini azalttım */}
+    <div className="w-full py-6">
+      <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">
         Son Eklenen İçerikler
       </h1>
 
@@ -223,8 +284,8 @@ export function Articles() {
                   <div
                     className={`${
                       isMobile
-                        ? "w-full max-w-[80%] mx-auto" // Mobil görünümü korundu
-                        : "w-[300px]" // Web için genişliği arttırdım
+                        ? "w-full max-w-[80%] mx-auto"
+                        : "w-[300px]" 
                     }`}
                     key={article.id}
                   >
@@ -233,7 +294,7 @@ export function Articles() {
                 );
               })
             ) : (
-              <div className="text-center py-8 w-full"> {/* Padding azalttım */}
+              <div className="text-center py-8 w-full">
                 <p className="text-muted-foreground">Henüz makale bulunmuyor.</p>
               </div>
             )}
@@ -241,7 +302,7 @@ export function Articles() {
         </AnimatePresence>
       </div>
 
-      <div className="flex justify-center items-center gap-4 mt-4 mb-2"> {/* Marjinleri azalttım */}
+      <div className="flex justify-center items-center gap-4 mt-4 mb-2">
         <Button
           onClick={goToPrevPage}
           className="p-1.5 rounded-full h-8 w-8" 

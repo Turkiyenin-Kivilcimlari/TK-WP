@@ -29,12 +29,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import api from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Dashboard'da kullanılacak tüm istatistik verileri için tek bir tip tanımı
 interface DashboardStats {
   totalUsers: number;
   newUsers: { count: number; percentChange: number };
-  activeProjects: { count: number; change: number };
+  allEvents: { count: number; change: number };
   contentCount: { count: number; change: number };
 }
 
@@ -43,7 +44,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     newUsers: { count: 0, percentChange: 0 },
-    activeProjects: { count: 0, change: 0 },
+    allEvents: { count: 0, change: 0 },
     contentCount: { count: 0, change: 0 },
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -74,9 +75,9 @@ export default function AdminDashboardPage() {
             count: data.newUsers?.count || 0,
             percentChange: data.newUsers?.percentChange || 0,
           },
-          activeProjects: {
-            count: data.activeProjects?.count || 0,
-            change: data.activeProjects?.change || 0,
+          allEvents: {
+            count: data.allEvents?.count || 0,
+            change: data.allEvents?.change || 0,
           },
           contentCount: {
             count: data.contentCount?.count || 0,
@@ -168,13 +169,13 @@ export default function AdminDashboardPage() {
                 : "Yeni kullanıcı platformu",
             },
             {
-              title: "Aktif Proje",
-              value: stats.activeProjects.count,
-              description: hasComparison(stats.activeProjects.change)
+              title: "Tüm Etkinlikler",
+              value: stats.allEvents.count,
+              description: hasComparison(stats.allEvents.change)
                 ? `${formatPercentChange(
-                    stats.activeProjects.change
+                    stats.allEvents.change
                   )} geçen aya göre`
-                : "İlk projeler bu ay oluşturuldu",
+                : "İlk etkinlikler bu ay oluşturuldu",
             },
             {
               title: "Yeni Üyeler",
@@ -226,109 +227,138 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" /> Kullanıcı Yönetimi
-              </CardTitle>
-              <CardDescription>
-                Kullanıcıları görüntüle ve yönet
-              </CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/admin/users">Kullanıcılar</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+          {isLoading ? (
+            // Skeleton yükleme durumu
+            <>
+              {Array(8)
+                .fill(0)
+                .map((_, index) => (
+                  <Card key={`skeleton-${index}`}>
+                    <CardHeader>
+                      <Skeleton className="h-6 w-40 bg-primary/20 mb-2" />
+                      <Skeleton className="h-4 w-full bg-primary/20" />
+                    </CardHeader>
+                    <CardFooter>
+                      <Skeleton className="h-10 w-full bg-primary/20" />
+                    </CardFooter>
+                  </Card>
+                ))}
+            </>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" /> Kullanıcı Yönetimi
+                  </CardTitle>
+                  <CardDescription>
+                    Kullanıcıları görüntüle ve yönet
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/admin/users">Kullanıcılar</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" /> İçerik Yönetimi
-              </CardTitle>
-              <CardDescription>
-                İçerikler, blog ve sayfaları yönet
-              </CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/admin/content">İçerikler</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" /> İçerik Yönetimi
+                  </CardTitle>
+                  <CardDescription>
+                    İçerikler, blog ve sayfaları yönet
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/admin/content">İçerikler</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" /> Yorum Yönetimi
-              </CardTitle>
-              <CardDescription>Kullanıcı yorumlarını yönet</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/admin/comments">Yorumlar</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" /> Yorum Yönetimi
+                  </CardTitle>
+                  <CardDescription>Kullanıcı yorumlarını yönet</CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/admin/comments">Yorumlar</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" /> Etkinlik Yönetimi
-              </CardTitle>
-              <CardDescription>Topluluk etkinliklerini yönet</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/admin/events">Etkinlikler</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" /> Etkinlik Yönetimi
+                  </CardTitle>
+                  <CardDescription>
+                    Topluluk etkinliklerini yönet
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/admin/events">Etkinlikler</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" /> Yönetim Kurulu
-              </CardTitle>
-              <CardDescription>
-                Yönetim kurulu üyelerini düzenle
-              </CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/admin/board">Yönetim Kurulu</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" /> Yönetim Kurulu
+                  </CardTitle>
+                  <CardDescription>
+                    Yönetim kurulu üyelerini düzenle
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/admin/board">Yönetim Kurulu</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UsersRound className="h-5 w-5" /> Topluluk Temsilcileri
-              </CardTitle>
-              <CardDescription>Temsilcileri yönet ve düzenle</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/admin/community-team">Topluluk Temsilcileri</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UsersRound className="h-5 w-5" /> Topluluk Temsilcileri
+                  </CardTitle>
+                  <CardDescription>
+                    Temsilcileri yönet ve düzenle
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/admin/community-team">
+                      Topluluk Temsilcileri
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Heart className="h-5 w-5" /> Topluluk Destekçileri
-              </CardTitle>
-              <CardDescription>Destekçileri yönet ve düzenle</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/admin/supporters">Topluluk Destekçileri</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Heart className="h-5 w-5" /> Topluluk Destekçileri
+                  </CardTitle>
+                  <CardDescription>
+                    Destekçileri yönet ve düzenle
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/admin/supporters">Topluluk Destekçileri</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            </>
+          )}
         </div>
 
         <div className="flex justify-center mt-10">
