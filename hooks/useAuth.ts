@@ -14,6 +14,8 @@ export interface User {
   email: string;
   phone?: string;
   avatar?: string;
+  slug?: string;
+  about?: string;
   role: UserRole;
   allowEmails?: boolean;  // Yeni alan eklendi
 }
@@ -28,6 +30,7 @@ export interface RegisterFormData {
   confirmPassword: string;
   turnstileToken?: string; // turnstileToken alanı ekleyin
   allowEmails?: boolean;  // Yeni alan eklendi
+  title?: string; // Title alanı eklendi
 }
 
 // Giriş formu girdileri türü
@@ -67,7 +70,16 @@ export function useAuth() {
   // Kayıt olma işlemi
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterFormData) => {
-      const response = await api.post('/auth/register', data);
+      const response = await api.post('/auth/register', {
+        name: data.name,
+        lastname: data.lastname,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        allowEmails: data.allowEmails,
+        title: data.title, // Title bilgisini gönder
+        turnstileToken: data.turnstileToken
+      });
       return response.data;
     },
     onSuccess: (data) => {

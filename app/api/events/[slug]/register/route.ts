@@ -1,12 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import Event, { EventStatus, IEvent } from '@/models/Event';
+import Event, { EventStatus, IEvent, EventType } from '@/models/Event';
 import User from '@/models/User';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { Types } from 'mongoose';
 import { encryptedJson } from '@/lib/response';
 
 export const dynamic = 'force-dynamic';
+
+// Etkinliğin geçip geçmediğini kontrol eden yardımcı fonksiyon
+function isEventPast(event: any): boolean {
+  if (!event || !event.eventDays || event.eventDays.length === 0) {
+    return true;
+  }
+
+  const now = new Date();
+  const lastDay = event.eventDays[event.eventDays.length - 1];
+  
+  if (!lastDay || !lastDay.date) return true;
+  
+  const lastDate = new Date(lastDay.date);
+  
+  if (lastDay.endTime) {
+    const [hours, minutes] = lastDay.endTime.split(':').map(Number);
+    lastDate.setHours(hours, minutes, 0, 0);
+  } 
+  else if (lastDay.eventType === EventType.ONLINE && lastDay.startTime) {
+    const [hours, minutes] = lastDay.startTime.split(':').map(Number);
+    lastDate.setHours(hours, minutes, 0, 0);
+    lastDate.setHours(lastDate.getHours() + 1);
+  } 
+  else {
+    lastDate.setHours(23, 59, 59, 999);
+  }
+
+  return now > lastDate;
+}
 
 // Etkinliğe katılma 
 export async function POST(
@@ -40,24 +69,17 @@ export async function POST(
     // Etkinlik onaylanmış mı kontrol et
     if (event.status !== EventStatus.APPROVED) {
       return encryptedJson(
-        { success: false, message: 'Bu etkinliğe şu anda kayıt olamazsınız' },
+        { success: false, message: 'Bu etkinlik henüz onaylanmamış' },
         { status: 400 }
       );
     }
     
-    // Etkinlik tarihi geçmiş mi kontrol et
-    const lastDay = event.eventDays && event.eventDays.length > 0 
-      ? event.eventDays[event.eventDays.length - 1] 
-      : null;
-      
-    if (lastDay) {
-      const lastDayDate = new Date(lastDay.date);
-      if (lastDayDate < new Date()) {
-        return encryptedJson(
-          { success: false, message: 'Bu etkinlik sona ermiştir' },
-          { status: 400 }
-        );
-      }
+    // Etkinliğin geçmişte olup olmadığını kontrol et - geliştirilmiş kontrol
+    if (isEventPast(event)) {
+      return encryptedJson(
+        { success: false, message: 'Bu etkinliğin tarihi geçmiş' },
+        { status: 400 }
+      );
     }
     
     // Kullanıcı zaten kayıtlı mı kontrol et
@@ -136,6 +158,14 @@ export async function DELETE(
       return encryptedJson(
         { success: false, message: 'Etkinlik bulunamadı' },
         { status: 404 }
+      );
+    }
+    
+    // Etkinliğin geçmişte olup olmadığını kontrol et
+    if (isEventPast(event)) {
+      return encryptedJson(
+        { success: false, message: 'Bu etkinliğin tarihi geçmiş, katılımınızı iptal edemezsiniz' },
+        { status: 400 }
       );
     }
     

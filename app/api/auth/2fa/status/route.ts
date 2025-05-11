@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     const userId = session.user.id;
     await connectToDatabase();
     
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select('+lastTwoFactorVerification');
     
     if (!user) {
       return encryptedJson(
@@ -72,10 +72,7 @@ export async function GET(req: NextRequest) {
           const verificationTimeoutMins = 180; // Admin için 3 saat (180 dakika)
           isVerificationExpired = diffMins > verificationTimeoutMins; 
         } else {
-          // Verified true ama lastTwoFactorVerification yok - şimdi oluştur
-          user.lastTwoFactorVerification = new Date();
-          await user.save();
-          isVerificationExpired = false;
+          isVerificationExpired = true; // Değer yoksa doğrulama süresi dolmuş kabul et
         }
       } else {
         // Doğrulama yapılmamış
@@ -85,6 +82,7 @@ export async function GET(req: NextRequest) {
       // Admin olmayan kullanıcılar için always false
       isVerificationExpired = false;
     }
+    
     
     return encryptedJson({
       success: true,
