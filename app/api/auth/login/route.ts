@@ -14,6 +14,7 @@ interface UserDocument extends Document {
   email: string;
   password: string;
   role: string;
+  slug: string;
   emailVerified: boolean;
   twoFactorEnabled: boolean;
   lastTwoFactorVerification: Date | null;
@@ -148,7 +149,8 @@ export async function POST(req: NextRequest) {
           name: user.name,
           lastname: user.lastname,
           email: user.email,
-          role: user.role
+          role: user.role,
+          slug: user.slug
         },
         token
       },

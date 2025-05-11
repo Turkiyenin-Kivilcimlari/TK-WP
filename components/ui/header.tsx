@@ -67,6 +67,7 @@ function Header({ children }: { children?: React.ReactNode }) {
   const [userData, setUserData] = useState({
     name: "",
     profileImage: "",
+    slug: "", // Slug alanını ekle
   });
 
   // Session değişikliklerini izle
@@ -79,12 +80,14 @@ function Header({ children }: { children?: React.ReactNode }) {
           session.user.lastname || ""
         }`.trim(),
         profileImage: session.user.avatar || "",
+        slug: session.user.slug || "", // Access slug property directly from the user object
       });
     } else {
       // Session yoksa kullanıcı bilgilerini sıfırla
       setUserData({
         name: "",
         profileImage: "",
+        slug: "",
       });
     }
 
@@ -102,6 +105,7 @@ function Header({ children }: { children?: React.ReactNode }) {
                   sessionData.user.lastname || ""
                 }`.trim(),
                 profileImage: sessionData.user.avatar || "",
+                slug: sessionData.user.slug || "", // API'dan gelen slug değerini al
               });
             }
           }
@@ -137,7 +141,7 @@ function Header({ children }: { children?: React.ReactNode }) {
       userData.name || "User"
     )}&background=random`;
   };
-
+  
   // Component for user profile display
   const UserProfileSection = () => (
     <DropdownMenu>
@@ -160,6 +164,11 @@ function Header({ children }: { children?: React.ReactNode }) {
         <DropdownMenuItem>
           <Link href="/profile" className="w-full">
             Profil
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Link href={`/u/${userData.slug}`} className="w-full">
+            Herkese Açık Profilim
           </Link>
         </DropdownMenuItem>
         {isAdmin && (

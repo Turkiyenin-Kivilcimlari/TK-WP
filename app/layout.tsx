@@ -19,6 +19,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Türkiye'nin Kıvılcımları",
   description: "",
+  verification: {
+    google: "rceQ2iUC9oCm-WSNefE6s7-wns26ZGGPivz0jGMiY9Q"
+  }
 };
 
 export default function RootLayout({
