@@ -38,6 +38,11 @@ export interface IUser extends Document {
   slug: string;
   about: string;
   title?: string;
+  github?: string;
+  linkedin?: string;
+  kaggle?: string;
+  huggingface?: string;
+  website?: string;
 }
 
 const userSchema = new Schema<IUser>(
@@ -117,6 +122,26 @@ const userSchema = new Schema<IUser>(
     title: {
       type: String,
       default: ''
+    },
+    github: {
+      type: String,
+      trim: true,
+    },
+    linkedin: {
+      type: String,
+      trim: true,
+    },
+    kaggle: {
+      type: String,
+      trim: true,
+    },
+    huggingface: {
+      type: String,
+      trim: true,
+    },
+    website: {
+      type: String,
+      trim: true,
     }
   },
   { timestamps: true }

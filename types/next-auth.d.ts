@@ -9,6 +9,11 @@ declare module "next-auth" {
     role: UserRole;
     slug?: string;
     requiresTwoFactor?: boolean;
+    github?: string;
+    linkedin?: string;
+    kaggle?: string; 
+    huggingface?: string;
+    website?: string;
   }
 
   interface Session {

@@ -16,17 +16,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, Upload } from "lucide-react";
+import {
+  Loader2,
+  User,
+  Upload
+} from "lucide-react";
 import api from "@/lib/api";
-import Link from "next/link";
-import { useUploadImage } from '@/hooks/useUploadImage';
-import Image from 'next/image';
+import { useUploadImage } from "@/hooks/useUploadImage";
+import Image from "next/image";
 import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { emitProfileUpdated } from '@/lib/events';
+import { emitProfileUpdated } from "@/lib/events";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FaKaggle } from "react-icons/fa";
+import { SiHuggingface } from "react-icons/si";
+import { FaLinkedin  } from "react-icons/fa";
+import { FaGithub } from "react-icons/fa";
+import { CgWebsite } from "react-icons/cg";
 
 export default function ProfileContent() {
   const { data: session, update: updateSession } = useSession();
@@ -42,15 +50,25 @@ export default function ProfileContent() {
     slug: "",
     about: "",
     title: "",
+    github: "",
+    linkedin: "",
+    kaggle: "",
+    huggingface: "",
+    website: "",
   });
 
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
   const [isSlugTaken, setIsSlugTaken] = useState(false);
   const slugCheckTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const { uploadImage, isUploading, deleteImage, isDeleting } = useUploadImage();
+  const { uploadImage, isUploading, deleteImage, isDeleting } =
+    useUploadImage();
 
-  const { data: userData, isLoading, refetch } = useQuery({
+  const {
+    data: userData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["user-profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user) throw new Error("Kullanıcı bulunamadı");
@@ -59,7 +77,7 @@ export default function ProfileContent() {
         return response.data.user;
       } catch (error: any) {
         toast.error("Profil bilgileri alınamadı", {
-          description: "Bir hata oluştu."
+          description: "Bir hata oluştu.",
         });
         throw error;
       }
@@ -75,10 +93,16 @@ export default function ProfileContent() {
         lastname: userData.lastname || "",
         phone: userData.phone || "",
         avatar: userData.avatar || "",
-        allowEmails: userData.allowEmails !== undefined ? userData.allowEmails : true,
+        allowEmails:
+          userData.allowEmails !== undefined ? userData.allowEmails : true,
         slug: userData.slug || "",
         about: userData.about || "",
         title: userData.title || "",
+        github: userData.github || "",
+        linkedin: userData.linkedin || "",
+        kaggle: userData.kaggle || "",
+        huggingface: userData.huggingface || "",
+        website: userData.website || "",
       });
     }
   }, [userData]);
@@ -90,10 +114,16 @@ export default function ProfileContent() {
         lastname: userData.lastname || "",
         phone: userData.phone || "",
         avatar: userData.avatar || "",
-        allowEmails: userData.allowEmails !== undefined ? userData.allowEmails : true,
+        allowEmails:
+          userData.allowEmails !== undefined ? userData.allowEmails : true,
         slug: userData.slug || "",
         about: userData.about || "",
         title: userData.title || "",
+        github: userData.github || "",
+        linkedin: userData.linkedin || "",
+        kaggle: userData.kaggle || "",
+        huggingface: userData.huggingface || "",
+        website: userData.website || "",
       });
     }
     setIsEditing(false);
@@ -106,18 +136,19 @@ export default function ProfileContent() {
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    const filteredValue = value
-      .replace(/\d/g, "")
-      .replace(/\s{2,}/g, " ");
+    const filteredValue = value.replace(/\d/g, "").replace(/\s{2,}/g, " ");
     setFormData((prev) => ({ ...prev, title: filteredValue }));
   };
 
   const handleNameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const onlyLetters = value.replace(/[^A-Za-zğüşıöçĞÜŞİÖÇ\s]/g, '');
-    const capitalized = onlyLetters.replace(/(^|\s)([a-zğüşıöç])/g, function(match) {
-      return match.toUpperCase();
-    });
+    const onlyLetters = value.replace(/[^A-Za-zğüşıöçĞÜŞİÖÇ\s]/g, "");
+    const capitalized = onlyLetters.replace(
+      /(^|\s)([a-zğüşıöç])/g,
+      function (match) {
+        return match.toUpperCase();
+      }
+    );
     setFormData((prev) => ({ ...prev, [name]: capitalized }));
   };
 
@@ -129,7 +160,9 @@ export default function ProfileContent() {
 
     try {
       setIsCheckingSlug(true);
-      const response = await api.get(`/api/check-slug?slug=${encodeURIComponent(slug)}`);
+      const response = await api.get(
+        `/api/check-slug?slug=${encodeURIComponent(slug)}`
+      );
 
       if (response.data.taken && response.data.userId !== session?.user?.id) {
         setIsSlugTaken(true);
@@ -150,24 +183,24 @@ export default function ProfileContent() {
     const value = e.target.value;
 
     // Check if the user is trying to input consecutive hyphens
-    if (value.includes('--')) {
+    if (value.includes("--")) {
       // Just return the current value with normalized hyphens to prevent consecutive hyphens
-      const normalizedValue = formData.slug.replace(/-+/g, '-');
+      const normalizedValue = formData.slug.replace(/-+/g, "-");
       return;
     }
 
     // Directly handle hyphen input specially
     const lastChar = value.charAt(value.length - 1);
-    if (lastChar === '-' && formData.slug === value.slice(0, -1)) {
+    if (lastChar === "-" && formData.slug === value.slice(0, -1)) {
       // Only allow hyphen if previous character is not also a hyphen
       const previousChar = formData.slug.charAt(formData.slug.length - 1);
-      if (previousChar !== '-') {
+      if (previousChar !== "-") {
         setFormData((prev) => ({ ...prev, slug: value }));
-        
+
         if (slugCheckTimeout.current) {
           clearTimeout(slugCheckTimeout.current);
         }
-        
+
         if (value && value !== userData?.slug) {
           slugCheckTimeout.current = setTimeout(() => {
             checkSlugAvailability(value);
@@ -178,18 +211,28 @@ export default function ProfileContent() {
     }
 
     const turkishCharsMap: Record<string, string> = {
-      'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'ö': 'o', 'ç': 'c',
-      'Ğ': 'g', 'Ü': 'u', 'Ş': 's', 'İ': 'i', 'Ö': 'o', 'Ç': 'c'
+      ğ: "g",
+      ü: "u",
+      ş: "s",
+      ı: "i",
+      ö: "o",
+      ç: "c",
+      Ğ: "g",
+      Ü: "u",
+      Ş: "s",
+      İ: "i",
+      Ö: "o",
+      Ç: "c",
     };
 
     let normalized = value
       .toLowerCase()
-      .replace(/[üşıöçğÜŞİÖÇĞ]/g, char => turkishCharsMap[char] || char);
+      .replace(/[üşıöçğÜŞİÖÇĞ]/g, (char) => turkishCharsMap[char] || char);
 
     normalized = normalized
       .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9_-]/g, "") 
-      .replace(/-+/g, "-")  // This consolidates multiple hyphens into one
+      .replace(/[^a-z0-9_-]/g, "")
+      .replace(/-+/g, "-") // This consolidates multiple hyphens into one
       .replace(/^-+|-+$/g, "");
 
     setFormData((prev) => ({ ...prev, slug: normalized }));
@@ -248,25 +291,30 @@ export default function ProfileContent() {
     setFormData((prev) => ({ ...prev, allowEmails: checked }));
   };
 
+  const handleSocialUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.lastname) {
       toast.error("Eksik bilgi", {
-        description: "Ad ve soyad alanları doldurulmalıdır."
+        description: "Ad ve soyad alanları doldurulmalıdır.",
       });
       return;
     }
 
     if (isCheckingSlug) {
       toast.error("Lütfen bekleyin", {
-        description: "Profil URL'si kontrol ediliyor"
+        description: "Profil URL'si kontrol ediliyor",
       });
       return;
     }
 
     if (isSlugTaken) {
       toast.error("Bu profil URL'si zaten kullanımda", {
-        description: "Lütfen farklı bir URL seçin"
+        description: "Lütfen farklı bir URL seçin",
       });
       return;
     }
@@ -281,27 +329,27 @@ export default function ProfileContent() {
           ...session?.user,
           name: formData.name,
           lastname: formData.lastname,
-          avatar: formData.avatar
-        }
+          avatar: formData.avatar,
+        },
       });
 
       emitProfileUpdated({
         id: session?.user?.id,
         name: formData.name,
         lastname: formData.lastname,
-        avatar: formData.avatar
+        avatar: formData.avatar,
       });
 
       router.refresh();
 
       toast.success("Profil güncellendi", {
-        description: "Profil bilgileriniz başarıyla güncellendi."
+        description: "Profil bilgileriniz başarıyla güncellendi.",
       });
       await refetch();
       setIsEditing(false);
     } catch (error: any) {
       toast.error("Hata", {
-        description: "Profil güncellenemedi."
+        description: "Profil güncellenemedi.",
       });
     } finally {
       setIsSubmitting(false);
@@ -314,14 +362,14 @@ export default function ProfileContent() {
 
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Dosya boyutu çok büyük", {
-        description: "Lütfen 5MB'dan küçük bir resim seçin."
+        description: "Lütfen 5MB'dan küçük bir resim seçin.",
       });
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       toast.error("Geçersiz dosya türü", {
-        description: "Lütfen bir resim dosyası seçin."
+        description: "Lütfen bir resim dosyası seçin.",
       });
       return;
     }
@@ -336,53 +384,53 @@ export default function ProfileContent() {
           onSuccess: async (data: { success: boolean; url: string }) => {
             if (data.success && data.url) {
               try {
-                setFormData(prev => ({ ...prev, avatar: data.url }));
+                setFormData((prev) => ({ ...prev, avatar: data.url }));
 
                 const updateResponse = await api.put(`/users/me`, {
                   ...formData,
-                  avatar: data.url
+                  avatar: data.url,
                 });
 
                 await updateSession({
                   ...session,
                   user: {
                     ...session?.user,
-                    avatar: data.url
-                  }
+                    avatar: data.url,
+                  },
                 });
 
                 emitProfileUpdated({
                   id: session?.user?.id,
                   name: userData?.name,
                   lastname: userData?.lastname,
-                  avatar: data.url
+                  avatar: data.url,
                 });
 
                 await refetch();
 
                 toast.success("Resim yüklendi", {
-                  description: "Profil fotoğrafı başarıyla yüklendi."
+                  description: "Profil fotoğrafı başarıyla yüklendi.",
                 });
               } catch (updateError: unknown) {
                 toast.error("Resim yüklendi ancak profiliniz güncellenemedi", {
-                  description: "Lütfen sayfayı yenileyip tekrar deneyin."
+                  description: "Lütfen sayfayı yenileyip tekrar deneyin.",
                 });
               }
             } else {
               toast.error("Resim yüklenirken bir hata oluştu", {
-                description: "Sunucu yanıtında URL bilgisi eksik"
+                description: "Sunucu yanıtında URL bilgisi eksik",
               });
             }
-          }
+          },
         });
       } catch (uploadError) {
         toast.error("Resim yüklenemedi", {
-          description: "Bir hata oluştu. Lütfen tekrar deneyin."
+          description: "Bir hata oluştu. Lütfen tekrar deneyin.",
         });
       }
     } catch (error) {
       toast.error("Resim yüklenemedi", {
-        description: "Bir hata oluştu. Lütfen tekrar deneyin."
+        description: "Bir hata oluştu. Lütfen tekrar deneyin.",
       });
     } finally {
       toast.dismiss(loadingToast);
@@ -403,51 +451,47 @@ export default function ProfileContent() {
         const updateResponse = await api.put(`/users/me`, {
           ...formData,
           avatar: "",
-          _avatarRemoved: true
+          _avatarRemoved: true,
         });
 
         if (!updateResponse.data.success) {
-          toast.error("İşleminiz yapılırken bir hata oluştu")
+          toast.error("İşleminiz yapılırken bir hata oluştu");
         }
 
-        setFormData(prev => ({ ...prev, avatar: "" }));
+        setFormData((prev) => ({ ...prev, avatar: "" }));
 
         await updateSession({
           ...session,
           user: {
             ...session?.user,
-            avatar: ""
-          }
+            avatar: "",
+          },
         });
 
         emitProfileUpdated({
           id: session?.user?.id,
           name: userData?.name,
           lastname: userData?.lastname,
-          avatar: ""
+          avatar: "",
         });
-
       } catch (dbError) {
         toast.error("İşlem sırasında bir hata oluştu");
       }
 
       try {
         const cloudinaryResponse = await deleteImage(oldAvatarUrl);
-      } catch (cloudinaryError) {
-      }
+      } catch (cloudinaryError) {}
 
       try {
         const freshData = await refetch();
-
       } catch (refetchError) {
         toast.error("İşlem sırasında bir hata oluştu");
       }
 
       toast.success("Profil fotoğrafı kaldırıldı");
-
     } catch (error: any) {
       toast.error("Hata", {
-        description: "Profil fotoğrafı kaldırılamadı."
+        description: "Profil fotoğrafı kaldırılamadı.",
       });
     } finally {
       toast.dismiss(loadingToast);
@@ -466,7 +510,7 @@ export default function ProfileContent() {
             <div className="flex flex-col items-center space-y-4 mb-6">
               <Skeleton className="h-24 w-24 rounded-full bg-primary/20" />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
@@ -477,22 +521,22 @@ export default function ProfileContent() {
                 <Skeleton className="h-10 w-full bg-primary/10" />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
               <Skeleton className="h-10 w-full bg-primary/10" />
             </div>
-            
+
             <div className="space-y-2">
               <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
               <Skeleton className="h-10 w-full bg-primary/10" />
             </div>
-            
+
             <div className="space-y-2">
               <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
               <Skeleton className="h-10 w-full bg-primary/10" />
             </div>
-            
+
             <div className="space-y-2">
               <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
               <Skeleton className="h-32 w-full bg-primary/10" />
@@ -507,7 +551,8 @@ export default function ProfileContent() {
   }
 
   const userRole = userData?.role || session?.user?.role;
-  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
+  const isAdmin =
+    userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
 
   return (
     <div className="space-y-8">
@@ -543,11 +588,17 @@ export default function ProfileContent() {
                     variant="outline"
                     size="sm"
                     className="flex items-center gap-2"
-                    onClick={() => document.getElementById('avatar-upload')?.click()}
+                    onClick={() =>
+                      document.getElementById("avatar-upload")?.click()
+                    }
                     disabled={isUploading}
                   >
                     <Upload className="h-4 w-4" />
-                    <span>{formData.avatar ? 'Fotoğrafı değiştir' : 'Fotoğraf yükle'}</span>
+                    <span>
+                      {formData.avatar
+                        ? "Fotoğrafı değiştir"
+                        : "Fotoğraf yükle"}
+                    </span>
                   </Button>
                   <Input
                     id="avatar-upload"
@@ -652,7 +703,11 @@ export default function ProfileContent() {
                 <Label htmlFor="slug">Profil URL'si</Label>
                 {isEditing && (
                   <span className="text-xs text-muted-foreground">
-                    * Profil adresiniz: {window && `${window.location.origin}/u/${formData.slug || 'kullanici'}`}
+                    * Profil adresiniz:{" "}
+                    {window &&
+                      `${window.location.origin}/u/${
+                        formData.slug || "kullanici"
+                      }`}
                   </span>
                 )}
               </div>
@@ -664,7 +719,11 @@ export default function ProfileContent() {
                   onChange={handleSlugChange}
                   disabled={!isEditing || isSubmitting}
                   placeholder="profil-adresi"
-                  className={`font-mono text-sm ${isSlugTaken ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  className={`font-mono text-sm ${
+                    isSlugTaken
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }`}
                 />
                 {isCheckingSlug && (
                   <div className="absolute right-3 top-2.5">
@@ -674,8 +733,14 @@ export default function ProfileContent() {
               </div>
               {isEditing && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Sadece küçük harfler, rakamlar ve kısa çizgiler kullanabilirsiniz. Boş bırakırsanız otomatik oluşturulur.
-                  {isSlugTaken && <span className="text-red-500 block mt-1">Bu profil URL'si başka bir kullanıcı tarafından kullanılıyor.</span>}
+                  Sadece küçük harfler, rakamlar ve kısa çizgiler
+                  kullanabilirsiniz. Boş bırakırsanız otomatik oluşturulur.
+                  {isSlugTaken && (
+                    <span className="text-red-500 block mt-1">
+                      Bu profil URL'si başka bir kullanıcı tarafından
+                      kullanılıyor.
+                    </span>
+                  )}
                 </p>
               )}
             </div>
@@ -708,7 +773,9 @@ export default function ProfileContent() {
                 id="about"
                 name="about"
                 value={formData.about}
-                onChange={(e) => setFormData((prev) => ({ ...prev, about: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, about: e.target.value }))
+                }
                 disabled={!isEditing || isSubmitting}
                 placeholder="Kendiniz hakkında kısa bilgi..."
                 rows={7}
@@ -717,34 +784,131 @@ export default function ProfileContent() {
               />
               {isEditing && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Profilinizde görünecek kısa bir biyografi yazabilirsiniz. Alanı büyütmek için sağ alt köşesinden sürükleyebilirsiniz. 
+                  Profilinizde görünecek kısa bir biyografi yazabilirsiniz.
+                  Alanı büyütmek için sağ alt köşesinden sürükleyebilirsiniz.
                   Maksimum 1000 karakter yazabilirsiniz.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-4 border-t">
+              <h3 className="text-lg font-medium">Sosyal Medya Hesapları</h3>
+              <p className="text-sm text-muted-foreground">
+                Profilinizde görünmesini istediğiniz sosyal medya hesaplarınızı
+                ekleyin (opsiyonel)
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="website" className="flex items-center gap-2">
+                    <CgWebsite className="h-5 w-5" /> Kişisel Web Sitesi
+                  </Label>
+                  <Input
+                    id="website"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://www.siteniz.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="github" className="flex items-center gap-2">
+                    <FaGithub className="h-5 w-5" /> GitHub
+                  </Label>
+                  <Input
+                    id="github"
+                    name="github"
+                    value={formData.github}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://github.com/kullaniciadi"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="linkedin" className="flex items-center gap-2">
+                    <FaLinkedin className="h-5 w-5" /> LinkedIn
+                  </Label>
+                  <Input
+                    id="linkedin"
+                    name="linkedin"
+                    value={formData.linkedin}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://linkedin.com/in/kullaniciadi"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="kaggle" className="flex items-center gap-2">
+                    <FaKaggle className="h-5 w-5" /> Kaggle
+                  </Label>
+                  <Input
+                    id="kaggle"
+                    name="kaggle"
+                    value={formData.kaggle}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://www.kaggle.com/kullaniciadi"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="huggingface"
+                    className="flex items-center gap-2"
+                  >
+                    <SiHuggingface className="h-5 w-5" /> Hugging Face
+                  </Label>
+                  <Input
+                    id="huggingface"
+                    name="huggingface"
+                    value={formData.huggingface}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://huggingface.co/kullaniciadi"
+                  />
+                </div>
+              </div>
+
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Sosyal medya hesaplarınızı herkese açık profilinizde
+                  görüntülemek için tam URL'leri girin.
                 </p>
               )}
             </div>
 
             {isEditing && (
               <div className="flex items-center space-x-2 mt-4">
-                <Checkbox 
-                  id="allowEmails" 
+                <Checkbox
+                  id="allowEmails"
                   checked={formData.allowEmails}
                   onCheckedChange={handleCheckboxChange}
                   disabled={isSubmitting}
                 />
-                <Label 
-                  htmlFor="allowEmails" 
+                <Label
+                  htmlFor="allowEmails"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Bilgilendirme e-postaları almak istiyorum
                 </Label>
               </div>
             )}
-            
+
             {!isEditing && (
               <div className="text-sm">
                 <p>
-                  <strong>E-posta bildirimleri:</strong>{' '}
-                  <span className={formData.allowEmails ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                  <strong>E-posta bildirimleri:</strong>{" "}
+                  <span
+                    className={
+                      formData.allowEmails
+                        ? "text-green-600 font-medium"
+                        : "text-red-600 font-medium"
+                    }
+                  >
                     {formData.allowEmails ? "Açık" : "Kapalı"}
                   </span>
                 </p>
@@ -754,9 +918,9 @@ export default function ProfileContent() {
           <CardFooter className="flex justify-between">
             {isEditing ? (
               <>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={handleCancel}
                   disabled={isSubmitting}
                 >
@@ -774,10 +938,7 @@ export default function ProfileContent() {
                 </Button>
               </>
             ) : (
-              <Button 
-                type="button" 
-                onClick={() => setIsEditing(true)}
-              >
+              <Button type="button" onClick={() => setIsEditing(true)}>
                 Düzenle
               </Button>
             )}

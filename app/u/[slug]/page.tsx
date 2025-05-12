@@ -16,13 +16,25 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Loader2, CalendarDays, FileText, Clock, UserCheck } from "lucide-react";
+import { 
+  User, 
+  Loader2, 
+  CalendarDays, 
+  FileText, 
+  Clock, 
+  UserCheck
+} from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { UserRole } from "@/models/User";
 import Link from "next/link";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FaKaggle } from "react-icons/fa";
+import { SiHuggingface } from "react-icons/si";
+import { FaLinkedin  } from "react-icons/fa";
+import { FaGithub } from "react-icons/fa";
+import { CgWebsite } from "react-icons/cg";
 
 interface ProfileData {
   user: {
@@ -35,7 +47,12 @@ interface ProfileData {
     slug: string;
     about: string;
     title: string;
-    createdAt: string; // Kayıt tarihi eklendi
+    createdAt: string;
+    github?: string;
+    linkedin?: string;
+    kaggle?: string;
+    huggingface?: string;
+    website?: string;
   };
   articles: Array<{
     id: string;
@@ -186,6 +203,11 @@ export default function UserProfilePage() {
     }
   };
 
+  // Sosyal medya linklerini kontrol eden yardımcı fonksiyon
+  const hasSocialLinks = (user: ProfileData['user']) => {
+    return !!(user.github || user.linkedin || user.kaggle || user.huggingface || user.website);
+  };
+
   // Yükleniyor durumu
   if (isLoading) {
     return (
@@ -279,22 +301,91 @@ export default function UserProfilePage() {
                 <AvatarFallback>{getUserInitials(user.name, user.lastname)}</AvatarFallback>
               </Avatar>
             </div>
-            <div>
-              <CardTitle className="text-2xl md:text-3xl">{user.fullName}</CardTitle>
-              {user.title && <p className="text-muted-foreground mt-1">{user.title}</p>}
-              <div className="flex items-center mt-1">
-                <Badge variant="outline" className={`${getRoleBadgeClasses(user.role)}`}>
-                  {formatUserRole(user.role)}
-                </Badge>
-                {isOwnProfile && (
-                  <Button variant="ghost" size="sm" className="ml-2" asChild>
-                    <Link href="/profile">Profili Düzenle</Link>
-                  </Button>
+            <div className="w-full">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between">
+                <div>
+                  <CardTitle className="text-2xl md:text-3xl">{user.fullName}</CardTitle>
+                  {user.title && <p className="text-muted-foreground mt-1">{user.title}</p>}
+                  <div className="flex items-center mt-1">
+                    <Badge variant="outline" className={`${getRoleBadgeClasses(user.role)}`}>
+                      {formatUserRole(user.role)}
+                    </Badge>
+                    {isOwnProfile && (
+                      <Button variant="ghost" size="sm" className="ml-2" asChild>
+                        <Link href="/profile">Profili Düzenle</Link>
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex items-center mt-2 text-sm text-muted-foreground">
+                    <Clock className="mr-2 h-4 w-4" />
+                    <span>Kayıt Tarihi: {safeFormatDate(user.createdAt)}</span>
+                  </div>
+                </div>
+                
+                {/* Sosyal Medya Linkleri */}
+                {hasSocialLinks(user) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-3 md:mt-0">
+                    {user.website && (
+                      <Link
+                        href={user.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                        title="Kişisel Web Sitesi"
+                      >
+                        <CgWebsite className="h-5 w-5" />
+                      </Link>
+                    )}
+                    
+                    {user.github && (
+                      <Link 
+                        href={user.github} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                        title="GitHub"
+                      >
+                        <FaGithub className="h-5 w-5" />
+                      </Link>
+                    )}
+                    
+                    {user.linkedin && (
+                      <Link 
+                        href={user.linkedin} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                        title="LinkedIn"
+                      >
+                        <FaLinkedin  className="h-5 w-5" />
+                      </Link>
+                    )}
+                    
+                    {user.kaggle && (
+                      <Link 
+                        href={user.kaggle} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                        title="Kaggle"
+                      >
+                        <FaKaggle className="h-5 w-5" />
+                      </Link>
+                    )}
+                    
+                    {user.huggingface && (
+                      <Link 
+                        href={user.huggingface} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                        title="Hugging Face"
+                      >
+                        <SiHuggingface className="h-5 w-5" />
+                      </Link>
+                    )}
+                  </div>
                 )}
-              </div>
-              <div className="flex items-center mt-2 text-sm text-muted-foreground">
-                <Clock className="mr-2 h-4 w-4" />
-                <span>Kayıt Tarihi: {safeFormatDate(user.createdAt)}</span>
               </div>
             </div>
           </div>

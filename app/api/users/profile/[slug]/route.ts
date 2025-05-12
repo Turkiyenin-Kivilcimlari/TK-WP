@@ -36,7 +36,7 @@ export async function GET(
     const { slug } = params;
     
     // Kullanıcıyı bul (hassas alanları hariç tut)
-    const user = await User.findOne({ slug }).select('name lastname avatar role slug about title createdAt')
+    const user = await User.findOne({ slug }).select('name lastname avatar role slug about title github linkedin kaggle huggingface website createdAt')
     
     if (!user) {
       return encryptedJson(
@@ -84,6 +84,11 @@ export async function GET(
       about: user.about || '',
       title: user.title || '',
       createdAt: user.createdAt,
+      github: user.github || '',
+      linkedin: user.linkedin || '',
+      kaggle: user.kaggle || '',
+      huggingface: user.huggingface || '',
+      website: user.website || '',
     };
     
     // Makaleleri formatla
