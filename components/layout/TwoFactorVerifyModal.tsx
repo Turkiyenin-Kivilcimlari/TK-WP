@@ -16,19 +16,23 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
-// OTP Input bileşenleri için import (InputOTPSeparator kaldırıldı)
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 
-export function TwoFactorVerifyModal() {
+interface TwoFactorVerifyModalProps {
+  forceOpen?: boolean;
+  onVerificationComplete?: () => void;
+}
+
+export function TwoFactorVerifyModal({ forceOpen = false, onVerificationComplete }: TwoFactorVerifyModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [token, setToken] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [wasVerified, setWasVerified] = useState(false); // Doğrulama durumunu takip etmek için
-  const { data: session, status, update: updateSession } = useSession(); // update fonksiyonu eklendi
+  const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -41,6 +45,20 @@ export function TwoFactorVerifyModal() {
 
   const isAdmin = session?.user?.role === UserRole.ADMIN || session?.user?.role === UserRole.SUPERADMIN;
 
+  // Doğrulama süresinin dolup dolmadığını kontrol eden yardımcı fonksiyon
+  const isVerificationExpired = () => {
+    if (twoFactorStatus?.lastVerification) {
+      const now = new Date();
+      const lastVerification = new Date(twoFactorStatus.lastVerification);
+      const diffMs = now.getTime() - lastVerification.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const timeoutMins = twoFactorStatus.sessionTimeoutMins || 180; // Varsayılan 3 saat (180 dakika)
+      
+      return diffMins >= timeoutMins;
+    }
+    return true; // Doğrulama zamanı yoksa süresi dolmuş kabul edelim
+  };
+
   // Admin ve 2FA durumuna göre modalı göster
   useEffect(() => {
     // Oturum yükleniyorsa bekle
@@ -49,6 +67,12 @@ export function TwoFactorVerifyModal() {
     // Oturum yoksa modalı gösterme
     if (status === 'unauthenticated') {
       setIsOpen(false);
+      return;
+    }
+    
+    // Force open prop takes precedence over other conditions
+    if (forceOpen) {
+      setIsOpen(true);
       return;
     }
     
@@ -65,25 +89,22 @@ export function TwoFactorVerifyModal() {
         return;
       }
       
-      // 2FA durumunu doğrudan kontrol et
-      if (twoFactorStatus.enabled && !twoFactorStatus.verified) {
-        console.log(twoFactorStatus.enabled,"   ", twoFactorStatus.verified);
+      // 2FA durumunu doğrudan kontrol et - doğrulama yapılmamış VEYA doğrulama süresi dolmuşsa
+      if (twoFactorStatus.enabled && (!twoFactorStatus.verified || isVerificationExpired())) {
         // Sadece kapalıysa aç, aynı state'i sürekli güncellemekten kaçın
         if (!isOpen) {
-          console.log("2FA verification needed, opening modal");
           setIsOpen(true);
         }
       } else {
         // Sadece açıksa kapat, aynı state'i sürekli güncellemekten kaçın
         if (isOpen) {
-          console.log("2FA verification not needed, closing modal");
           setIsOpen(false);
         }
       }
     } else {
       setIsOpen(false);
     }
-  }, [twoFactorStatus, isAdmin, status, wasVerified, isOpen]);
+  }, [twoFactorStatus, isAdmin, status, wasVerified, isOpen, forceOpen]);
 
   // Modal kapandığında kodunu temizle
   useEffect(() => {
@@ -97,10 +118,10 @@ export function TwoFactorVerifyModal() {
     
     try {
       setIsVerifying(true);
+      
       const result = await verifyTwoFactor(token);
       
       if (result && result.success) {
-        console.log("Verification successful, updating status:", result);
         
         // Başarılı doğrulama durumunu kaydet
         setWasVerified(true);
@@ -120,8 +141,6 @@ export function TwoFactorVerifyModal() {
             sessionTimeoutMins: 180
           };
           
-          // Debug için kontrol
-          console.log("Manuel güncellenen cookie değerleri:", updatedStatus);
           
           // Cookie ayarlama
           document.cookie = `two-factor-status=${JSON.stringify(updatedStatus)}; path=/; max-age=10800; SameSite=Lax`;
@@ -133,13 +152,16 @@ export function TwoFactorVerifyModal() {
         // Modal'ı kapat
         setIsOpen(false);
         
+        // Notify the parent component that verification is complete
+        if (onVerificationComplete) {
+          onVerificationComplete();
+        }
+        
         // Bir süre bekleyerek tüm güncellemelerin tamamlanmasını sağla
         setTimeout(async () => {
           // 2FA durumunu yenile
           await refreshStatus();
           
-          // Konsolu temizle (debug için)
-          console.clear();
           
           // Toast mesajı göster
           toast.success('Doğrulama başarılı', {
@@ -167,18 +189,27 @@ export function TwoFactorVerifyModal() {
 
   // Admin için modalın kapatılmasını engelle
   const handleOpenChange = (open: boolean) => {
+    // If forceOpen is true, prevent closing
+    if (forceOpen && !open) {
+      toast.warning('Doğrulama gerekli', {
+        description: 'Admin paneline erişmek için iki faktörlü doğrulamayı tamamlamanız gerekmektedir.'
+      });
+      return;
+    }
+    
     // Admin ve doğrulama gerekiyorsa kapatmaya izin verme
     if (isAdmin && twoFactorStatus?.enabled && !twoFactorStatus?.verified && !open) {
       return;
     }
+    
     setIsOpen(open);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => {
-        // Admin zorunlu doğrulama için dışarı tıklama ile kapatmayı engelle
-        if (isAdmin && twoFactorStatus?.enabled && !twoFactorStatus?.verified) {
+        // Force open takes precedence
+        if (forceOpen || (isAdmin && twoFactorStatus?.enabled && !twoFactorStatus?.verified)) {
           e.preventDefault();
           toast.warning('Doğrulama gerekli', {
             description: 'Yönetici işlemlerine erişmek için öncelikle doğrulama yapmalısınız'
