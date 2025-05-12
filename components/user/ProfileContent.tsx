@@ -4,7 +4,7 @@ import { UserRole } from "@/models/User";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -16,16 +16,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, Upload } from "lucide-react";
+import {
+  Loader2,
+  User,
+  Upload
+} from "lucide-react";
 import api from "@/lib/api";
-import Link from "next/link";
-import { useUploadImage } from '@/hooks/useUploadImage';
-import Image from 'next/image';
+import { useUploadImage } from "@/hooks/useUploadImage";
+import Image from "next/image";
 import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { emitProfileUpdated } from '@/lib/events';
+import { emitProfileUpdated } from "@/lib/events";
 import { Checkbox } from "@/components/ui/checkbox";
-
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FaKaggle } from "react-icons/fa";
+import { SiHuggingface } from "react-icons/si";
+import { FaLinkedin  } from "react-icons/fa";
+import { FaGithub } from "react-icons/fa";
+import { CgWebsite } from "react-icons/cg";
 
 export default function ProfileContent() {
   const { data: session, update: updateSession } = useSession();
@@ -38,13 +47,29 @@ export default function ProfileContent() {
     phone: "",
     avatar: "",
     allowEmails: false,
+    slug: "",
+    about: "",
+    title: "",
+    github: "",
+    linkedin: "",
+    kaggle: "",
+    huggingface: "",
+    website: "",
   });
-  
-  const { uploadImage, isUploading, deleteImage, isDeleting } = useUploadImage();
 
-  // Kullanıcı verilerini al
-  const { data: userData, isLoading, refetch } = useQuery({
-    queryKey: ["user-profile", session?.user?.id], // Use ID instead of email for better caching
+  const [isCheckingSlug, setIsCheckingSlug] = useState(false);
+  const [isSlugTaken, setIsSlugTaken] = useState(false);
+  const slugCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const { uploadImage, isUploading, deleteImage, isDeleting } =
+    useUploadImage();
+
+  const {
+    data: userData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["user-profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user) throw new Error("Kullanıcı bulunamadı");
       try {
@@ -52,16 +77,15 @@ export default function ProfileContent() {
         return response.data.user;
       } catch (error: any) {
         toast.error("Profil bilgileri alınamadı", {
-          description: "Bir hata oluştu."
+          description: "Bir hata oluştu.",
         });
         throw error;
       }
     },
-    enabled: !!session?.user, // Only run query when session exists
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !!session?.user,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // userData değiştiğinde formData'yı güncelle
   useEffect(() => {
     if (userData) {
       setFormData({
@@ -69,25 +93,228 @@ export default function ProfileContent() {
         lastname: userData.lastname || "",
         phone: userData.phone || "",
         avatar: userData.avatar || "",
-        allowEmails: userData.allowEmails !== undefined ? userData.allowEmails : true,
+        allowEmails:
+          userData.allowEmails !== undefined ? userData.allowEmails : true,
+        slug: userData.slug || "",
+        about: userData.about || "",
+        title: userData.title || "",
+        github: userData.github || "",
+        linkedin: userData.linkedin || "",
+        kaggle: userData.kaggle || "",
+        huggingface: userData.huggingface || "",
+        website: userData.website || "",
       });
     }
   }, [userData]);
+
+  const handleCancel = () => {
+    if (userData) {
+      setFormData({
+        name: userData.name || "",
+        lastname: userData.lastname || "",
+        phone: userData.phone || "",
+        avatar: userData.avatar || "",
+        allowEmails:
+          userData.allowEmails !== undefined ? userData.allowEmails : true,
+        slug: userData.slug || "",
+        about: userData.about || "",
+        title: userData.title || "",
+        github: userData.github || "",
+        linkedin: userData.linkedin || "",
+        kaggle: userData.kaggle || "",
+        huggingface: userData.huggingface || "",
+        website: userData.website || "",
+      });
+    }
+    setIsEditing(false);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    const filteredValue = value.replace(/\d/g, "").replace(/\s{2,}/g, " ");
+    setFormData((prev) => ({ ...prev, title: filteredValue }));
+  };
+
+  const handleNameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const onlyLetters = value.replace(/[^A-Za-zğüşıöçĞÜŞİÖÇ\s]/g, "");
+    const capitalized = onlyLetters.replace(
+      /(^|\s)([a-zğüşıöç])/g,
+      function (match) {
+        return match.toUpperCase();
+      }
+    );
+    setFormData((prev) => ({ ...prev, [name]: capitalized }));
+  };
+
+  const checkSlugAvailability = async (slug: string) => {
+    if (!slug || slug.length < 3) {
+      setIsSlugTaken(false);
+      return;
+    }
+
+    try {
+      setIsCheckingSlug(true);
+      const response = await api.get(
+        `/api/check-slug?slug=${encodeURIComponent(slug)}`
+      );
+
+      if (response.data.taken && response.data.userId !== session?.user?.id) {
+        setIsSlugTaken(true);
+        toast.error("Bu profil URL'si zaten kullanımda", {
+          description: "Lütfen farklı bir URL seçin",
+        });
+      } else {
+        setIsSlugTaken(false);
+      }
+    } catch (error) {
+      setIsSlugTaken(false);
+    } finally {
+      setIsCheckingSlug(false);
+    }
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Check if the user is trying to input consecutive hyphens
+    if (value.includes("--")) {
+      // Just return the current value with normalized hyphens to prevent consecutive hyphens
+      const normalizedValue = formData.slug.replace(/-+/g, "-");
+      return;
+    }
+
+    // Directly handle hyphen input specially
+    const lastChar = value.charAt(value.length - 1);
+    if (lastChar === "-" && formData.slug === value.slice(0, -1)) {
+      // Only allow hyphen if previous character is not also a hyphen
+      const previousChar = formData.slug.charAt(formData.slug.length - 1);
+      if (previousChar !== "-") {
+        setFormData((prev) => ({ ...prev, slug: value }));
+
+        if (slugCheckTimeout.current) {
+          clearTimeout(slugCheckTimeout.current);
+        }
+
+        if (value && value !== userData?.slug) {
+          slugCheckTimeout.current = setTimeout(() => {
+            checkSlugAvailability(value);
+          }, 500);
+        }
+      }
+      return;
+    }
+
+    const turkishCharsMap: Record<string, string> = {
+      ğ: "g",
+      ü: "u",
+      ş: "s",
+      ı: "i",
+      ö: "o",
+      ç: "c",
+      Ğ: "g",
+      Ü: "u",
+      Ş: "s",
+      İ: "i",
+      Ö: "o",
+      Ç: "c",
+    };
+
+    let normalized = value
+      .toLowerCase()
+      .replace(/[üşıöçğÜŞİÖÇĞ]/g, (char) => turkishCharsMap[char] || char);
+
+    normalized = normalized
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9_-]/g, "")
+      .replace(/-+/g, "-") // This consolidates multiple hyphens into one
+      .replace(/^-+|-+$/g, "");
+
+    setFormData((prev) => ({ ...prev, slug: normalized }));
+
+    if (slugCheckTimeout.current) {
+      clearTimeout(slugCheckTimeout.current);
+    }
+
+    if (normalized && normalized !== userData?.slug) {
+      slugCheckTimeout.current = setTimeout(() => {
+        checkSlugAvailability(normalized);
+      }, 500);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (slugCheckTimeout.current) {
+        clearTimeout(slugCheckTimeout.current);
+      }
+    };
+  }, []);
+
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const validChars = value.replace(/[^\d+() ]/g, "");
+    const singleSpaces = validChars.replace(/\s+/g, " ");
+    let formattedNumber = "";
+    let lastCharWasDigit = false;
+    let lastCharWasSpace = false;
+
+    for (let i = 0; i < singleSpaces.length; i++) {
+      const char = singleSpaces[i];
+
+      if (/\d/.test(char)) {
+        formattedNumber += char;
+        lastCharWasDigit = true;
+        lastCharWasSpace = false;
+      } else if (char === " ") {
+        if (lastCharWasDigit && !lastCharWasSpace) {
+          formattedNumber += char;
+          lastCharWasSpace = true;
+          lastCharWasDigit = false;
+        }
+      } else {
+        formattedNumber += char;
+        lastCharWasDigit = false;
+        lastCharWasSpace = false;
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, phone: formattedNumber }));
+  };
+
   const handleCheckboxChange = (checked: boolean) => {
     setFormData((prev) => ({ ...prev, allowEmails: checked }));
+  };
+
+  const handleSocialUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.lastname) {
       toast.error("Eksik bilgi", {
-        description: "Ad ve soyad alanları doldurulmalıdır."
+        description: "Ad ve soyad alanları doldurulmalıdır.",
+      });
+      return;
+    }
+
+    if (isCheckingSlug) {
+      toast.error("Lütfen bekleyin", {
+        description: "Profil URL'si kontrol ediliyor",
+      });
+      return;
+    }
+
+    if (isSlugTaken) {
+      toast.error("Bu profil URL'si zaten kullanımda", {
+        description: "Lütfen farklı bir URL seçin",
       });
       return;
     }
@@ -95,60 +322,54 @@ export default function ProfileContent() {
     setIsSubmitting(true);
     try {
       const response = await api.put(`/users/me`, formData);
-      
-      // Session'ı güncelle
+
       await updateSession({
         ...session,
         user: {
           ...session?.user,
           name: formData.name,
           lastname: formData.lastname,
-          avatar: formData.avatar
-        }
+          avatar: formData.avatar,
+        },
       });
-      
-      // Profil güncellemesini bildir
+
       emitProfileUpdated({
         id: session?.user?.id,
         name: formData.name,
         lastname: formData.lastname,
-        avatar: formData.avatar
+        avatar: formData.avatar,
       });
-      
-      // Uygulama genelinde oturum yenilemesini tetikleyelim
+
       router.refresh();
-      
+
       toast.success("Profil güncellendi", {
-        description: "Profil bilgileriniz başarıyla güncellendi."
+        description: "Profil bilgileriniz başarıyla güncellendi.",
       });
       await refetch();
       setIsEditing(false);
     } catch (error: any) {
       toast.error("Hata", {
-        description: "Profil güncellenemedi."
+        description: "Profil güncellenemedi.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Resim yükleme işleyicisi
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Dosya boyutu kontrolü (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Dosya boyutu çok büyük", {
-        description: "Lütfen 5MB'dan küçük bir resim seçin."
+        description: "Lütfen 5MB'dan küçük bir resim seçin.",
       });
       return;
     }
 
-    // Dosya türü kontrolü
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       toast.error("Geçersiz dosya türü", {
-        description: "Lütfen bir resim dosyası seçin."
+        description: "Lütfen bir resim dosyası seçin.",
       });
       return;
     }
@@ -156,167 +377,121 @@ export default function ProfileContent() {
     const loadingToast = toast.loading("Fotoğraf yükleniyor...");
 
     try {
-      // Yükleme öncesi bir önizleme oluştur (opsiyonel)
       const localPreviewUrl = URL.createObjectURL(file);
-      
-      // Resmi yükle
-      // Define interfaces
-      interface ProfileImage {
-        success: boolean;
-        url: string;
-      }
 
-      interface ProfileUpdateData {
-        id?: string;
-        name?: string;
-        lastname?: string;
-        avatar?: string;
-      }
+      try {
+        uploadImage(file, {
+          onSuccess: async (data: { success: boolean; url: string }) => {
+            if (data.success && data.url) {
+              try {
+                setFormData((prev) => ({ ...prev, avatar: data.url }));
 
-            try {
-              uploadImage(file, {
-                onSuccess: async (data: ProfileImage) => {
-                  if (data.success && data.url) {
-                    
-                    try {
-                      // Form state'ini API'ye güncellenmeden önce güncelle 
-                      // Bu sayede kullanıcı anında değişikliği görecek
-                      setFormData(prev => ({ ...prev, avatar: data.url }));
-                      
-                      // Ayrıca veritabanına da kaydet
-                      const updateResponse = await api.put(`/users/me`, { 
-                        ...formData, 
-                        avatar: data.url 
-                      });
-                      
-                      
-                      // Session'ı güncelle
-                      await updateSession({
-                        ...session,
-                        user: {
-                          ...session?.user,
-                          avatar: data.url
-                        }
-                      });
-                      
-                      // Profil avatar güncellemesini bildir
-                      emitProfileUpdated({
-                        id: session?.user?.id,
-                        name: userData?.name,
-                        lastname: userData?.lastname,
-                        avatar: data.url
-                      } as ProfileUpdateData);
-                      
-                      // Verileri yeniden yükle
-                      await refetch();
-                      
-                      toast.success("Resim yüklendi", {
-                        description: "Profil fotoğrafı başarıyla yüklendi."
-                      });
-                    } catch (updateError: unknown) {
-                      toast.error("Resim yüklendi ancak profiliniz güncellenemedi", {
-                        description: "Lütfen sayfayı yenileyip tekrar deneyin."
-                      });
-                    }
-                  } else {
-                    toast.error("Resim yüklenirken bir hata oluştu", {
-                      description: "Sunucu yanıtında URL bilgisi eksik"
-                    });
-                  }
-                }
-              });
-            } catch (uploadError) {
-              toast.error("Resim yüklenemedi", {
-                description: "Bir hata oluştu. Lütfen tekrar deneyin."
+                const updateResponse = await api.put(`/users/me`, {
+                  ...formData,
+                  avatar: data.url,
+                });
+
+                await updateSession({
+                  ...session,
+                  user: {
+                    ...session?.user,
+                    avatar: data.url,
+                  },
+                });
+
+                emitProfileUpdated({
+                  id: session?.user?.id,
+                  name: userData?.name,
+                  lastname: userData?.lastname,
+                  avatar: data.url,
+                });
+
+                await refetch();
+
+                toast.success("Resim yüklendi", {
+                  description: "Profil fotoğrafı başarıyla yüklendi.",
+                });
+              } catch (updateError: unknown) {
+                toast.error("Resim yüklendi ancak profiliniz güncellenemedi", {
+                  description: "Lütfen sayfayı yenileyip tekrar deneyin.",
+                });
+              }
+            } else {
+              toast.error("Resim yüklenirken bir hata oluştu", {
+                description: "Sunucu yanıtında URL bilgisi eksik",
               });
             }
+          },
+        });
+      } catch (uploadError) {
+        toast.error("Resim yüklenemedi", {
+          description: "Bir hata oluştu. Lütfen tekrar deneyin.",
+        });
+      }
     } catch (error) {
       toast.error("Resim yüklenemedi", {
-        description: "Bir hata oluştu. Lütfen tekrar deneyin."
+        description: "Bir hata oluştu. Lütfen tekrar deneyin.",
       });
     } finally {
       toast.dismiss(loadingToast);
     }
   };
 
-  // Profil fotoğrafını kaldırma işleyicisi
   const handleRemoveImage = async () => {
-    // Mevcut avatar URL'si var mı kontrol et
     if (!formData.avatar) {
       return;
     }
-    
+
     const loadingToast = toast.loading("Profil fotoğrafı kaldırılıyor...");
-    
+
     try {
-      // Bu adımları sırayla dene ve hata olursa loglayıp devam et
-      
-      // Eski avatar URL'sini saklayalım
       const oldAvatarUrl = formData.avatar;
-      
-      // 1. Önce veritabanındaki kayıttan temizleyelim, bu en önemli adım
+
       try {
-        
-        // Ekstra alan ekleyerek güncelleyelim ki istek farklı olsun
-        const updateResponse = await api.put(`/users/me`, { 
-          ...formData, 
+        const updateResponse = await api.put(`/users/me`, {
+          ...formData,
           avatar: "",
-          _avatarRemoved: true // Sunucu tarafında avatar'ın kasıtlı olarak boşaltıldığını belirtmek için
+          _avatarRemoved: true,
         });
-        
-        
+
         if (!updateResponse.data.success) {
-          toast.error("İşleminiz yapılırken bir hata oluştu")
+          toast.error("İşleminiz yapılırken bir hata oluştu");
         }
-        
-        // Form state'ini güncelleyelim ki UI hemen değişsin
-        setFormData(prev => ({ ...prev, avatar: "" }));
-        
-        // Session'ı güncelle
+
+        setFormData((prev) => ({ ...prev, avatar: "" }));
+
         await updateSession({
           ...session,
           user: {
             ...session?.user,
-            avatar: ""
-          }
+            avatar: "",
+          },
         });
 
-        // Profil avatar kaldırıldığını bildir
         emitProfileUpdated({
           id: session?.user?.id,
           name: userData?.name,
           lastname: userData?.lastname,
-          avatar: ""
+          avatar: "",
         });
-        
       } catch (dbError) {
         toast.error("İşlem sırasında bir hata oluştu");
       }
-      
-      // 2. Şimdi Cloudinary'den dosyayı silmeyi deneyelim
-      // Bu adım başarısız olsa bile kullanıcı deneyimi bozulmasın
+
       try {
         const cloudinaryResponse = await deleteImage(oldAvatarUrl);
-      } catch (cloudinaryError) {
-        // Bu hatayı sadece loglayalım, kritik değil
+      } catch (cloudinaryError) {}
 
-      }
-      
-      // 3. Son kontrol - veriler gerçekten güncellenmiş mi kontrol edelim
       try {
-        // Önbelleği temizleyerek güncel veri alalım
         const freshData = await refetch();
-        
       } catch (refetchError) {
         toast.error("İşlem sırasında bir hata oluştu");
       }
-      
-      // Başarı mesajı göster
+
       toast.success("Profil fotoğrafı kaldırıldı");
-      
     } catch (error: any) {
       toast.error("Hata", {
-        description: "Profil fotoğrafı kaldırılamadı."
+        description: "Profil fotoğrafı kaldırılamadı.",
       });
     } finally {
       toast.dismiss(loadingToast);
@@ -325,15 +500,59 @@ export default function ProfileContent() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-10">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="space-y-8">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-7 w-48 bg-primary/20 mb-2" />
+            <Skeleton className="h-4 w-72 bg-primary/10" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center space-y-4 mb-6">
+              <Skeleton className="h-24 w-24 rounded-full bg-primary/20" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+                <Skeleton className="h-10 w-full bg-primary/10" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+                <Skeleton className="h-10 w-full bg-primary/10" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+              <Skeleton className="h-10 w-full bg-primary/10" />
+            </div>
+
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+              <Skeleton className="h-10 w-full bg-primary/10" />
+            </div>
+
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+              <Skeleton className="h-10 w-full bg-primary/10" />
+            </div>
+
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 bg-primary/20 mb-1" />
+              <Skeleton className="h-32 w-full bg-primary/10" />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-10 w-20 bg-primary/20" />
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
-  // Kullanıcı rolü kontrolü - session veya userData'dan alır
   const userRole = userData?.role || session?.user?.role;
-  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
+  const isAdmin =
+    userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
 
   return (
     <div className="space-y-8">
@@ -346,7 +565,6 @@ export default function ProfileContent() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {/* Profil Fotoğrafı */}
             <div className="flex flex-col items-center space-y-4 mb-6">
               <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/20">
                 {formData.avatar ? (
@@ -362,19 +580,25 @@ export default function ProfileContent() {
                   </div>
                 )}
               </div>
-              
+
               {isEditing && (
                 <div className="flex flex-col items-center">
                   <Button
-                    type="button" 
-                    variant="outline" 
+                    type="button"
+                    variant="outline"
                     size="sm"
                     className="flex items-center gap-2"
-                    onClick={() => document.getElementById('avatar-upload')?.click()}
+                    onClick={() =>
+                      document.getElementById("avatar-upload")?.click()
+                    }
                     disabled={isUploading}
                   >
                     <Upload className="h-4 w-4" />
-                    <span>{formData.avatar ? 'Fotoğrafı değiştir' : 'Fotoğraf yükle'}</span>
+                    <span>
+                      {formData.avatar
+                        ? "Fotoğrafı değiştir"
+                        : "Fotoğraf yükle"}
+                    </span>
                   </Button>
                   <Input
                     id="avatar-upload"
@@ -400,11 +624,11 @@ export default function ProfileContent() {
                       disabled={isDeleting}
                     >
                       {isDeleting ? (
-                          <>
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                            Kaldırılıyor...
-                          </>
-                        ) : (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          Kaldırılıyor...
+                        </>
+                      ) : (
                         "Fotoğrafı kaldır"
                       )}
                     </Button>
@@ -420,10 +644,15 @@ export default function ProfileContent() {
                   id="name"
                   name="name"
                   value={formData.name}
-                  onChange={handleChange}
+                  onChange={handleNameInput}
                   disabled={!isEditing || isSubmitting}
                   required
                 />
+                {isEditing && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sadece harf ve boşluk kullanılabilir
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastname">Soyad</Label>
@@ -431,10 +660,15 @@ export default function ProfileContent() {
                   id="lastname"
                   name="lastname"
                   value={formData.lastname}
-                  onChange={handleChange}
+                  onChange={handleNameInput}
                   disabled={!isEditing || isSubmitting}
                   required
                 />
+                {isEditing && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sadece harf ve boşluk kullanılabilir
+                  </p>
+                )}
               </div>
             </div>
 
@@ -453,35 +687,228 @@ export default function ProfileContent() {
                 id="phone"
                 name="phone"
                 value={formData.phone}
-                onChange={handleChange}
+                onChange={handlePhoneNumberChange}
                 disabled={!isEditing || isSubmitting}
                 placeholder="Telefon numarası"
               />
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sadece rakam, +, (), ve boşluk kullanılabilir
+                </p>
+              )}
             </div>
 
-            {/* E-posta izni için checkbox ekle */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label htmlFor="slug">Profil URL'si</Label>
+                {isEditing && (
+                  <span className="text-xs text-muted-foreground">
+                    * Profil adresiniz:{" "}
+                    {window &&
+                      `${window.location.origin}/u/${
+                        formData.slug || "kullanici"
+                      }`}
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  id="slug"
+                  name="slug"
+                  value={formData.slug}
+                  onChange={handleSlugChange}
+                  disabled={!isEditing || isSubmitting}
+                  placeholder="profil-adresi"
+                  className={`font-mono text-sm ${
+                    isSlugTaken
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }`}
+                />
+                {isCheckingSlug && (
+                  <div className="absolute right-3 top-2.5">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sadece küçük harfler, rakamlar ve kısa çizgiler
+                  kullanabilirsiniz. Boş bırakırsanız otomatik oluşturulur.
+                  {isSlugTaken && (
+                    <span className="text-red-500 block mt-1">
+                      Bu profil URL'si başka bir kullanıcı tarafından
+                      kullanılıyor.
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="title">Unvan</Label>
+              <Input
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleTitleChange}
+                placeholder="Unvanınız (örn: Yazılım Geliştirici, Öğrenci)"
+                disabled={!isEditing}
+              />
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sadece harf ve tek boşluk kullanılabilir, sayı kullanılamaz
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="about">Hakkında</Label>
+                <span className="text-xs text-muted-foreground">
+                  {formData.about?.length || 0}/1000 karakter
+                </span>
+              </div>
+              <Textarea
+                id="about"
+                name="about"
+                value={formData.about}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, about: e.target.value }))
+                }
+                disabled={!isEditing || isSubmitting}
+                placeholder="Kendiniz hakkında kısa bilgi..."
+                rows={7}
+                maxLength={1000}
+                className="resize-y min-h-[100px]"
+              />
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Profilinizde görünecek kısa bir biyografi yazabilirsiniz.
+                  Alanı büyütmek için sağ alt köşesinden sürükleyebilirsiniz.
+                  Maksimum 1000 karakter yazabilirsiniz.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-4 border-t">
+              <h3 className="text-lg font-medium">Sosyal Medya Hesapları</h3>
+              <p className="text-sm text-muted-foreground">
+                Profilinizde görünmesini istediğiniz sosyal medya hesaplarınızı
+                ekleyin (opsiyonel)
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="website" className="flex items-center gap-2">
+                    <CgWebsite className="h-5 w-5" /> Kişisel Web Sitesi
+                  </Label>
+                  <Input
+                    id="website"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://www.siteniz.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="github" className="flex items-center gap-2">
+                    <FaGithub className="h-5 w-5" /> GitHub
+                  </Label>
+                  <Input
+                    id="github"
+                    name="github"
+                    value={formData.github}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://github.com/kullaniciadi"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="linkedin" className="flex items-center gap-2">
+                    <FaLinkedin className="h-5 w-5" /> LinkedIn
+                  </Label>
+                  <Input
+                    id="linkedin"
+                    name="linkedin"
+                    value={formData.linkedin}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://linkedin.com/in/kullaniciadi"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="kaggle" className="flex items-center gap-2">
+                    <FaKaggle className="h-5 w-5" /> Kaggle
+                  </Label>
+                  <Input
+                    id="kaggle"
+                    name="kaggle"
+                    value={formData.kaggle}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://www.kaggle.com/kullaniciadi"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="huggingface"
+                    className="flex items-center gap-2"
+                  >
+                    <SiHuggingface className="h-5 w-5" /> Hugging Face
+                  </Label>
+                  <Input
+                    id="huggingface"
+                    name="huggingface"
+                    value={formData.huggingface}
+                    onChange={handleSocialUrlChange}
+                    disabled={!isEditing || isSubmitting}
+                    placeholder="https://huggingface.co/kullaniciadi"
+                  />
+                </div>
+              </div>
+
+              {isEditing && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Sosyal medya hesaplarınızı herkese açık profilinizde
+                  görüntülemek için tam URL'leri girin.
+                </p>
+              )}
+            </div>
+
             {isEditing && (
               <div className="flex items-center space-x-2 mt-4">
-                <Checkbox 
-                  id="allowEmails" 
+                <Checkbox
+                  id="allowEmails"
                   checked={formData.allowEmails}
                   onCheckedChange={handleCheckboxChange}
                   disabled={isSubmitting}
                 />
-                <Label 
-                  htmlFor="allowEmails" 
+                <Label
+                  htmlFor="allowEmails"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Bilgilendirme e-postaları almak istiyorum
                 </Label>
               </div>
             )}
-            
+
             {!isEditing && (
               <div className="text-sm">
                 <p>
-                  <strong>E-posta bildirimleri:</strong>{' '}
-                  <span className={formData.allowEmails ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                  <strong>E-posta bildirimleri:</strong>{" "}
+                  <span
+                    className={
+                      formData.allowEmails
+                        ? "text-green-600 font-medium"
+                        : "text-red-600 font-medium"
+                    }
+                  >
                     {formData.allowEmails ? "Açık" : "Kapalı"}
                   </span>
                 </p>
@@ -491,10 +918,10 @@ export default function ProfileContent() {
           <CardFooter className="flex justify-between">
             {isEditing ? (
               <>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsEditing(false)}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
                   disabled={isSubmitting}
                 >
                   İptal
@@ -511,10 +938,7 @@ export default function ProfileContent() {
                 </Button>
               </>
             ) : (
-              <Button 
-                type="button" 
-                onClick={() => setIsEditing(true)}
-              >
+              <Button type="button" onClick={() => setIsEditing(true)}>
                 Düzenle
               </Button>
             )}

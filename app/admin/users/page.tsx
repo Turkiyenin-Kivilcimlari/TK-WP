@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UsersList } from "@/components/user/UsersList";
+import { UsersList } from "@/components/admin/UsersList";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { Loader2, ArrowLeft, Shield } from "lucide-react";
@@ -119,7 +119,7 @@ export default function UsersPage() {
   
   return (
     <div className="flex min-h-screen justify-center">
-      <div className="container py-8 px-4 md:py-12 md:px-3">
+      <div className="container max-w-7xl py-8 px-4 md:py-12 md:px-3">
         <div className="text-center mb-6">
           <h1 className="text-2xl md:text-3xl font-bold">Kullanıcı Yönetimi</h1>
         </div>

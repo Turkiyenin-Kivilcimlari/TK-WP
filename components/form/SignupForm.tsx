@@ -23,6 +23,7 @@ interface FormErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  title?: string; // Title için hata mesajı alanı ekleyelim
 }
 
 export function SignupForm({ className, ...props }: SignupFormProps) {
@@ -39,7 +40,8 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
     email: "",
     password: "",
     confirmPassword: "",
-    allowEmails: false, // Default değeri false olarak değiştirildi
+    allowEmails: false,
+    title: "", // Title alanını ekleyelim
   });
 
   const [errors, setErrors] = React.useState<FormErrors>({});
@@ -191,9 +193,18 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
         delete newErrors.lastname;
         break;
 
+      case "title":
+        if (value.trim().length > 50) {
+          newErrors.title = "Unvan en fazla 50 karakter olabilir";
+          break;
+        }
+        delete newErrors.title;
+        break;
+
       case "phone":
+        // Telefon alanı artık zorunlu değil, boşsa hata vermeyelim
         if (!value.trim()) {
-          newErrors.phone = "Telefon numarası zorunludur";
+          delete newErrors.phone;
           break;
         }
         if (value.replace(/[^\d]/g, "").length < 10) {
@@ -270,7 +281,7 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
       Object.keys(newErrors).length === 0 &&
       Boolean(formValues.name) &&
       Boolean(formValues.lastname) &&
-      Boolean(formValues.phone) &&
+      // Telefon zorunlu olmadığı için kontrol etmiyoruz
       Boolean(formValues.email) &&
       Boolean(formValues.password) &&
       Boolean(formValues.confirmPassword);
@@ -299,10 +310,16 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
       newErrors.lastname = "Soyad sadece harf içermelidir, sayı içeremez";
     }
 
-    if (!formValues.phone.trim()) {
-      newErrors.phone = "Telefon numarası zorunludur";
-    } else if (formValues.phone.replace(/[^\d]/g, "").length < 10) {
-      newErrors.phone = "Geçerli bir telefon numarası giriniz";
+    // Title validasyonu - title uzunluk kontrolü yapıyoruz ama zorunlu değil
+    if (formValues.title && formValues.title.trim().length > 50) {
+      newErrors.title = "Unvan en fazla 50 karakter olabilir";
+    }
+
+    // Telefon validasyonu - artık zorunlu değil
+    if (formValues.phone.trim()) {
+      if (formValues.phone.replace(/[^\d]/g, "").length < 10) {
+        newErrors.phone = "Geçerli bir telefon numarası giriniz";
+      }
     }
 
     if (!formValues.email.trim()) {
@@ -449,9 +466,38 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
           </div>
         </div>
 
+        {/* Title (Unvan) alanı */}
+        <div className="grid gap-1">
+          <Label htmlFor="title" className="flex">
+            Unvan (Opsiyonel)
+            {showErrors && errors.title && (
+              <span className="ml-auto text-xs text-destructive font-normal">
+                {errors.title}
+              </span>
+            )}
+          </Label>
+          <Input
+            id="title"
+            placeholder="Örn: Yazılım Geliştirici, Öğrenci, Öğretmen"
+            type="text"
+            disabled={isRegistering}
+            value={formValues.title}
+            onChange={handleInputChange}
+            className={cn(
+              showErrors &&
+                errors.title &&
+                "border-destructive focus-visible:ring-destructive"
+            )}
+            aria-invalid={showErrors && errors.title ? "true" : "false"}
+            aria-describedby={
+              showErrors && errors.title ? "title-error" : undefined
+            }
+          />
+        </div>
+
         <div className="grid gap-1">
           <Label htmlFor="phone" className="flex">
-            Telefon Numarası
+            Telefon Numarası (Opsiyonel)
             {showErrors && errors.phone && (
               <span className="ml-auto text-xs text-destructive font-normal">
                 {errors.phone}

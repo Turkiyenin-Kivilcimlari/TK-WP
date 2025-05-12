@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Article {
   _id: string;
@@ -60,6 +61,7 @@ interface Article {
     name: string;
     lastname: string;
     avatar?: string;
+    slug?: string; // Yazarın slug'ını ekledik
   };
   blocks?: any[];
   tags?: string[];
@@ -271,7 +273,6 @@ function ArticlesWithSearchParams() {
         url += `&tag=${encodeURIComponent(tag)}`;
       }
 
-
       const response = await api.get(url);
       const data = response.data;
 
@@ -438,8 +439,55 @@ function ArticlesWithSearchParams() {
         {/* Grid düzeni artık 4 kolon gösterecek */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
           {loading ? (
-            <div className="col-span-full flex justify-center items-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="col-span-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div key={index} className="border rounded-lg overflow-hidden shadow-sm p-3">
+                    {/* Yazar ve tarih skeleton */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1">
+                        <Skeleton className="h-5 w-5 rounded-full bg-primary/25" />
+                        <Skeleton className="h-3 w-20 bg-primary/20" />
+                      </div>
+                      <Skeleton className="h-3 w-16 bg-primary/20" />
+                    </div>
+
+                    {/* Başlık skeleton */}
+                    <div className="h-[48px] mb-1">
+                      <Skeleton className="h-4 w-full bg-primary/20 mb-2" />
+                      <Skeleton className="h-4 w-3/4 bg-primary/20" />
+                    </div>
+
+                    {/* Açıklama skeleton */}
+                    <div className="h-[54px]">
+                      <Skeleton className="h-3 w-full bg-primary/20 mb-1.5" />
+                      <Skeleton className="h-3 w-full bg-primary/20 mb-1.5" />
+                      <Skeleton className="h-3 w-2/3 bg-primary/20" />
+                    </div>
+
+                    {/* Resim skeleton */}
+                    <Skeleton className="w-full aspect-[16/9] bg-primary/15 my-2" />
+
+                    {/* İstatistikler skeleton */}
+                    <div className="flex items-center justify-between mb-2 mt-auto">
+                      <Skeleton className="h-3 w-10 bg-primary/20" />
+                      <div className="flex gap-2">
+                        <Skeleton className="h-3 w-10 bg-primary/20" />
+                        <Skeleton className="h-3 w-10 bg-primary/20" />
+                      </div>
+                    </div>
+
+                    {/* Etiketler skeleton */}
+                    <div className="flex gap-1 mb-2">
+                      <Skeleton className="h-4 w-12 bg-primary/20" />
+                      <Skeleton className="h-4 w-12 bg-primary/20" />
+                    </div>
+
+                    {/* Buton skeleton */}
+                    <Skeleton className="h-7 w-full bg-primary/25" />
+                  </div>
+                ))}
+              </div>
             </div>
           ) : articles.length === 0 ? (
             <div className="col-span-full text-center py-20">
@@ -464,6 +512,7 @@ function ArticlesWithSearchParams() {
                   {/* Yazar ve tarih - Boyutları küçültüldü */}
                   <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
+                      <Link href={`/u/${article.author?.slug}`} className="flex items-center gap-1">
                       <Avatar className="h-5 w-5">
                         <AvatarImage
                           src={article.author?.avatar || ""}
@@ -474,6 +523,7 @@ function ArticlesWithSearchParams() {
                         </AvatarFallback>
                       </Avatar>
                       <span>{getAuthorName(article.author)}</span>
+                      </Link>
                     </div>
                     <span>
                       {formatDate(article.publishedAt || article.createdAt)}

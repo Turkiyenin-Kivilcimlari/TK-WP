@@ -18,6 +18,7 @@ export function CloudflareTurnstile({
   const widgetIdRef = useRef<string | null>(null);
   const initialized = useRef(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [turnstileVerified, setTurnstileVerified] = useState(false);
   
   // Localhost kontrolü
   const [isLocalhost, setIsLocalhost] = useState(false);
@@ -37,8 +38,14 @@ export function CloudflareTurnstile({
   // Localhost ise hemen doğrula
   useEffect(() => {
     if (isLocalhost && isMounted) {
-      // Localhost'ta otomatik doğrulama yapalım
-      onVerify("localhost-dev-verification-token");
+      // Güvenlik için localhost'ta bile token üretme
+      const localhostToken = `dev-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+      
+      // 100ms gecikme ile doğrula
+      setTimeout(() => {
+        if (onVerify) onVerify(localhostToken);
+        setTurnstileVerified(true);
+      }, 100);
     }
   }, [isLocalhost, onVerify, isMounted]);
 
