@@ -63,6 +63,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSession } from "next-auth/react";
+import { SafeHTML } from "@/components/SafeHTML";
 
 export type BlockType = "text" | "heading" | "image" | "code";
 
@@ -721,9 +722,9 @@ export function WritingEditor({ articleData, isEdit = false }: {
                 // Önizleme modunda içerik
                 <>
                   {block.type === "text" && (
-                    <div
+                    <SafeHTML 
+                      html={block.content} 
                       className="prose dark:prose-invert max-w-none prose-a:text-primary prose-a:underline hover:prose-a:text-primary/80"
-                      dangerouslySetInnerHTML={{ __html: block.content }}
                     />
                   )}
 

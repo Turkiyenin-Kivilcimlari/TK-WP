@@ -73,6 +73,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SafeHTML } from "@/components/SafeHTML";
 
 const sanitizeAndTruncateHTML = (html: string, maxLength: number = 150) => {
   const plainText = html.replace(/<[^>]*>/g, "");
@@ -145,9 +146,7 @@ const HTMLContent = ({
   content: string;
   className?: string;
 }) => {
-  return (
-    <div className={className} dangerouslySetInnerHTML={{ __html: content }} />
-  );
+  return <SafeHTML html={content} className={className} />;
 };
 
 export default function ContentManagementPage() {

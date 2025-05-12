@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { SafeHTML } from '@/components/SafeHTML';
 
 export const metadata: Metadata = {
   title: "Çerez Politikası",
@@ -6,6 +7,14 @@ export const metadata: Metadata = {
 }
 
 export default function CookiePolicyPage() {
+  const cookieDescriptionHtml = `
+    <p>
+      Çerezler (cookies), bir web sitesini ziyaret ettiğinizde tarayıcınız tarafından bilgisayarınızda veya mobil 
+      cihazınızda depolanan küçük metin dosyalarıdır. Bu dosyalar, web sitesinin veya üçüncü taraf sunucuların 
+      cihazınızı tanımasını ve web sitesi gezinmenizi daha verimli hale getirmeyi sağlar.
+    </p>
+  `;
+
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">Çerez Politikası</h1>
@@ -17,11 +26,7 @@ export default function CookiePolicyPage() {
         
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">1. Çerezler Nedir?</h2>
-          <p>
-            Çerezler (cookies), bir web sitesini ziyaret ettiğinizde tarayıcınız tarafından bilgisayarınızda veya mobil 
-            cihazınızda depolanan küçük metin dosyalarıdır. Bu dosyalar, web sitesinin veya üçüncü taraf sunucuların 
-            cihazınızı tanımasını ve web sitesi gezinmenizi daha verimli hale getirmeyi sağlar.
-          </p>
+          <SafeHTML html={cookieDescriptionHtml} />
         </section>
 
         <section className="mb-8">

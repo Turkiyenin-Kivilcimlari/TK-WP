@@ -53,11 +53,21 @@ function VerifyEmailClient() {
       return;
     }
 
+    // Email formatını kontrol et - güvenlik için
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Geçersiz e-posta formatı");
+      return;
+    }
+
     setResendDisabled(true);
     setCountdown(60); // 60 saniye bekleme süresi
 
     try {
-      const response = await api.post("/auth/send-verification", { email });
+      const response = await api.post("/auth/send-verification", { 
+        email: email.trim().toLowerCase(), // Normalize email
+        forceNew: true 
+      });
 
       if (response.status === 200) {
         toast.success("Doğrulama kodu gönderildi", {

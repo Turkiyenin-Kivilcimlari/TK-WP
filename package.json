@@ -51,6 +51,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^2.30.0",
     "dicons": "^1.1.7",
+    "dompurify": "^3.2.5",
     "framer-motion": "^12.5.0",
     "hi-base32": "^0.5.1",
     "input-otp": "^1.4.2",
@@ -83,6 +84,7 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
+    "@types/dompurify": "^3.0.5",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20",
     "@types/nodemailer": "^6.4.14",

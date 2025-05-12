@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import Link from "next/link"
+import { SafeHTML } from '@/components/SafeHTML';
 
 export const metadata: Metadata = {
   title: "Gizlilik Politikası",
@@ -7,6 +8,17 @@ export const metadata: Metadata = {
 }
 
 export default function PrivacyPolicyPage() {
+  const technicalInfoHtml = `
+    <li>İnternet protokol (IP) adresi, tarayıcı türü, ziyaret saatleri gibi teknik bilgiler</li>
+    <li>Platformumuzu nasıl kullandığınızla ilgili analiz verileri</li>
+  `;
+  
+  const legalBasisHtml = `
+    <li>Açık rızanız</li>
+    <li>Sizinle olan sözleşmemizin ifası için gerekli olması</li>
+    <li>Yasal yükümlülüklerimizin yerine getirilmesi</li>
+  `;
+  
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">Gizlilik Politikası</h1>
@@ -33,8 +45,7 @@ export default function PrivacyPolicyPage() {
             <li>Ad-soyad, e-posta adresi ve iletişim bilgileri</li>
             <li>Hesap oluşturma ve oturum açma bilgileri</li>
             <li>Platformumuzda paylaştığınız içerik ve yorumlar</li>
-            <li>İnternet protokol (IP) adresi, tarayıcı türü, ziyaret saatleri gibi teknik bilgiler</li>
-            <li>Platformumuzu nasıl kullandığınızla ilgili analiz verileri</li>
+            <SafeHTML html={technicalInfoHtml} />
           </ul>
         </section>
 
@@ -44,10 +55,7 @@ export default function PrivacyPolicyPage() {
             Kişisel verilerinizi işlememizin yasal dayanakları şunlardır:
           </p>
           <ul className="list-disc pl-5 mt-2 mb-4">
-            <li>Açık rızanız</li>
-            <li>Sizinle olan sözleşmemizin ifası için gerekli olması</li>
-            <li>Yasal yükümlülüklerimizin yerine getirilmesi</li>
-            <li>Meşru menfaatlerimizin gerektirmesi</li>
+            <SafeHTML html={legalBasisHtml} />
           </ul>
         </section>
 

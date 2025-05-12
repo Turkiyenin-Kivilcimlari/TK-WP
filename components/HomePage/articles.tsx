@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SafeHTML } from "@/components/SafeHTML";
 
 interface Article {
   id: string;
@@ -290,6 +291,7 @@ export function Articles() {
                     key={article.id}
                   >
                     <ArticleCard article={article} />
+                    <SafeHTML html={article.description || ""} />
                   </div>
                 );
               })
