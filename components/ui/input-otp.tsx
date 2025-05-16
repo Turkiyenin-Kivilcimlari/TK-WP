@@ -32,7 +32,7 @@ const InputOTPSlot = React.forwardRef<
   HTMLDivElement,
   SlotProps & React.HTMLAttributes<HTMLDivElement>
 >(
-  ({ char, hasFakeCaret, isActive, className, ...props }, ref) => (
+  ({ char, hasFakeCaret, isActive, className, placeholderChar, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(

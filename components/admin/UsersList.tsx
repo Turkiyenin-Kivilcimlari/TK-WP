@@ -45,6 +45,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface UsersListProps {
   currentUserId: string;
@@ -75,6 +76,13 @@ export function UsersList({ currentUserId }: UsersListProps) {
     isUpdatingRole,
   } = useUsers(params);
   
+  // Kullanıcının baş harflerini alma fonksiyonu
+  const getUserInitials = (name?: string, lastname?: string) => {
+    const firstInitial = name ? name.charAt(0).toUpperCase() : '';
+    const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : '';
+    return `${firstInitial}${lastInitial}`;
+  };
+
   // Otomatik arama için useEffect
   useEffect(() => {
     // Önceki timeout'u temizle
@@ -435,9 +443,15 @@ export function UsersList({ currentUserId }: UsersListProps) {
                 <Card key={userId} className="overflow-hidden">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">{user.name} {user.lastname}</h3>
-                        <p className="text-sm text-muted-foreground break-all mt-1">{user.email}</p>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={user.avatar} alt={`${user.name} ${user.lastname}`} />
+                          <AvatarFallback>{getUserInitials(user.name, user.lastname)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-medium">{user.name} {user.lastname}</h3>
+                          <p className="text-sm text-muted-foreground break-all mt-1">{user.email}</p>
+                        </div>
                       </div>
                       <Badge variant={getRoleBadgeVariant(user.role as UserRole)}>
                         {getRoleDisplayName(user.role as UserRole)}
@@ -532,7 +546,7 @@ export function UsersList({ currentUserId }: UsersListProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[120px]">Ad Soyad</TableHead>
+                <TableHead className="min-w-[180px]">Ad Soyad</TableHead>
                 <TableHead className="min-w-[120px]">E-posta</TableHead>
                 <TableHead className="min-w-[100px]">Rol</TableHead>
                 <TableHead className="text-right min-w-[180px]">İşlemler</TableHead>
@@ -552,7 +566,13 @@ export function UsersList({ currentUserId }: UsersListProps) {
                   return (
                     <TableRow key={userId}>
                       <TableCell className="font-medium">
-                        {user.name} {user.lastname}
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} alt={`${user.name} ${user.lastname}`} />
+                            <AvatarFallback>{getUserInitials(user.name, user.lastname)}</AvatarFallback>
+                          </Avatar>
+                          <span>{user.name} {user.lastname}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="break-all">{user.email}</TableCell>
                       <TableCell>

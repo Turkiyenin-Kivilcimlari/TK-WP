@@ -12,11 +12,14 @@ import { encryptedJson } from '@/lib/response';
 const registerSchema = z.object({
   name: z.string().min(2, 'Ad en az 2 karakter olmalıdır'),
   lastname: z.string().min(2, 'Soyad en az 2 karakter olmalıdır'),
-  phone: z.string().min(10, 'Geçerli bir telefon numarası giriniz').optional(),
+  phone: z.union([
+    z.string().length(0),  // Empty string is allowed
+    z.string().min(10, 'Telefon numarası en az 10 karakter olmalıdır')
+  ]).optional(),
   email: z.string().email('Geçerli bir e-posta adresi giriniz'),
   password: z
     .string()
-    .min(8, 'Şifre en az 8 karakter olmalıdır'),
+    .min(8, 'Şifre en az 8 karakter olmalıdır').optional(),
   turnstileToken: z.string().optional(),
   allowEmails: z.boolean().default(true),
   title: z.string().optional()
@@ -33,6 +36,7 @@ export async function POST(req: NextRequest) {
       registerSchema.parse({ name, lastname, email, phone, password, allowEmails, title, turnstileToken });
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('Validation error:', error.errors);
         return encryptedJson({ success: false}, { status: 400 });
       }
       throw error;

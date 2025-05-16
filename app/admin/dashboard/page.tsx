@@ -14,6 +14,7 @@ import {
   Building2,
   UsersRound,
   Heart,
+  FormInput,
 } from "lucide-react";
 import { UserRole } from "@/models/User";
 import {
@@ -354,6 +355,22 @@ export default function AdminDashboardPage() {
                 <CardFooter>
                   <Button asChild className="w-full">
                     <Link href="/admin/supporters">Topluluk Destekçileri</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FormInput className="h-5 w-5" /> Başvuru Yönetimi
+                  </CardTitle>
+                  <CardDescription>
+                    Temsilci başvurularını yönet
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/admin/applications">Başvurular</Link>
                   </Button>
                 </CardFooter>
               </Card>

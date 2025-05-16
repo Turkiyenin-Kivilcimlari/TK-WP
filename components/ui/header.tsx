@@ -171,6 +171,11 @@ function Header({ children }: { children?: React.ReactNode }) {
             Herkese Açık Profilim
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Link href="/applications" className="w-full">
+            Başvurularım
+          </Link>
+        </DropdownMenuItem>
         {isAdmin && (
           <DropdownMenuItem>
             <Link href="/admin/dashboard" className="w-full">
@@ -358,6 +363,15 @@ function Header({ children }: { children?: React.ReactNode }) {
                           className="w-full justify-between"
                         >
                           <span>Profil</span>
+                          <MoveRight className="w-4 h-4 stroke-1" />
+                        </Button>
+                      </Link>
+                      <Link href="/applications" onClick={() => setOpen(false)}>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                        >
+                          <span>Başvurularım</span>
                           <MoveRight className="w-4 h-4 stroke-1" />
                         </Button>
                       </Link>
