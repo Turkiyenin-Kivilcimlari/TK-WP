@@ -27,6 +27,8 @@ export const extractPublicId = (url: string): string | null => {
         publicId = 'user_avatars/' + filename;
       } else if (url.includes('/article_thumbnails/')) {
         publicId = 'article_thumbnails/' + filename;
+      } else if (url.includes('/board_members/')) {
+        publicId = 'board_members/' + filename;
       } else {
         publicId = filename;
       }

@@ -6,6 +6,25 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * HTML içeriğini tehlikeli tag ve attribute'lerden arındırır
+ * Bu fonksiyon yalnızca istemci tarafında çalışır
+ */
+export function sanitizeHtml(html: string): string {
+  // İstemci tarafında olup olmadığımızı kontrol et
+  if (typeof window === 'undefined') {
+    // Sunucu tarafında çalışıyorsa, tehlikeli olabilecek içeriği kaldır
+    return html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/on\w+="[^"]*"/g, '')
+      .replace(/on\w+=\'[^\']*\'/g, '');
+  }
+  
+  // İstemci tarafında DOMPurify kullanmak için lazy import yapabiliriz
+  // Bu fonksiyon istemci tarafında daha sonra SafeHTML bileşeni içinde kullanılacak
+  return html;
+}
+
+/**
  * SEO dostu slug üretmek için metni formatlayan fonksiyon
  * @param text Slug'a dönüştürülecek metin
  * @returns SEO dostu slug

@@ -1,13 +1,25 @@
-import { connectToDatabase } from '@/lib/mongodb';
-import Article, { ArticleStatus } from '@/models/Article';
-import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
-import mongoose from 'mongoose';
-import { UserRole } from '@/models/User';
-import { encryptedJson } from '@/lib/response';
+import { connectToDatabase } from "@/lib/mongodb";
+import Article, { ArticleStatus } from "@/models/Article";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  authenticateUser,
+  checkAdminAuthWithTwoFactor,
+} from "@/middleware/authMiddleware";
+import mongoose from "mongoose";
+import { UserRole } from "@/models/User";
+import { encryptedJson } from "@/lib/response";
 
 // Force dynamic rendering
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
+
+interface BaseBlock {
+  type: string;
+}
+
+interface TextBlock extends BaseBlock {
+  type: "text" | "heading";
+  content: string;
+}
 
 // Belirli bir makaleyi getir (admin için)
 export async function GET(
@@ -18,66 +30,72 @@ export async function GET(
     // Admin işlemi olduğu için 2FA kontrolü ekliyoruz
     const adminCheck = await checkAdminAuthWithTwoFactor(req);
     if (adminCheck) return adminCheck;
-    
+
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
       return encryptedJson(
-        { success: false, message: 'Giriş yapmalısınız' },
+        { success: false, message: "Giriş yapmalısınız" },
         { status: 401 }
       );
     }
-    
+
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
       return encryptedJson(
-        { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
+        { success: false, message: "Bu işlem için admin yetkisi gereklidir" },
         { status: 403 }
       );
     }
-    
+
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
       return encryptedJson(
-        { success: false, message: 'Geçersiz makale kimliği' },
+        { success: false, message: "Geçersiz makale kimliği" },
         { status: 400 }
       );
     }
-    
+
     await connectToDatabase();
-    
+
     // Makaleyi yazarı ile birlikte getir
-    const article = await Article.findById(articleId).populate('author', 'name lastname email avatar');
-    
+    const article = await Article.findById(articleId).populate(
+      "author",
+      "name lastname email avatar"
+    );
+
     if (!article) {
       return encryptedJson(
-        { success: false, message: 'Makale bulunamadı' },
+        { success: false, message: "Makale bulunamadı" },
         { status: 404 }
       );
     }
-    
+
     // MongoDB belgesini JavaScript nesnesine dönüştür
     const formattedArticle = article.toObject();
-    
+
     // ID dönüşümlerini yap
-    formattedArticle.id = (formattedArticle._id as mongoose.Types.ObjectId).toString();
+    formattedArticle.id = (
+      formattedArticle._id as mongoose.Types.ObjectId
+    ).toString();
     delete formattedArticle._id;
-    
+
     // Yazar bilgisini düzenle
     if (formattedArticle.author && formattedArticle.author._id) {
-      (formattedArticle.author as any).id = formattedArticle.author._id.toString();
-      if ('_id' in formattedArticle.author) {
+      (formattedArticle.author as any).id =
+        formattedArticle.author._id.toString();
+      if ("_id" in formattedArticle.author) {
         delete (formattedArticle.author as any)._id;
       }
     }
-    
+
     return encryptedJson({
       success: true,
-      article: formattedArticle
+      article: formattedArticle,
     });
   } catch (error: any) {
     return encryptedJson(
-      { success: false, message: 'Bir hata oluştu' },
+      { success: false, message: "Bir hata oluştu" },
       { status: 500 }
     );
   }
@@ -92,116 +110,140 @@ export async function PATCH(
     // Admin işlemi olduğu için 2FA kontrolü ekliyoruz
     const adminCheck = await checkAdminAuthWithTwoFactor(req);
     if (adminCheck) return adminCheck;
-    
+
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
       return encryptedJson(
-        { success: false, message: 'Giriş yapmalısınız' },
+        { success: false, message: "Giriş yapmalısınız" },
         { status: 401 }
       );
     }
-    
+
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
       return encryptedJson(
-        { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
+        { success: false, message: "Bu işlem için admin yetkisi gereklidir" },
         { status: 403 }
       );
     }
-    
+
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
       return encryptedJson(
-        { success: false, message: 'Geçersiz makale kimliği' },
+        { success: false, message: "Geçersiz makale kimliği" },
         { status: 400 }
       );
     }
-    
+
     // İstek gövdesini al
     const body = await req.json();
     const { title, blocks, status, tags, thumbnail } = body;
-  
-    
+
     await connectToDatabase();
-    
+
     // Makaleyi bul
     const article = await Article.findById(articleId);
-    
+
     if (!article) {
       return encryptedJson(
-        { success: false, message: 'Makale bulunamadı' },
+        { success: false, message: "Makale bulunamadı" },
         { status: 404 }
       );
     }
-    
+
     // Güncellenecek alanları belirle
     const updates: any = {};
-    
+
     // İçerik alanları
-    if (title !== undefined) updates.title = title;
-    if (blocks !== undefined) updates.blocks = blocks;
+    if (title !== undefined) updates.title = title.trim();
+    if (blocks !== undefined) {
+      updates.blocks = blocks.map((block: BaseBlock) => {
+        if (block.type === "text" || block.type === "heading") {
+          // HTML içeriğindeki potansiyel tehlikeli kodları temizle
+          return {
+            ...block,
+            content: (block as TextBlock).content
+              .replace(
+                /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+                ""
+              )
+              .replace(/javascript:/gi, "")
+              .replace(/on\w+="[^"]*"/g, "")
+              .replace(/on\w+=\'[^\']*\'/g, ""),
+          };
+        }
+        return block;
+      });
+    }
     if (tags !== undefined) updates.tags = tags;
     if (thumbnail !== undefined) updates.thumbnail = thumbnail;
-    
+
     // Durum değişikliği
     if (status !== undefined) {
       updates.status = status;
-      
+
       // Enum doğrulaması
       if (!Object.values(ArticleStatus).includes(status as ArticleStatus)) {
         return encryptedJson(
-          { success: false, message: `Geçersiz durum değeri: ${status}. Geçerli değerler: ${Object.values(ArticleStatus).join(', ')}` },
+          {
+            success: false,
+            message: `Geçersiz durum değeri: ${status}. Geçerli değerler: ${Object.values(
+              ArticleStatus
+            ).join(", ")}`,
+          },
           { status: 400 }
         );
       }
-      
+
       // Eğer durum "PUBLISHED" olarak değişiyorsa ve daha önce published değilse
-      if (status === ArticleStatus.PUBLISHED && article.status !== ArticleStatus.PUBLISHED) {
+      if (
+        status === ArticleStatus.PUBLISHED &&
+        article.status !== ArticleStatus.PUBLISHED
+      ) {
         updates.publishedAt = new Date();
       }
     }
-    
+
     // Eğer güncellenecek alan yoksa hata döndür
     if (Object.keys(updates).length === 0) {
       return encryptedJson(
-        { success: false, message: 'Güncellenecek alan bulunamadı' },
+        { success: false, message: "Güncellenecek alan bulunamadı" },
         { status: 400 }
       );
     }
-    
+
     // Son güncelleme zamanını ayarla
     updates.updatedAt = new Date();
-    
+
     // Makaleyi güncelle
     const updatedArticle = await Article.findByIdAndUpdate(
       articleId,
       { $set: updates },
       { new: true, runValidators: true }
     );
-    
+
     if (!updatedArticle) {
       return encryptedJson(
-        { success: false, message: 'Makale güncellenemedi' },
+        { success: false, message: "Makale güncellenemedi" },
         { status: 500 }
       );
     }
-    
-    
+
     return encryptedJson({
       success: true,
-      message: 'Makale başarıyla güncellendi',
+      message: "Makale başarıyla güncellendi",
       article: {
         id: updatedArticle._id,
         title: updatedArticle.title,
         status: updatedArticle.status,
-        updatedAt: updatedArticle.updatedAt
-      }
+        updatedAt: updatedArticle.updatedAt,
+      },
     });
   } catch (error: any) {
     return encryptedJson(
-      { 
-        success: 'Bir hata oluştu',
+      {
+        success: "Bir hata oluştu",
       },
       { status: 500 }
     );
@@ -217,54 +259,54 @@ export async function DELETE(
     // Admin işlemi olduğu için 2FA kontrolü ekliyoruz
     const adminCheck = await checkAdminAuthWithTwoFactor(req);
     if (adminCheck) return adminCheck;
-    
+
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
       return encryptedJson(
-        { success: false, message: 'Giriş yapmalısınız' },
+        { success: false, message: "Giriş yapmalısınız" },
         { status: 401 }
       );
     }
-    
+
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
       return encryptedJson(
-        { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
+        { success: false, message: "Bu işlem için admin yetkisi gereklidir" },
         { status: 403 }
       );
     }
-    
+
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
       return encryptedJson(
-        { success: false, message: 'Geçersiz makale kimliği' },
+        { success: false, message: "Geçersiz makale kimliği" },
         { status: 400 }
       );
     }
-    
+
     await connectToDatabase();
-    
+
     // Makaleyi bul
     const article = await Article.findById(articleId);
-    
+
     if (!article) {
       return encryptedJson(
-        { success: false, message: 'Makale bulunamadı' },
+        { success: false, message: "Makale bulunamadı" },
         { status: 404 }
       );
     }
-    
+
     // Makaleyi sil
     await Article.findByIdAndDelete(articleId);
-    
+
     return encryptedJson({
       success: true,
-      message: 'Makale başarıyla silindi'
+      message: "Makale başarıyla silindi",
     });
   } catch (error: any) {
     return encryptedJson(
-      { success: false, message: 'Bir hata oluştu' },
+      { success: false, message: "Bir hata oluştu" },
       { status: 500 }
     );
   }
@@ -279,101 +321,109 @@ export async function PUT(
     // Admin işlemi olduğu için 2FA kontrolü ekliyoruz
     const adminCheck = await checkAdminAuthWithTwoFactor(req);
     if (adminCheck) return adminCheck;
-    
+
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
       return encryptedJson(
-        { success: false, message: 'Giriş yapmalısınız' },
+        { success: false, message: "Giriş yapmalısınız" },
         { status: 401 }
       );
     }
-    
+
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
       return encryptedJson(
-        { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
+        { success: false, message: "Bu işlem için admin yetkisi gereklidir" },
         { status: 403 }
       );
     }
-    
+
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
       return encryptedJson(
-        { success: false, message: 'Geçersiz makale kimliği' },
+        { success: false, message: "Geçersiz makale kimliği" },
         { status: 400 }
       );
     }
-    
+
     // İstek verisini al
     const body = await req.json();
     const { status } = body;
-    
+
     if (!status) {
       return encryptedJson(
-        { success: false, message: 'Durum bilgisi gereklidir' },
+        { success: false, message: "Durum bilgisi gereklidir" },
         { status: 400 }
       );
     }
-    
+
     // Enum doğrulaması
     if (!Object.values(ArticleStatus).includes(status as ArticleStatus)) {
       return encryptedJson(
-        { success: false, message: `Geçersiz durum değeri: ${status}. Geçerli değerler: ${Object.values(ArticleStatus).join(', ')}` },
+        {
+          success: false,
+          message: `Geçersiz durum değeri: ${status}. Geçerli değerler: ${Object.values(
+            ArticleStatus
+          ).join(", ")}`,
+        },
         { status: 400 }
       );
     }
-    
+
     await connectToDatabase();
-    
+
     // Makaleyi bul
     const article = await Article.findById(articleId);
-    
+
     if (!article) {
       return encryptedJson(
-        { success: false, message: 'Makale bulunamadı' },
+        { success: false, message: "Makale bulunamadı" },
         { status: 404 }
       );
     }
-    
+
     // Güncellenecek alanlar
-    const updates: any = { 
-      status, 
-      updatedAt: new Date() 
+    const updates: any = {
+      status,
+      updatedAt: new Date(),
     };
-    
+
     // Eğer durum "PUBLISHED" olarak değişiyorsa ve daha önce published değilse
-    if (status === ArticleStatus.PUBLISHED && article.status !== ArticleStatus.PUBLISHED) {
+    if (
+      status === ArticleStatus.PUBLISHED &&
+      article.status !== ArticleStatus.PUBLISHED
+    ) {
       updates.publishedAt = new Date();
     }
-    
+
     // Makaleyi güncelle
     const updatedArticle = await Article.findByIdAndUpdate(
       articleId,
       { $set: updates },
       { new: true }
     );
-    
+
     if (!updatedArticle) {
       return encryptedJson(
-        { success: false, message: 'Makale güncellenemedi' },
+        { success: false, message: "Makale güncellenemedi" },
         { status: 500 }
       );
     }
-    
+
     return encryptedJson({
       success: true,
-      message: 'Makale durumu başarıyla güncellendi',
+      message: "Makale durumu başarıyla güncellendi",
       article: {
         id: updatedArticle._id,
         title: updatedArticle.title,
         status: updatedArticle.status,
-        updatedAt: updatedArticle.updatedAt
-      }
+        updatedAt: updatedArticle.updatedAt,
+      },
     });
   } catch (error: any) {
     return encryptedJson(
-      { success: false, message: 'Bir hata oluştu' },
+      { success: false, message: "Bir hata oluştu" },
       { status: 500 }
     );
   }
