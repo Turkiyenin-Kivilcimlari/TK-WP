@@ -163,13 +163,6 @@ function VerifyEmailClient() {
     }
   }, [otpCode, email, router]);
 
-  // OTP kodu değiştiğinde ve 6 hane olduğunda otomatik doğrulama yap
-  useEffect(() => {
-    if (otpCode.length === 6 && !isSubmitting && !isVerified) {
-      handleVerifyOtp();
-    }
-  }, [otpCode, isSubmitting, isVerified, handleVerifyOtp]);
-
   if (isVerified) {
     return (
       <div className="flex min-h-screen items-center justify-center">

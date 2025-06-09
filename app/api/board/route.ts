@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import  Board  from "@/models/Board";
-import dbConnect from "@/lib/mongodb";
+import {connectToDatabase} from "@/lib/mongodb";
 
 export async function GET() {
   try {
-    await dbConnect();
+    await connectToDatabase();
     
     const boardMembers = await Board.find({}).sort({ createdAt: -1 });
     

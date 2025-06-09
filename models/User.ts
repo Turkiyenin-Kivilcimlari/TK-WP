@@ -1,10 +1,10 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Document, model, Model, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 // Make sure these imports are explicitly typed
 import * as ms from 'ms';
 import { StringValue } from 'ms';
-import { slugify } from '@/lib/utils';
+import { safeParseDate, slugify } from '@/lib/utils';
 
 export enum UserRole {
   USER = 'USER',
@@ -43,8 +43,15 @@ export interface IUser extends Document {
   kaggle?: string;
   huggingface?: string;
   website?: string;
+  // Yeni alan: yedekleme izinleri
+  backupPermissions?: {
+    canView: boolean;
+    canManage: boolean;
+    canDownload: boolean;
+  };
 }
 
+// Schema içinde setter kullanarak tarih alanları için dönüşüm ekleyelim
 const userSchema = new Schema<IUser>(
   {
     name: { 
@@ -142,9 +149,36 @@ const userSchema = new Schema<IUser>(
     website: {
       type: String,
       trim: true,
+    },
+    // Yedekleme izinleri - Sadece admin/moderatör kullanıcılar için
+    backupPermissions: {
+      canView: {
+        type: Boolean,
+        default: false,
+      },
+      canManage: {
+        type: Boolean,
+        default: false,
+      },
+      canDownload: {
+        type: Boolean,
+        default: false,
+      }
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      set: (v: any) => safeParseDate(v)
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+      set: (v: any) => safeParseDate(v)
     }
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 // Şifre karşılaştırma metodunu güçlendirelim
@@ -262,15 +296,7 @@ userSchema.methods.verifyTwoFactorToken = async function(token: string) {
   }
 };
 
-// Güvenli model tanımlaması
-let User: Model<IUser>;
-
-try {
-  // Eğer model zaten tanımlıysa, varolan modeli kullan
-  User = mongoose.model<IUser>('User');
-} catch (error) {
-  // Model henüz tanımlanmamışsa yeni model oluştur
-  User = mongoose.model<IUser>('User', userSchema);
-}
+// Model zaten oluşturulduysa onu kullan, yoksa yeni oluştur
+const User = (mongoose.models?.User as Model<IUser>) || model<IUser>('User', userSchema);
 
 export default User;

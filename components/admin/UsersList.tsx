@@ -29,7 +29,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Loader2, Search, Trash, UserCog } from 'lucide-react';
+import { Loader2, Search, Trash, UserCog, Database } from 'lucide-react';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -46,10 +46,21 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface UsersListProps {
   currentUserId: string;
 }
+
+// Yedekleme izinleri için arayüz
+interface BackupPermissions {
+  canView: boolean;
+  canManage: boolean;
+  canDownload: boolean;
+}
+
 export function UsersList({ currentUserId }: UsersListProps) {
   const { data: session } = useSession();
   
@@ -331,6 +342,113 @@ export function UsersList({ currentUserId }: UsersListProps) {
     return () => window.removeEventListener('resize', checkMobileView);
   }, []);
   
+  // Modaller için state
+  const [backupDialogOpen, setBackupDialogOpen] = useState(false);
+  const [selectedUserForBackup, setSelectedUserForBackup] = useState<any>(null);
+  const [backupPermissions, setBackupPermissions] = useState<BackupPermissions>({
+    canView: false,
+    canManage: false,
+    canDownload: false
+  });
+  const [savingBackupPermissions, setSavingBackupPermissions] = useState(false);
+  const [loadingBackupPermissions, setLoadingBackupPermissions] = useState(false);
+  
+  // Yedekleme iznini açma metodu
+  const handleOpenBackupDialog = async (user: any) => {
+    setSelectedUserForBackup(user);
+    setBackupDialogOpen(true);
+    
+    // Kullanıcının mevcut yedekleme izinlerini getir
+    await fetchBackupPermissions(user.id || user._id);
+  };
+  
+  // Kullanıcının yedekleme izinlerini getirme
+  const fetchBackupPermissions = async (userId: string) => {
+    if (!userId) return;
+    
+    setLoadingBackupPermissions(true);
+    try {
+      const response = await fetch(`/api/admin/users/backup-permissions?userId=${userId}`);
+      const data = await response.json();
+      
+      if (data.success && data.user?.backupPermissions) {
+        setBackupPermissions(data.user.backupPermissions);
+      } else {
+        // Varsayılan değerleri kullan
+        setBackupPermissions({
+          canView: false,
+          canManage: false,
+          canDownload: false
+        });
+      }
+    } catch (error) {
+      console.error("Yedekleme izinleri getirilemedi:", error);
+      toast.error("Yedekleme izinleri getirilemedi");
+    } finally {
+      setLoadingBackupPermissions(false);
+    }
+  };
+  
+  // Yedekleme izinlerini kaydetme
+  const saveBackupPermissions = async () => {
+    if (!selectedUserForBackup) return;
+    
+    const userId = selectedUserForBackup.id || selectedUserForBackup._id;
+    if (!userId) {
+      toast.error("Kullanıcı kimliği geçersiz");
+      return;
+    }
+    
+    setSavingBackupPermissions(true);
+    try {
+      const response = await fetch('/api/admin/users/backup-permissions', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          permissions: backupPermissions
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success("Yedekleme izinleri güncellendi");
+        setBackupDialogOpen(false);
+      } else {
+        toast.error(data.error || "İzinler güncellenemedi");
+      }
+    } catch (error) {
+      console.error("Yedekleme izinleri kaydedilemedi:", error);
+      toast.error("Yedekleme izinleri kaydedilemedi");
+    } finally {
+      setSavingBackupPermissions(false);
+    }
+  };
+  
+  // Yedekleme izinlerinin değişimini işleme
+  const handlePermissionChange = (key: keyof BackupPermissions, value: boolean) => {
+    const newPermissions = { ...backupPermissions, [key]: value };
+    
+    // Bağımlı izinleri otomatik ayarla
+    if ((key === 'canManage' || key === 'canDownload') && value === true) {
+      newPermissions.canView = true;
+    }
+    
+    // Görüntüleme kapatılırsa diğer izinler de kapatılmalı
+    if (key === 'canView' && value === false) {
+      newPermissions.canManage = false;
+      newPermissions.canDownload = false;
+    }
+    
+    setBackupPermissions(newPermissions);
+  };
+  
+  // Kullanıcının süper admin olup olmadığını kontrol et
+  const isSuperAdmin = session?.user?.role === UserRole.SUPERADMIN;
+  
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -426,6 +544,102 @@ export function UsersList({ currentUserId }: UsersListProps) {
         </div>
       </div>
       
+      {/* Yedekleme İzinleri Modal */}
+      <Dialog open={backupDialogOpen} onOpenChange={setBackupDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Yedekleme İzinleri</DialogTitle>
+            <DialogDescription>
+              {selectedUserForBackup && (
+                <>
+                  <span className="font-semibold">{selectedUserForBackup.name} {selectedUserForBackup.lastname}</span> 
+                  kullanıcısının yedekleme izinlerini ayarlayın.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingBackupPermissions ? (
+            <div className="py-6 flex justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="p-4 space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="canView" 
+                    checked={backupPermissions.canView}
+                    onCheckedChange={(checked) => 
+                      handlePermissionChange('canView', checked as boolean)
+                    }
+                  />
+                  <Label htmlFor="canView" className="cursor-pointer">
+                    Yedeklemeleri görüntüleyebilir
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="canManage" 
+                    checked={backupPermissions.canManage}
+                    disabled={!backupPermissions.canView}
+                    onCheckedChange={(checked) => 
+                      handlePermissionChange('canManage', checked as boolean)
+                    }
+                  />
+                  <Label 
+                    htmlFor="canManage" 
+                    className={`cursor-pointer ${!backupPermissions.canView ? 'text-muted-foreground' : ''}`}
+                  >
+                    Yedeklemeleri yönetebilir
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="canDownload" 
+                    checked={backupPermissions.canDownload}
+                    disabled={!backupPermissions.canView}
+                    onCheckedChange={(checked) => 
+                      handlePermissionChange('canDownload', checked as boolean)
+                    }
+                  />
+                  <Label 
+                    htmlFor="canDownload" 
+                    className={`cursor-pointer ${!backupPermissions.canView ? 'text-muted-foreground' : ''}`}
+                  >
+                    Yedeklemeleri indirebilir
+                  </Label>
+                </div>
+              </div>
+              
+              <div className="pt-4 flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setBackupDialogOpen(false)}
+                >
+                  İptal
+                </Button>
+                <Button
+                  onClick={saveBackupPermissions}
+                  disabled={savingBackupPermissions}
+                >
+                  {savingBackupPermissions ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Kaydediliyor
+                    </>
+                  ) : (
+                    'Kaydet'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
       {/* Mobil görünüm için kart tabanlı liste */}
       {isMobile ? (
         <div className="space-y-4">
@@ -480,55 +694,70 @@ export function UsersList({ currentUserId }: UsersListProps) {
                         </Select>
                       </div>
                       
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="destructive" 
+                      <div className="flex flex-col gap-2">
+                        {/* Yedekleme Ayarları - Sadece Admin ve SUPERADMIN görebilir */}
+                        {isSuperAdmin && userRole === UserRole.ADMIN && (
+                          <Button
+                            variant="outline"
                             size="sm"
-                            className="w-full flex items-center justify-center gap-2 mt-2"
-                            disabled={isDeleting || !canDeleteUser(userId, userRole)}
-                            title={getDeleteDisabledReason(userId, userRole)}
+                            className="w-full flex items-center justify-center gap-2"
+                            onClick={() => handleOpenBackupDialog(user)}
                           >
-                            <Trash className="h-4 w-4" />
-                            <span>Sil</span>
+                            <Database className="h-4 w-4" />
+                            <span>Yedekleme Ayarları</span>
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Kullanıcıyı Sil</AlertDialogTitle>
-                            <AlertDialogDescription>
-                            Bu işlemi geri alamazsınız. Bu kullanıcının hesabını silmek istediğinizden emin misiniz?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-                            <AlertDialogCancel className="w-full sm:w-auto mt-0">İptal</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => {
-                                if (!userId) {
-                                  toast.error("Silme işlemi başarısız", {
-                                    description: "Kullanıcı kimliği eksik."
-                                  });
-                                  return;
-                                }
-                                
-                                // Admin kullanıcı kontrol kısmını kaldırıyoruz veya süper admin kontrolü ekliyoruz
-                                // Süper admin ise her kullanıcıyı silebilsin
-                                if (userRole === UserRole.ADMIN && session?.user?.role !== UserRole.SUPERADMIN) {
-                                  toast.error("Silme işlemi başarısız", {
-                                    description: "Yönetim üyeleri silinemez."
-                                  });
-                                  return;
-                                }
-                                
-                                handleDeleteUser(userId);
-                              }}
-                              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        )}
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              className="w-full flex items-center justify-center gap-2 mt-2"
+                              disabled={isDeleting || !canDeleteUser(userId, userRole)}
+                              title={getDeleteDisabledReason(userId, userRole)}
                             >
-                              Sil
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash className="h-4 w-4" />
+                              <span>Sil</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Kullanıcıyı Sil</AlertDialogTitle>
+                              <AlertDialogDescription>
+                              Bu işlemi geri alamazsınız. Bu kullanıcının hesabını silmek istediğinizden emin misiniz?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+                              <AlertDialogCancel className="w-full sm:w-auto mt-0">İptal</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  if (!userId) {
+                                    toast.error("Silme işlemi başarısız", {
+                                      description: "Kullanıcı kimliği eksik."
+                                    });
+                                    return;
+                                  }
+                                  
+                                  // Admin kullanıcı kontrol kısmını kaldırıyoruz veya süper admin kontrolü ekliyoruz
+                                  // Süper admin ise her kullanıcıyı silebilsin
+                                  if (userRole === UserRole.ADMIN && session?.user?.role !== UserRole.SUPERADMIN) {
+                                    toast.error("Silme işlemi başarısız", {
+                                      description: "Yönetim üyeleri silinemez."
+                                    });
+                                    return;
+                                  }
+                                  
+                                  handleDeleteUser(userId);
+                                }}
+                                className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Sil
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -549,7 +778,7 @@ export function UsersList({ currentUserId }: UsersListProps) {
                 <TableHead className="min-w-[180px]">Ad Soyad</TableHead>
                 <TableHead className="min-w-[120px]">E-posta</TableHead>
                 <TableHead className="min-w-[100px]">Rol</TableHead>
-                <TableHead className="text-right min-w-[180px]">İşlemler</TableHead>
+                <TableHead className="text-right min-w-[230px]">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -582,7 +811,6 @@ export function UsersList({ currentUserId }: UsersListProps) {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-col sm:flex-row gap-2 justify-end items-end">
-                          {/* Rol değiştirme */}
                           <Select
                             onValueChange={(value) => handleRoleChange(userId, value as UserRole)}
                             defaultValue={user.role}
@@ -601,7 +829,19 @@ export function UsersList({ currentUserId }: UsersListProps) {
                             </SelectContent>
                           </Select>
                           
-                          {/* Silme */}
+                          {/* Yedekleme Ayarları - Sadece SUPERADMIN ve admin kullanıcıları için */}
+                          {isSuperAdmin && userRole === UserRole.ADMIN && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full sm:w-auto flex items-center gap-2"
+                              onClick={() => handleOpenBackupDialog(user)}
+                            >
+                              <Database className="h-4 w-4" />
+                              <span>Yedekleme</span>
+                            </Button>
+                          )}
+                          
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                             <Button 

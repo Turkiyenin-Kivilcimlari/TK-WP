@@ -15,6 +15,7 @@ import {
   UsersRound,
   Heart,
   FormInput,
+  Database,
 } from "lucide-react";
 import { UserRole } from "@/models/User";
 import {
@@ -371,6 +372,22 @@ export default function AdminDashboardPage() {
                 <CardFooter>
                   <Button asChild className="w-full">
                     <Link href="/admin/applications">Başvurular</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="h-5 w-5" /> Yedekleme Yönetimi
+                  </CardTitle>
+                  <CardDescription>
+                    Sistem yedeklerini oluştur ve geri yükle
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/admin/backup">Yedeklemeler</Link>
                   </Button>
                 </CardFooter>
               </Card>

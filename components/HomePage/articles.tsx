@@ -257,7 +257,9 @@ export function Articles() {
       };
     }
   };
-
+console.log("articles", articles);
+console.log("displayedArticles", displayedArticles);
+console.log(displayedArticles[0]?.author)
   return (
     <div className="w-full py-6">
       <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">

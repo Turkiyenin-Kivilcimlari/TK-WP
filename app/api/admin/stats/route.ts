@@ -7,6 +7,7 @@ import Article from '@/models/Article';
 import Event from '@/models/Event'; // Etkinlik modeli eklendi
 import { checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import { encryptedJson } from '@/lib/response';
+import { safeParseDate } from '@/lib/utils';
 
 // Promise.allSettled kullanarak veritabanı işlemlerini paralel çalıştırma
 export async function GET(req: NextRequest) {
@@ -18,13 +19,13 @@ export async function GET(req: NextRequest) {
     // Veritabanı bağlantısı
     await connectToDatabase();
     
-    // Tarih hesaplamaları
-    const thisMonth = new Date();
+    // Tarih hesaplamaları - güvenli tarih dönüşümüyle
+    const thisMonth = safeParseDate(new Date());
     thisMonth.setDate(1); // Ayın 1'i
     thisMonth.setHours(0, 0, 0, 0); // Günün başlangıcı
     
     // Geçen ay
-    const lastMonth = new Date(thisMonth);
+    const lastMonth = safeParseDate(new Date(thisMonth));
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     
     // Tüm veritabanı sorgularını paralel olarak çalıştır
@@ -40,25 +41,29 @@ export async function GET(req: NextRequest) {
       thisMonthEventsResult,           // Bu aydaki etkinlikler
       lastMonthEventsResult            // Geçen aydaki etkinlikler
     ] = await Promise.allSettled([
-      User.countDocuments().lean().exec(),
-      User.countDocuments({ createdAt: { $gte: thisMonth } }).lean().exec(),
+      User.countDocuments().exec(),
+      User.countDocuments({ 
+        createdAt: { 
+          $gte: thisMonth 
+        } 
+      }).exec(),
       User.countDocuments({
         createdAt: { $gte: lastMonth, $lt: thisMonth }
-      }).lean().exec(),
+      }).exec(),
       Article.countDocuments({
         status: { $regex: new RegExp('^published$', 'i') }
-      }).lean().exec(),
+      }).exec(),
       Article.countDocuments({
         createdAt: { $gte: thisMonth },
         status: { $regex: new RegExp('^published$', 'i') }
-      }).lean().exec(),
+      }).exec(),
       Article.countDocuments({
         createdAt: { $gte: lastMonth, $lt: thisMonth },
         status: { $regex: new RegExp('^published$', 'i') }
-      }).lean().exec(),
-      Event.countDocuments().lean().exec(),                       // Tüm etkinlikler
-      Event.countDocuments({ createdAt: { $gte: thisMonth } }).lean().exec(),   // Bu aydaki etkinlikler
-      Event.countDocuments({ createdAt: { $gte: lastMonth, $lt: thisMonth } }).lean().exec() // Geçen aydaki etkinlikler
+      }).exec(),
+      Event.countDocuments().exec(),                       // Tüm etkinlikler
+      Event.countDocuments({ createdAt: { $gte: thisMonth } }).exec(),   // Bu aydaki etkinlikler
+      Event.countDocuments({ createdAt: { $gte: lastMonth, $lt: thisMonth } }).exec() // Geçen aydaki etkinlikler
     ]);
     
     // Promise sonuçlarını güvenli şekilde çıkar

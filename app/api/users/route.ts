@@ -1,68 +1,96 @@
-export const dynamic = 'force-dynamic';
-
-import { connectToDatabase } from '@/lib/mongodb';
-import User, { UserRole } from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser, authorizeRoles, checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
-import { encryptedJson } from '@/lib/response';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { UserRole } from '@/models/User';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// Tüm kullanıcıları getir (sadece yönetim üyeleri için)
-export async function GET(req: NextRequest) {
+// Kullanıcı verileri dosya yolu (örnek implementasyon)
+const USERS_FILE_PATH = path.join(process.cwd(), 'data', 'users.json');
+
+// Kullanıcı verilerini dosyadan oku
+async function getUsers() {
   try {
-    // Yetkilendirme kontrolü - 2FA dahil admin yetkisi kontrolü
-    const authResponse = await checkAdminAuthWithTwoFactor(req);
-    if (authResponse) return authResponse;
-    
-    await connectToDatabase();
-    
-    // Filtreleme ve sayfalama parametrelerini al
-    const searchParams = req.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const role = searchParams.get('role') as UserRole | null;
-    const search = searchParams.get('search');
-    
-    const skip = (page - 1) * limit;
-    
-    // Sorgu oluştur
-    const query: any = {};
-    
-    // Rol filtreleme
-    if (role && Object.values(UserRole).includes(role)) {
-      query.role = role;
+    const dataDir = path.dirname(USERS_FILE_PATH);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
     }
     
-    // Arama filtreleme
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { lastname: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
-      ];
+    if (!fs.existsSync(USERS_FILE_PATH)) {
+      fs.writeFileSync(USERS_FILE_PATH, JSON.stringify([], null, 2), 'utf8');
+      return [];
     }
     
-    // Kullanıcıları getir
-    const users = await User.find(query)
-      .select('name lastname email role avatar createdAt emailVerified twoFactorEnabled') // Sadece gerekli alanları seç, password ve twoFactorSecret hariç
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-    
-    // Toplam kullanıcı sayısını hesapla
-    const total = await User.countDocuments(query);
-    
-    return encryptedJson({
-      success: true,
-      count: users.length,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-      users
-    });
+    const data = fs.readFileSync(USERS_FILE_PATH, 'utf8');
+    return JSON.parse(data);
   } catch (error) {
-    return encryptedJson(
-      { success: false, message: 'Sunucu hatası' },
-      { status: 500 }
-    );
+    console.error('Kullanıcılar yüklenirken hata oluştu:', error);
+    return [];
+  }
+}
+
+// Yetki kontrolü yap
+async function checkPermission() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== UserRole.SUPERADMIN) {
+    return false;
+  }
+  return true;
+}
+
+// Tüm kullanıcıları getir
+export async function GET() {
+  try {
+    const hasPermission = await checkPermission();
+    if (!hasPermission) {
+      return new NextResponse(JSON.stringify({ error: 'Yetkisiz erişim' }), { 
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const users = await getUsers();
+    return NextResponse.json(users);
+  } catch (error) {
+    console.error('Kullanıcı verileri alınırken hata oluştu:', error);
+    return NextResponse.json({ error: 'Kullanıcı verileri alınamadı' }, { status: 500 });
+  }
+}
+
+// Kullanıcı oluştur veya güncelle
+export async function POST(request: NextRequest) {
+  try {
+    const hasPermission = await checkPermission();
+    if (!hasPermission) {
+      return new NextResponse(JSON.stringify({ error: 'Yetkisiz erişim' }), { 
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const userData = await request.json();
+    const users = await getUsers();
+    
+    const existingIndex = users.findIndex((user: any) => user.id === userData.id);
+    
+    if (existingIndex >= 0) {
+      // Varolan kullanıcıyı güncelle
+      users[existingIndex] = { ...users[existingIndex], ...userData };
+    } else {
+      // Yeni kullanıcı ekle
+      users.push(userData);
+    }
+    
+    // Dosyaya kaydet
+    try {
+      fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(users, null, 2), 'utf8');
+      return NextResponse.json(userData);
+    } catch (error) {
+      console.error('Kullanıcı kaydedilirken hata oluştu:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Kullanıcı kaydedilirken hata oluştu:', error);
+    return NextResponse.json({ error: 'Kullanıcı kaydedilemedi' }, { status: 500 });
   }
 }

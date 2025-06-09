@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import  Board  from "@/models/Board";
-import dbConnect from "@/lib/mongodb";
+import {connectToDatabase} from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { UserRole } from "@/models/User";
@@ -16,7 +16,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
 
     const { id } = params;
-    await dbConnect();
+    await connectToDatabase();
     
     const data = await req.json();
     
@@ -64,7 +64,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     }
 
     const { id } = params;
-    await dbConnect();
+    await connectToDatabase();
     
     const deletedBoardMember = await Board.findByIdAndDelete(id);
     

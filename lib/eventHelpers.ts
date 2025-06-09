@@ -1,4 +1,5 @@
 import { EventType } from "@/models/Event";
+import { safeParseDate } from "./utils";
 
 /**
  * Etkinliğin geçip geçmediğini kontrol eder
@@ -14,8 +15,8 @@ export function isEventPast(event: any): boolean {
   
   if (!lastDay || !lastDay.date) return true;
   
-  // Son gün tarihini oluştur
-  const lastDate = new Date(lastDay.date);
+  // Son gün tarihini oluştur - safeParseDate fonksiyonuyla
+  const lastDate = safeParseDate(lastDay.date);
   
   // Saat belirtilmişse ekleyelim
   if (lastDay.endTime) {

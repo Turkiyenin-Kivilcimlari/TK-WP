@@ -9,6 +9,8 @@ export function cn(...inputs: ClassValue[]) {
  * HTML içeriğini tehlikeli tag ve attribute'lerden arındırır
  * Bu fonksiyon yalnızca istemci tarafında çalışır
  */
+
+
 export function sanitizeHtml(html: string): string {
   // İstemci tarafında olup olmadığımızı kontrol et
   if (typeof window === 'undefined') {
@@ -22,6 +24,62 @@ export function sanitizeHtml(html: string): string {
   // İstemci tarafında DOMPurify kullanmak için lazy import yapabiliriz
   // Bu fonksiyon istemci tarafında daha sonra SafeHTML bileşeni içinde kullanılacak
   return html;
+}
+
+/**
+ * MongoDB'den gelen genişletilmiş JSON tarih formatını 
+ * JavaScript Date nesnesine dönüştürür.
+ * 
+ * Şu formatları kabul eder:
+ * - Date nesnesi
+ * - ISO tarih dizisi
+ * - { $date: '...' } formatında MongoDB nesnesi
+ * - { '$date': '...' } formatında MongoDB nesnesi
+ * 
+ * @param dateInput - Dönüştürülecek tarih girdisi
+ * @returns JavaScript Date nesnesi
+ */
+export function safeParseDate(dateInput: any): Date {
+  // Date nesnesi ise direkt döndür
+  if (dateInput instanceof Date) {
+    return dateInput;
+  }
+  
+  try {
+    // MongoDB Extended JSON formatı kontrolü ({ $date: '...' } veya { '$date': '...' })
+    if (dateInput && typeof dateInput === 'object') {
+      if (dateInput.$date && typeof dateInput.$date === 'string') {
+        return new Date(dateInput.$date);
+      }
+      
+      if (dateInput['$date'] && typeof dateInput['$date'] === 'string') {
+        return new Date(dateInput['$date']);
+      }
+      
+      // ISODate formatı kontrolü
+      if (dateInput.toString && dateInput.toString().startsWith('ISODate')) {
+        const isoDateStr = dateInput.toString().replace(/^ISODate\(['"](.+)['"]\)$/, '$1');
+        return new Date(isoDateStr);
+      }
+    }
+    
+    // Tarih string'i ise Date'e çevir
+    if (typeof dateInput === 'string') {
+      return new Date(dateInput);
+    }
+    
+    // Sayı (timestamp) ise Date'e çevir
+    if (typeof dateInput === 'number') {
+      return new Date(dateInput);
+    }
+    
+    // Eğer hiçbir durum uymuyorsa, şu anki zamanı döndür
+    console.warn('Geçersiz tarih formatı, şu anki zaman kullanılıyor:', dateInput);
+    return new Date();
+  } catch (error) {
+    console.error('Tarih dönüşüm hatası:', error);
+    return new Date(); // Hata durumunda şu anki zamanı döndür
+  }
 }
 
 /**

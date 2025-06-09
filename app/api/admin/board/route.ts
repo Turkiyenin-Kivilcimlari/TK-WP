@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import  Board  from "@/models/Board";
-import dbConnect from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { UserRole } from "@/models/User";
 import { encryptedJson } from "@/lib/response";
+import {connectToDatabase} from "@/lib/mongodb";
 
 // Board üyelerini listeleme
 export async function GET() {
@@ -15,7 +15,7 @@ export async function GET() {
       return encryptedJson({ success: false, error: "Yetkisiz erişim" }, { status: 403 });
     }
 
-    await dbConnect();
+    await connectToDatabase();
     const boardMembers = await Board.find({}).sort({ createdAt: -1 });
     
     return encryptedJson({ success: true, boardMembers }, { status: 200 });
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       return encryptedJson({ success: false, error: "Yetkisiz erişim" }, { status: 403 });
     }
 
-    await dbConnect();
+    await connectToDatabase();
     
     const data = await req.json();
     

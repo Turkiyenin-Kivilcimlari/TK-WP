@@ -76,16 +76,31 @@ export default function SignupPage() {
           </p>
         </div>
         
-        <SignupForm turnstileToken={turnstileToken || undefined} turnstileVerified={turnstileVerified} />
+        <div className="space-y-4">
+          <SignupForm turnstileToken={turnstileToken || undefined} turnstileVerified={turnstileVerified} />
+          
+          {/* Cloudflare Turnstile Widget */}
+          <div className="mt-1 mb-2">
+            <div className="text-sm text-muted-foreground mb-2">
+              Lütfen robot olmadığınızı doğrulayın
+            </div>
+            <CloudflareTurnstile 
+              key={turnstileKey}
+              onVerify={handleTurnstileVerify}
+              onError={handleTurnstileError}
+            />
+            {turnstileVerified && renderVerificationSuccess()}
+          </div>
+        </div>
         
         <p className="px-8 text-center text-sm text-muted-foreground">
           Zaten hesabınız var mı?{" "}
-            <a 
+          <a 
             href="/signin" 
             className="underline underline-offset-4 hover:text-primary"
-            >
+          >
             Giriş yapın
-            </a>
+          </a>
         </p>
       </div>
     </div>

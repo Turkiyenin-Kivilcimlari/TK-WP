@@ -10,6 +10,8 @@ import { useAuth, RegisterFormData } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { CloudflareTurnstile } from "../ui/cloudflare-turnstile";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useRouter } from "next/navigation";
+import api from "@/lib/api";
 
 interface SignupFormProps extends React.HTMLAttributes<HTMLDivElement> {
   turnstileToken?: string;
@@ -26,8 +28,84 @@ interface FormErrors {
   title?: string; // Title için hata mesajı alanı ekleyelim
 }
 
+const signupSchema = {
+  name: (value: string) => {
+    if (!value.trim()) {
+      return "Ad alanı zorunludur";
+    }
+    if (!/^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]+$/.test(value.trim())) {
+      return "Ad sadece harf içermelidir, sayı içeremez";
+    }
+    if (value.trim().length < 2) {
+      return "Ad en az 2 karakter olmalıdır";
+    }
+  },
+  lastname: (value: string) => {
+    if (!value.trim()) {
+      return "Soyad alanı zorunludur";
+    }
+    if (!/^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]+$/.test(value.trim())) {
+      return "Soyad sadece harf içermelidir, sayı içeremez";
+    }
+    if (value.trim().length < 2) {
+      return "Soyad en az 2 karakter olmalıdır";
+    }
+  },
+  title: (value: string) => {
+    if (value.trim().length > 50) {
+      return "Unvan en fazla 50 karakter olabilir";
+    }
+  },
+  phone: (value: string) => {
+    // Telefon alanı artık zorunlu değil, boşsa hata vermeyelim
+    if (!value.trim()) {
+      return;
+    }
+    if (value.replace(/[^\d]/g, "").length < 10) {
+      return "Geçerli bir telefon numarası giriniz";
+    }
+  },
+  email: (value: string) => {
+    if (!value.trim()) {
+      return "E-posta adresi zorunludur";
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return "Geçerli bir e-posta adresi giriniz";
+    }
+  },
+  password: (value: string) => {
+    if (!value) {
+      return "Şifre zorunludur";
+    }
+    if (value.length < 8) {
+      return "Şifre en az 8 karakter olmalıdır";
+    }
+    if (!/(?=.*[a-z])/.test(value)) {
+      return "Şifre en az bir küçük harf içermelidir";
+    }
+    if (!/(?=.*[A-Z])/.test(value)) {
+      return "Şifre en az bir büyük harf içermelidir";
+    }
+    if (!/(?=.*\d)/.test(value)) {
+      return "Şifre en az bir rakam içermelidir";
+    }
+    if (/[ğüşıöçĞÜŞİÖÇ]/.test(value)) {
+      return "Şifre Türkçe karakter içermemelidir";
+    }
+  },
+  confirmPassword: (value: string, password: string) => {
+    if (!value) {
+      return "Şifre tekrarı zorunludur";
+    }
+    if (value !== password) {
+      return "Şifreler eşleşmiyor";
+    }
+  },
+};
+
 export function SignupForm({ className, ...props }: SignupFormProps) {
   const { register, isRegistering } = useAuth();
+  const router = useRouter();
 
   const [showPassword, setShowPassword] = React.useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] =
@@ -378,13 +456,31 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
     }
 
     try {
-      await register({
+      const response = await api.post("/auth/register", {
         ...formValues,
         turnstileToken,
         allowEmails: formValues.allowEmails,
       });
-    } catch (error) {
-      toast.error("Kayıt Hatası");
+
+      if (response.data.success) {
+        toast.success("Kayıt başarılı!", {
+          description: "E-posta doğrulama bağlantısı gönderildi.",
+        });
+
+        if (response.data.redirectUrl) {
+          router.push(response.data.redirectUrl);
+        } else {
+          router.push(`/verify-email?email=${encodeURIComponent(formValues.email)}`);
+        }
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Kayıt sırasında bir hata oluştu";
+      toast.error("Kayıt başarısız", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsFormValidated(false);
     }
   };
 

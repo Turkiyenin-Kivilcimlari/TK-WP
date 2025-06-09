@@ -1,0 +1,434 @@
+[
+  {
+    "id": "88c76fd5-0fa9-4d30-8baf-40a415787786",
+    "type": "FULL",
+    "status": "IN_PROGRESS",
+    "path": "backup\\2025-05-16T12-52-00",
+    "createdAt": "2025-05-16T12:52:02.386Z",
+    "updatedAt": "2025-05-16T12:52:02.386Z"
+  },
+  {
+    "id": "89fa5584-0b92-4c1c-b861-77e74a20b24b",
+    "type": "MONGODB",
+    "status": "IN_PROGRESS",
+    "path": "backup\\2025-05-16T12-52-00",
+    "createdAt": "2025-05-16T12:52:03.692Z",
+    "updatedAt": "2025-05-16T12:52:03.692Z"
+  },
+  {
+    "id": "e9d2c088-c43c-4e2f-8595-81ef3f05ab35",
+    "type": "FULL",
+    "status": "IN_PROGRESS",
+    "path": "backup\\2025-05-16T13-09-59",
+    "createdAt": "2025-05-16T13:10:01.079Z",
+    "updatedAt": "2025-05-16T13:10:01.079Z"
+  },
+  {
+    "id": "11328ea0-ec13-4ae7-95bc-0fdbe421b67a",
+    "type": "MONGODB",
+    "status": "IN_PROGRESS",
+    "path": "backup\\2025-05-16T13-09-59",
+    "createdAt": "2025-05-16T13:10:02.531Z",
+    "updatedAt": "2025-05-16T13:10:02.531Z"
+  },
+  {
+    "id": "3a17ae48-b8fd-4701-8b09-6b7ba1f3b164",
+    "type": "FULL",
+    "status": "IN_PROGRESS",
+    "path": "backups\\2025-05-16T13-16-53",
+    "createdAt": "2025-05-16T13:16:54.748Z",
+    "updatedAt": "2025-05-16T13:16:54.748Z"
+  },
+  {
+    "id": "d524adb4-ebf2-4b3c-b20f-abe61c43a94b",
+    "type": "MONGODB",
+    "status": "IN_PROGRESS",
+    "path": "backups\\2025-05-16T13-16-53",
+    "createdAt": "2025-05-16T13:16:55.966Z",
+    "updatedAt": "2025-05-16T13:16:55.966Z"
+  },
+  {
+    "id": "fe3d089e-1cd2-43ce-a9f1-6ccebecec735",
+    "type": "FULL",
+    "status": "IN_PROGRESS",
+    "path": "backups\\2025-05-16T13-21-07",
+    "createdAt": "2025-05-16T13:21:10.010Z",
+    "updatedAt": "2025-05-16T13:21:10.010Z"
+  },
+  {
+    "id": "67a8a56e-f717-4fb5-a043-97f349b230c1",
+    "type": "MONGODB",
+    "status": "IN_PROGRESS",
+    "path": "backups\\2025-05-16T13-21-07",
+    "createdAt": "2025-05-16T13:21:11.457Z",
+    "updatedAt": "2025-05-16T13:21:11.457Z"
+  },
+  {
+    "id": "18bc6510-810e-4afa-9a52-fb1e5b08b4b3",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-22-39",
+    "createdAt": "2025-05-16T13:22:40.928Z",
+    "updatedAt": "2025-05-16T13:23:17.475Z"
+  },
+  {
+    "id": "db693278-dbdd-46a6-977a-1dd43f41cfcb",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-22-39\\mongodb_backup_1747401764861.zip",
+    "createdAt": "2025-05-16T13:22:42.136Z",
+    "updatedAt": "2025-05-16T13:22:44.945Z"
+  },
+  {
+    "id": "9eb5baef-61df-47fe-8976-7b108b460abf",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-22-39\\cloudinary_backup_1747401795158.zip",
+    "createdAt": "2025-05-16T13:22:47.841Z",
+    "updatedAt": "2025-05-16T13:23:16.057Z"
+  },
+  {
+    "id": "2af1b8ac-cd59-4c0b-95c6-cafa8363fa24",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-25-16",
+    "createdAt": "2025-05-16T13:25:18.064Z",
+    "updatedAt": "2025-05-16T13:25:58.538Z"
+  },
+  {
+    "id": "42e60219-329a-44a2-b6e3-6416123581be",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-25-16\\mongodb_backup_1747401922377.zip",
+    "createdAt": "2025-05-16T13:25:19.308Z",
+    "updatedAt": "2025-05-16T13:25:22.436Z"
+  },
+  {
+    "id": "7735dc11-0fd0-4125-a9e4-69a8d78d0508",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-25-16\\cloudinary_backup_1747401956314.zip",
+    "createdAt": "2025-05-16T13:25:24.993Z",
+    "updatedAt": "2025-05-16T13:25:57.259Z"
+  },
+  {
+    "id": "be3e3d84-01ad-4295-89fa-3301762c8c15",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-47-13",
+    "createdAt": "2025-05-16T13:47:13.029Z",
+    "updatedAt": "2025-05-16T13:47:44.291Z"
+  },
+  {
+    "id": "65bfd6de-24a4-481c-ab12-a68ed124f80f",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-47-13\\mongodb_backup_1747403236443.zip",
+    "createdAt": "2025-05-16T13:47:13.037Z",
+    "updatedAt": "2025-05-16T13:47:16.506Z"
+  },
+  {
+    "id": "c642b988-f60b-4aaa-9582-d0645fc8345c",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-47-13\\cloudinary_backup_1747403263308.zip",
+    "createdAt": "2025-05-16T13:47:16.516Z",
+    "updatedAt": "2025-05-16T13:47:44.286Z"
+  },
+  {
+    "id": "972be1bc-1654-4b49-b6f8-6f6b569e76f4",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-49-13",
+    "createdAt": "2025-05-16T13:49:14.849Z",
+    "updatedAt": "2025-05-16T13:49:55.201Z"
+  },
+  {
+    "id": "e7488177-1d30-489a-8837-c77a770a8387",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-49-13\\mongodb_backup_1747403358095.zip",
+    "createdAt": "2025-05-16T13:49:15.123Z",
+    "updatedAt": "2025-05-16T13:49:18.162Z"
+  },
+  {
+    "id": "c5d02546-3557-4e5f-84b4-982c606f69c7",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-49-13\\cloudinary_backup_1747403393960.zip",
+    "createdAt": "2025-05-16T13:49:18.438Z",
+    "updatedAt": "2025-05-16T13:49:55.069Z"
+  },
+  {
+    "id": "41f007fe-079a-46e4-bc86-abaa707c739e",
+    "type": "FULL",
+    "status": "IN_PROGRESS",
+    "path": "backups\\2025-05-16T13-56-06",
+    "createdAt": "2025-05-16T13:56:07.984Z",
+    "updatedAt": "2025-05-16T13:56:07.984Z"
+  },
+  {
+    "id": "f0a319cb-8175-46d8-8e96-ce656a3bbb41",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T13-56-06\\mongodb_backup_1747403771269.zip",
+    "createdAt": "2025-05-16T13:56:08.272Z",
+    "updatedAt": "2025-05-16T13:56:11.334Z"
+  },
+  {
+    "id": "fbf0d26c-17c5-4778-b4ea-0dc5e8065f39",
+    "type": "CLOUDINARY",
+    "status": "IN_PROGRESS",
+    "path": "backups\\2025-05-16T13-56-06",
+    "createdAt": "2025-05-16T13:56:11.695Z",
+    "updatedAt": "2025-05-16T13:56:11.695Z"
+  },
+  {
+    "id": "f664cb89-098f-436a-8a4f-0f380a7ed242",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T14-02-22",
+    "createdAt": "2025-05-16T14:02:24.981Z",
+    "updatedAt": "2025-05-16T14:03:11.032Z"
+  },
+  {
+    "id": "db132dbf-cf0f-4bd2-9eb3-2c77805246cf",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T14-02-22\\mongodb_backup_1747404148631.zip",
+    "createdAt": "2025-05-16T14:02:26.225Z",
+    "updatedAt": "2025-05-16T14:02:28.687Z"
+  },
+  {
+    "id": "6fc3a9b6-4371-4f55-866d-9ea3a4262c6a",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T14-02-22\\cloudinary_backup_1747404188975.zip",
+    "createdAt": "2025-05-16T14:02:31.767Z",
+    "updatedAt": "2025-05-16T14:03:09.855Z"
+  },
+  {
+    "id": "a166eed6-56ce-4520-99d8-a471073e2c62",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T14-04-09",
+    "createdAt": "2025-05-16T14:04:10.388Z",
+    "updatedAt": "2025-05-16T14:05:00.271Z"
+  },
+  {
+    "id": "7b8c802b-12cf-4872-8df8-00826dbafc30",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T14-04-09\\mongodb_backup_1747404254386.zip",
+    "createdAt": "2025-05-16T14:04:11.694Z",
+    "updatedAt": "2025-05-16T14:04:14.450Z"
+  },
+  {
+    "id": "087c75b6-b7b9-4871-96c5-3b5bc28b4469",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-16T14-04-09\\cloudinary_backup_1747404295655.zip",
+    "createdAt": "2025-05-16T14:04:17.138Z",
+    "updatedAt": "2025-05-16T14:04:58.992Z"
+  },
+  {
+    "id": "a72bff61-0207-48d6-82d2-4b63adeb333f",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T10-52-01",
+    "createdAt": "2025-05-17T10:52:34.262Z",
+    "updatedAt": "2025-05-17T10:53:08.894Z"
+  },
+  {
+    "id": "561135a0-3370-4016-8436-554346156916",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T10-52-01\\mongodb_backup_1747479157634.zip",
+    "createdAt": "2025-05-17T10:52:35.117Z",
+    "updatedAt": "2025-05-17T10:52:37.696Z"
+  },
+  {
+    "id": "9ddda166-e396-4bdc-85cf-731358a86d35",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T10-52-01\\cloudinary_backup_1747479187024.zip",
+    "createdAt": "2025-05-17T10:52:39.271Z",
+    "updatedAt": "2025-05-17T10:53:08.003Z"
+  },
+  {
+    "id": "42ed120b-3b67-4e2b-9712-3448af4ae1bf",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-02-20",
+    "createdAt": "2025-05-17T17:02:23.192Z",
+    "updatedAt": "2025-05-17T17:02:30.769Z"
+  },
+  {
+    "id": "7bfa7ba7-3eef-4294-850e-c34db6069fb7",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-02-20\\mongodb_backup_1747501345997.zip",
+    "createdAt": "2025-05-17T17:02:24.397Z",
+    "updatedAt": "2025-05-17T17:02:26.057Z"
+  },
+  {
+    "id": "2f0e64c5-b09e-4060-94c8-3b15db4991e4",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-02-20\\cloudinary_backup_1747501349469.zip",
+    "createdAt": "2025-05-17T17:02:28.516Z",
+    "updatedAt": "2025-05-17T17:02:29.526Z"
+  },
+  {
+    "id": "f9c4cb02-bb2c-4ff9-acc2-51fad0c43368",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-06-29",
+    "createdAt": "2025-05-17T17:06:31.278Z",
+    "updatedAt": "2025-05-17T17:07:48.360Z"
+  },
+  {
+    "id": "10ccb609-1b75-4a4d-88a7-8b01b0856dac",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-06-29\\mongodb_backup_1747501595529.zip",
+    "createdAt": "2025-05-17T17:06:32.600Z",
+    "updatedAt": "2025-05-17T17:06:35.590Z"
+  },
+  {
+    "id": "ea90c765-67aa-49bf-adfb-3611370c683d",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-06-29\\cloudinary_backup_1747501666042.zip",
+    "createdAt": "2025-05-17T17:06:38.499Z",
+    "updatedAt": "2025-05-17T17:07:46.957Z"
+  },
+  {
+    "id": "68539378-5fda-4e14-b8bc-19b7cca873bb",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-14-05",
+    "createdAt": "2025-05-17T17:14:06.635Z",
+    "updatedAt": "2025-05-17T17:14:44.569Z"
+  },
+  {
+    "id": "138c046b-7a25-4ec8-9bed-52b9d34b702e",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-14-05\\mongodb_backup_1747502049198.zip",
+    "createdAt": "2025-05-17T17:14:06.699Z",
+    "updatedAt": "2025-05-17T17:14:09.268Z"
+  },
+  {
+    "id": "fa103404-ed57-46e7-87a8-31978be876c5",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-14-05\\cloudinary_backup_1747502083592.zip",
+    "createdAt": "2025-05-17T17:14:09.362Z",
+    "updatedAt": "2025-05-17T17:14:44.529Z"
+  },
+  {
+    "id": "d9008704-f952-4451-96a3-9a7ca55eb5f6",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-18-27",
+    "createdAt": "2025-05-17T17:18:29.126Z",
+    "updatedAt": "2025-05-17T17:19:17.610Z"
+  },
+  {
+    "id": "e6c6a6a8-6e91-4c31-ac6b-07cd846e3122",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-18-27\\mongodb_backup_1747502311996.zip",
+    "createdAt": "2025-05-17T17:18:29.339Z",
+    "updatedAt": "2025-05-17T17:18:32.073Z"
+  },
+  {
+    "id": "a117749e-d60f-4b8d-9ed5-19bca5239757",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-17T17-18-27\\cloudinary_backup_1747502356220.zip",
+    "createdAt": "2025-05-17T17:18:32.368Z",
+    "updatedAt": "2025-05-17T17:19:17.437Z"
+  },
+  {
+    "id": "fe47d97a-afdc-4feb-aadd-cc7a4f9d9429",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-18T06-08-07",
+    "createdAt": "2025-05-18T06:08:09.169Z",
+    "updatedAt": "2025-05-18T06:09:05.455Z"
+  },
+  {
+    "id": "a4646106-46b2-4ed7-bcf2-663fdf1d89c6",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-18T06-08-07\\mongodb_backup_1747548491991.zip",
+    "createdAt": "2025-05-18T06:08:09.325Z",
+    "updatedAt": "2025-05-18T06:08:12.079Z"
+  },
+  {
+    "id": "44c5dd15-aa08-4155-a002-30661cdc7026",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-18T06-08-07\\cloudinary_backup_1747548543955.zip",
+    "createdAt": "2025-05-18T06:08:12.337Z",
+    "updatedAt": "2025-05-18T06:09:05.303Z"
+  },
+  {
+    "id": "47a78c12-0c6d-4b2a-88cc-d386514074c5",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-18T09-23-56",
+    "createdAt": "2025-05-18T09:23:57.831Z",
+    "updatedAt": "2025-05-18T09:25:27.413Z"
+  },
+  {
+    "id": "9ebaece5-98ea-4708-a49c-cdceea935deb",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-18T09-23-56\\mongodb_backup_1747560241349.zip",
+    "createdAt": "2025-05-18T09:23:57.980Z",
+    "updatedAt": "2025-05-18T09:24:01.411Z"
+  },
+  {
+    "id": "cd700b59-f4b5-4622-b348-d5ccc4994c19",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-18T09-23-56\\cloudinary_backup_1747560325744.zip",
+    "createdAt": "2025-05-18T09:24:02.045Z",
+    "updatedAt": "2025-05-18T09:25:27.211Z"
+  },
+  {
+    "id": "7c735ae0-8130-4c23-b72c-e39c808153a6",
+    "type": "FULL",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-18T09-31-20",
+    "createdAt": "2025-05-18T09:31:20.711Z",
+    "updatedAt": "2025-05-18T09:32:02.662Z"
+  },
+  {
+    "id": "1c5f669a-d26f-4785-bc19-77766fc2400e",
+    "type": "MONGODB",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-18T09-31-20\\mongodb_backup_1747560684222.zip",
+    "createdAt": "2025-05-18T09:31:20.712Z",
+    "updatedAt": "2025-05-18T09:31:24.253Z"
+  },
+  {
+    "id": "03453128-fa13-49ef-b82e-6f99657c84b0",
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-05-18T09-31-20\\cloudinary_backup_1747560721157.zip",
+    "createdAt": "2025-05-18T09:31:24.756Z",
+    "updatedAt": "2025-05-18T09:32:02.369Z"
+  },
+  {
+    "type": "CLOUDINARY",
+    "status": "COMPLETED",
+    "path": "backups\\2025-06-07T05-45-49-693Z\\cloudinary_backup_1749275260967.zip",
+    "id": "337dadf9-807c-4013-b822-daf80eb0ac66",
+    "createdAt": "2025-06-07T05:45:49.695Z",
+    "updatedAt": "2025-06-07T05:47:42.348Z"
+  }
+]

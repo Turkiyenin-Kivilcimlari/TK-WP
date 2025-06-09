@@ -77,7 +77,7 @@ export const deleteMultipleImages = async (urls: string[]): Promise<{
   errors: string[];
 }> => {
   const result = {
-    success: true,
+    success: false,
     deleted: 0,
     failed: 0,
     errors: [] as string[]
@@ -112,3 +112,42 @@ export const deleteMultipleImages = async (urls: string[]): Promise<{
 };
 
 export default cloudinary;
+
+/**
+ * Cloudinary'den tüm klasör ve dosyaları getirir (yedekleme için)
+ */
+export const getAllCloudinaryAssets = async (folders: string[] = []): Promise<any[]> => {
+  try {
+    const allAssets: any[] = [];
+    
+    // Eğer klasör belirtilmemişse, tüm klasörleri al
+    let foldersToBackup = folders && folders.length > 0 ? folders : [];
+    
+    if (foldersToBackup.length === 0) {
+      // Tüm klasörleri al
+      const response = await cloudinary.api.root_folders();
+      foldersToBackup = response.folders.map((folder: any) => folder.name);
+    }
+    
+    // Her klasör için varlıkları al
+    for (const folder of foldersToBackup) {
+      let nextCursor: string | undefined = undefined;
+      
+      do {
+        const result = await cloudinary.search
+          .expression(`folder:${folder}`)
+          .max_results(500)
+          .next_cursor(nextCursor)
+          .execute();
+        
+        allAssets.push(...result.resources);
+        nextCursor = result.next_cursor;
+      } while (nextCursor);
+    }
+    
+    return allAssets;
+  } catch (error) {
+    console.error('Cloudinary varlıkları alınırken hata:', error);
+    return [];
+  }
+};

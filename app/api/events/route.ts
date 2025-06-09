@@ -6,6 +6,7 @@ import { UserRole } from "@/models/User";
 import { encryptedJson } from "@/lib/response";
 import { Schema } from "mongoose";
 import slugify from "slugify";
+import { safeParseDate } from '@/lib/utils';
 
 export const dynamic = "force-dynamic";
 
@@ -54,12 +55,12 @@ export async function GET(req: NextRequest) {
         filter.$or = [
           { 
             "eventDays.date": { 
-              $gte: new Date(now.setHours(0, 0, 0, 0)) 
+              $gte: safeParseDate(new Date(now.setHours(0, 0, 0, 0)))
             } 
           },
           {
             $and: [
-              { "eventDays.date": { $eq: new Date(now.setHours(0, 0, 0, 0)) } },
+              { "eventDays.date": { $eq: safeParseDate(new Date(now.setHours(0, 0, 0, 0))) } },
               { 
                 $or: [
                   { "eventDays.endTime": { $exists: true, $ne: "" } },
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
         yesterday.setDate(yesterday.getDate() - 1);
         
         filter["eventDays.date"] = { 
-          $lt: new Date(yesterday.setHours(23, 59, 59, 999)) 
+          $lt: safeParseDate(new Date(yesterday.setHours(23, 59, 59, 999)))
         };
       }
 

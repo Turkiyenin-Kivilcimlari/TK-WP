@@ -6,6 +6,7 @@ import * as QRCode from 'qrcode';
 import crypto from 'crypto';
 import base32 from 'hi-base32';
 import { encryptedJson } from "@/lib/response";
+import { safeParseDate } from '@/lib/utils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +32,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Tarih alanlarını güvenli şekilde dönüştür
+    if (user.createdAt) {
+      user.createdAt = safeParseDate(user.createdAt);
+    }
+    
+    if (user.updatedAt) {
+      user.updatedAt = safeParseDate(user.updatedAt);
+    }
+    
     try {
       // speakeasy kullanmak yerine doğrudan kendi güvenli rastgele secret oluşturma fonksiyonumuzu yazalım
       // 20 byte (160 bit) güvenli rastgele veri oluştur
@@ -57,12 +67,14 @@ export async function POST(req: NextRequest) {
         }
       });
     } catch (error) {
+      console.error('QR kod oluşturma hatası:', error);
       return encryptedJson(
         { success: false, message: 'QR kod oluşturma hatası' },
         { status: 500 }
       );
     }
   } catch (error) {
+    console.error('2FA setup error:', error);
     return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
