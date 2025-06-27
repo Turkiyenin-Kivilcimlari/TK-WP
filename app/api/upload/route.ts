@@ -26,8 +26,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Klasör doğrulama
-    const uploadFolder = folder === 'article_thumbnails' ? 'article_thumbnails' : 'user_avatars';
+    // Klasör doğrulama - board_members klasörü için destek ekleyelim
+    const allowedFolders = ['user_avatars', 'article_thumbnails', 'board_members'];
+    const uploadFolder = allowedFolders.includes(folder) ? folder : 'user_avatars';
     
     
     // Cloudinary'ye yükleme ayarları
@@ -45,6 +46,13 @@ export async function POST(req: NextRequest) {
     if (uploadFolder === 'article_thumbnails') {
       uploadOptions.transformation.push(
         { width: 600, height: 450, crop: 'fill', gravity: 'auto', quality: 99 },
+      );
+    }
+    
+    // Board üyeleri için özel boyutlandırma
+    if (uploadFolder === 'board_members') {
+      uploadOptions.transformation.push(
+        { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 99 },
       );
     }
     

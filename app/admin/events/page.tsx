@@ -93,8 +93,74 @@ export default function AdminEventsPage() {
   // Yükleniyor durumu
   if (status === "loading") {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="container mx-auto max-w-7xl py-8 px-4">
+        {/* Geri dönüş butonu bölümü */}
+        <div className="mb-6">
+          <Skeleton className="h-10 w-40 bg-primary/20" />
+        </div>
+        
+        {/* Başlık ve filtreleme bölümü */}
+        <div className="flex flex-col space-y-4">
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-8 w-56 bg-primary/20" />
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <Skeleton className="h-10 flex-1 bg-primary/20" />
+            <Skeleton className="h-10 w-44 bg-primary/20" />
+          </div>
+        </div>
+        
+        {/* Etkinlik kart bölümü */}
+        <div className="mt-6 border rounded-lg">
+          {/* Kart başlığı */}
+          <div className="p-4 border-b">
+            <Skeleton className="h-6 w-40 bg-primary/20 mb-2" />
+            <Skeleton className="h-4 w-60 bg-primary/20" />
+          </div>
+          
+          {/* Etkinlik listesi */}
+          <div className="divide-y">
+            {Array(3)
+              .fill(0)
+              .map((_, index) => (
+                <div key={index} className="p-4 md:p-6">
+                  <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
+                    <div className="space-y-3 w-full md:w-3/4">
+                      {/* Başlık ve etiketler */}
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <Skeleton className="h-6 w-1/3 bg-primary/20" />
+                        <Skeleton className="h-5 w-20 rounded-full bg-primary/20" />
+                        <Skeleton className="h-5 w-20 rounded-full bg-primary/20" />
+                      </div>
+                      
+                      {/* Tarih bilgisi */}
+                      <div className="flex items-center gap-1">
+                        <Skeleton className="h-4 w-4 rounded-full bg-primary/20" />
+                        <Skeleton className="h-4 w-36 bg-primary/20" />
+                      </div>
+                      
+                      {/* Oluşturan bilgisi */}
+                      <div className="flex items-center gap-1">
+                        <Skeleton className="h-4 w-24 bg-primary/20" />
+                        <Skeleton className="h-4 w-32 bg-primary/20" />
+                      </div>
+                      
+                      {/* Butonlar */}
+                      <div className="pt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <Skeleton className="h-8 w-full bg-primary/20" />
+                        <Skeleton className="h-8 w-full bg-primary/20" />
+                        <Skeleton className="h-8 w-full bg-primary/20" />
+                      </div>
+                    </div>
+                    
+                    {/* Kapak görseli */}
+                    <Skeleton className="relative w-full md:w-48 h-32 rounded-md bg-primary/20" />
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -265,12 +331,12 @@ export default function AdminEventsPage() {
         });
       } else {
         toast.error("E-posta gönderilemedi", {
-          description: response.data.message || "Bir hata oluştu.",
+          description: "Bir hata oluştu.",
         });
       }
     } catch (error: any) {
       toast.error("E-posta gönderilemedi", {
-        description: error.message || "Bir hata oluştu.",
+        description: "Bir hata oluştu.",
       });
     } finally {
       setEmailSending((prev) => ({ ...prev, [event.id]: false }));
@@ -278,7 +344,7 @@ export default function AdminEventsPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto max-w-7xl py-8 px-4">
       <div className="mb-6">
         <Button variant="outline" asChild>
           <Link href="/admin/dashboard">
@@ -342,15 +408,43 @@ export default function AdminEventsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-4 space-y-4">
+            <div className="divide-y">
               {Array(3)
                 .fill(0)
                 .map((_, index) => (
-                  <div key={index} className="flex flex-col space-y-2">
-                    <Skeleton className="h-6 w-2/3" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <hr className="my-4" />
+                  <div key={index} className="p-4 md:p-6">
+                    <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
+                      <div className="space-y-3 w-full md:w-3/4">
+                        {/* Başlık ve etiketler */}
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <Skeleton className="h-6 w-1/3 bg-primary/20" />
+                          <Skeleton className="h-5 w-20 rounded-full bg-primary/20" />
+                          <Skeleton className="h-5 w-20 rounded-full bg-primary/20" />
+                        </div>
+                        
+                        {/* Tarih bilgisi */}
+                        <div className="flex items-center gap-1">
+                          <Skeleton className="h-4 w-4 rounded-full bg-primary/20" />
+                          <Skeleton className="h-4 w-36 bg-primary/20" />
+                        </div>
+                        
+                        {/* Oluşturan bilgisi */}
+                        <div className="flex items-center gap-1">
+                          <Skeleton className="h-4 w-24 bg-primary/20" />
+                          <Skeleton className="h-4 w-32 bg-primary/20" />
+                        </div>
+                        
+                        {/* Butonlar */}
+                        <div className="pt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <Skeleton className="h-8 w-full bg-primary/20" />
+                          <Skeleton className="h-8 w-full bg-primary/20" />
+                          <Skeleton className="h-8 w-full bg-primary/20" />
+                        </div>
+                      </div>
+                      
+                      {/* Kapak görseli */}
+                      <Skeleton className="relative w-full md:w-48 h-32 rounded-md bg-primary/20" />
+                    </div>
                   </div>
                 ))}
             </div>

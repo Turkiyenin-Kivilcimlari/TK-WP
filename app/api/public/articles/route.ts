@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       .populate({
       path: 'author',
       model: User,
-      select: 'name lastname avatar -_id' // role ve slug kaldırıldı
+      select: 'name lastname avatar slug -_id' // role ve slug kaldırıldı
       });
     
     return encryptedJson({

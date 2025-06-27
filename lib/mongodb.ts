@@ -1,41 +1,59 @@
 import mongoose from "mongoose";
+import { safeParseDate } from './utils';
 
-let isConnected = false;
+const MONGODB_URI = process.env.MONGODB_URI;
 
-export const connectToDatabase = async () => {
-  if (isConnected) {
-    return;
+if (!MONGODB_URI) {
+  throw new Error('MongoDB URI is not defined in environment variables');
+}
+
+/**
+ * MongoDB'ye bağlantı için global değişken
+ */
+declare global {
+  var mongooseClient: {
+    conn: typeof mongoose | null;
+    promise: Promise<typeof mongoose> | null;
+  };
+}
+
+// Geliştirme için global bağlantı değişkeni
+let cached = global.mongooseClient;
+
+if (!cached) {
+  cached = global.mongooseClient = { conn: null, promise: null };
+}
+
+/**
+ * MongoDB'ye bağlanma fonksiyonu
+ */
+export async function connectToDatabase() {
+  if (cached.conn) {
+    return cached.conn;
   }
-  
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: true,
+    };
+
+    // MongoDB şemalarında tarih dönüşümlerini düzeltmek için
+    mongoose.Schema.Types.Date.cast(function(val: any): Date | null | undefined {
+      if (val === null || val === undefined) {
+      return val;
+      }
+      return safeParseDate(val);
+    });
+
+    cached.promise = mongoose.connect(MONGODB_URI as string, opts);
+  }
+
   try {
-    const MONGODB_URI = process.env.MONGODB_URI;
-    if (!MONGODB_URI) {
-      throw new Error('MongoDB bağlantı adresi (MONGODB_URI) bulunamadı');
-    }
-    
-    // Kullanım dışı olan seçenekleri kaldırıldı (Node.js Driver 4.0.0+ için gerekli değil)
-    const options = {} as mongoose.ConnectOptions;
-
-    mongoose.connection.setMaxListeners(30)
-    
-    // Şema kayıt sorunlarını önlemek için strictQuery'yi false olarak ayarla
-    mongoose.set('strictQuery', false);
-    
-    await mongoose.connect(MONGODB_URI, options);
-    isConnected = true;
-    
-    // Şema modellerinin doğru yüklenmesini sağla
-    require('@/models/User');
-    require('@/models/Article');
-    require('@/models/Comment');
-    require('@/models/Token')
-    
-  } catch (error) {
-    throw error;
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
   }
-};
 
-mongoose.connection.on("error", (err) => {
-});
-
-export default connectToDatabase;
+  return cached.conn;
+}

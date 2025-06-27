@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Loader2,
   Calendar,
@@ -29,12 +30,12 @@ import {
   RefreshCw,
   ArrowUpDown,
   Trash2,
-  Tag, // Tag ikonunu ekle
-  ImageIcon, // Thumbnail için ikon
-  Settings, // Durum değiştirme için ikon ekleyelim
+  Tag,
+  ImageIcon,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image"; // Image bileşenini ekliyoruz
+import Image from "next/image";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -72,18 +73,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SafeHTML } from "@/components/SafeHTML";
 
-// HTML içeriğini güvenli bir şekilde işlemek için yardımcı fonksiyon
 const sanitizeAndTruncateHTML = (html: string, maxLength: number = 150) => {
-  // HTML etiketlerini kaldırarak düz metne dönüştürme
   const plainText = html.replace(/<[^>]*>/g, "");
-
-  // Metni belirtilen uzunluğa kısaltma
   if (plainText.length <= maxLength) return plainText;
   return plainText.substring(0, maxLength) + "...";
 };
 
-// Görüntülenme sayısını formatlama (1000 -> 1k, 1000000 -> 1M)
 const formatViewCount = (views: number): string => {
   if (views >= 1000000) {
     return `${(views / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
@@ -94,7 +91,6 @@ const formatViewCount = (views: number): string => {
   return views.toString();
 };
 
-// Etiketleri sınırlı sayıda gösterir, fazlaysa +X şeklinde belirtir
 const renderTags = (tags: string[], maxTags: number = 3) => {
   if (!tags || tags.length === 0) return null;
 
@@ -103,7 +99,6 @@ const renderTags = (tags: string[], maxTags: number = 3) => {
 
   return (
     <div className="flex flex-wrap gap-1 mt-1">
-      {/* Etiketler için bir başlık ikonu ekle */}
       <span className="flex items-center text-xs text-muted-foreground mr-1">
         <Tag className="h-3 w-3 mr-0.5" />
       </span>
@@ -121,9 +116,8 @@ const renderTags = (tags: string[], maxTags: number = 3) => {
   );
 };
 
-// Thumbnail göstermek için yardımcı bileşen
 const ArticleThumbnail = ({ article, className = "" }: { article: any, className?: string }) => {
-  const thumbnailUrl = article.thumbnail || article.image; // thumbnail veya image alanını kontrol et
+  const thumbnailUrl = article.thumbnail || article.image;
   
   if (!thumbnailUrl) {
     return (
@@ -145,7 +139,6 @@ const ArticleThumbnail = ({ article, className = "" }: { article: any, className
   );
 };
 
-// HTML içeriğini göstermek için dangerouslySetInnerHTML kullanacak bir bileşen
 const HTMLContent = ({
   content,
   className,
@@ -153,9 +146,7 @@ const HTMLContent = ({
   content: string;
   className?: string;
 }) => {
-  return (
-    <div className={className} dangerouslySetInnerHTML={{ __html: content }} />
-  );
+  return <SafeHTML html={content} className={className} />;
 };
 
 export default function ContentManagementPage() {
@@ -169,30 +160,23 @@ export default function ContentManagementPage() {
   const [isRejecting, setIsRejecting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  // Makale silme ile ilgili durumlar
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<string>("");
-
-  // Filtreleme state'leri
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [authorFilter, setAuthorFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [authors, setAuthors] = useState<any[]>([]);
-  // Tüm yazarları tutacak yeni state
   const [allAuthors, setAllAuthors] = useState<any[]>([]);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  // Tüm yazarları getir (filtreleme için - sadece bir kez çalışacak)
   const fetchAllAuthors = async () => {
     try {
-      // Tüm makaleleri getir (sayfalama ve filtreleme olmadan)
       const response = await api.get(`/api/admin/articles`);
       const allArticles = response.data.articles || [];
 
-      // Benzersiz yazarlar listesini oluştur
       interface Author {
         id: string;
         name: string;
@@ -207,7 +191,6 @@ export default function ContentManagementPage() {
       const uniqueAuthors = allArticles.reduce(
         (acc: Author[], article: Article) => {
           if (article.author) {
-            // Yazar zaten eklenmemişse ekle
             if (!acc.find((a: Author) => a.id === article.author!.id)) {
               acc.push(article.author);
             }
@@ -226,7 +209,6 @@ export default function ContentManagementPage() {
   const fetchArticles = async () => {
     setLoading(true);
     try {
-      // Query parametreleri oluştur
       let queryParams = new URLSearchParams();
 
       if (statusFilter !== "all") {
@@ -247,29 +229,22 @@ export default function ContentManagementPage() {
         queryParams.append("search", searchQuery.trim());
       }
 
-      // API isteği gönder
       const response = await api.get(
         `/api/admin/articles?${queryParams.toString()}`
       );
       const allArticles = response.data.articles || [];
 
-      // Tüm makaleler
       setArticles(allArticles);
 
-      // Onay bekleyen makaleler
       setPendingArticles(
         allArticles.filter(
           (article: any) => article.status === "pending_approval"
         )
       );
 
-      // Yayınlanmış makaleler
       setPublishedArticles(
         allArticles.filter((article: any) => article.status === "published")
       );
-
-      // Filtrelenen makalelere göre yazarları güncelleme - bu kısmı kaldırıyoruz
-      // Bu sayede filtreleme yazarları etkilemeyecek
     } catch (error) {
       toast.error("İçerikler yüklenirken bir hata oluştu");
     } finally {
@@ -277,7 +252,6 @@ export default function ContentManagementPage() {
     }
   };
 
-  // İlk yüklendiğinde tüm yazarları bir kez getir
   useEffect(() => {
     if (
       (status === "authenticated" && session?.user?.role === UserRole.ADMIN) ||
@@ -287,7 +261,6 @@ export default function ContentManagementPage() {
     }
   }, [session, status]);
 
-  // Tüm useEffect hook'ları burada - koşullu ifadelerden önce
   useEffect(() => {
     if (
       (status === "authenticated" && session?.user?.role === UserRole.ADMIN) ||
@@ -297,12 +270,10 @@ export default function ContentManagementPage() {
     }
   }, [session, status, statusFilter, dateFilter, authorFilter, sortOrder]);
 
-  // Arama yapıldığında
   const handleSearch = () => {
     fetchArticles();
   };
 
-  // Filtreleri sıfırla
   const resetFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
@@ -354,19 +325,16 @@ export default function ContentManagementPage() {
     }
   };
 
-  // Makale silme işleminde yetki kontrolü
   const handleDeleteArticle = async () => {
     if (!articleToDelete) {
       toast.error("Silinecek makale bulunamadı");
       return;
     }
 
-    // Silmeden önce makaleyi bulalım ve yetki kontrolü yapalım
     const articleToDeleteData = articles.find(
       (article) => article.id === articleToDelete
     );
 
-    // Kullanıcı kendi makalesini veya admin herhangi bir makaleyi silebilir
     if (
       !(
         session?.user?.id === articleToDeleteData?.author?.id ||
@@ -395,7 +363,6 @@ export default function ContentManagementPage() {
     }
   };
 
-  // Durumu formatlama
   const formatStatus = (status: string) => {
     switch (status) {
       case ArticleStatus.DRAFT:
@@ -411,11 +378,9 @@ export default function ContentManagementPage() {
     }
   };
 
-  // Durum değiştirme işlemi
   const handleUpdateStatus = async (articleId: string, newStatus: string) => {
     setIsUpdatingStatus(true);
     try {
-      // FIX: Update the endpoint to use the admin API path
       await api.patch(`/api/admin/articles/${articleId}`, {
         status: newStatus,
       });
@@ -431,22 +396,84 @@ export default function ContentManagementPage() {
     }
   };
 
-  // Yükleniyor durumu
   if (status === "loading") {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="container max-w-7xl mx-auto py-8 px-4">
+        {/* Header Skeleton */}
+        <div className="text-center mb-6">
+          <Skeleton className="h-10 w-64 bg-primary/20 rounded-lg mx-auto" />
+          <Skeleton className="h-4 w-96 bg-primary/20 rounded-lg mx-auto mt-2" />
+        </div>
+
+        {/* Filters Skeleton */}
+        <div className="mb-6 bg-muted/30 p-4 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i}>
+                <Skeleton className="h-4 w-20 bg-primary/20 rounded-md mb-1" />
+                <Skeleton className="h-10 w-full bg-primary/20 rounded-md" />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-9 w-40 bg-primary/20 rounded-md" />
+            <Skeleton className="h-9 w-40 bg-primary/20 rounded-md" />
+          </div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="mt-6">
+          <div className="border-b">
+            <div className="flex gap-2 w-full mb-2">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-10 flex-1 bg-primary/20 rounded-md" />
+              ))}
+            </div>
+          </div>
+
+          {/* Tab Content Skeleton */}
+          <div className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, index) => (
+                <Card key={`skeleton-${index}`} className="overflow-hidden">
+                  <Skeleton className="w-full h-40 bg-primary/20" />
+                  <CardHeader className="pb-2">
+                    <Skeleton className="h-6 w-full bg-primary/20 rounded-md" />
+                    <Skeleton className="h-4 w-3/4 bg-primary/20 rounded-md mt-2" />
+                  </CardHeader>
+                  <CardContent className="pb-2">
+                    <Skeleton className="h-4 w-full bg-primary/20 rounded-md mb-2" />
+                    <Skeleton className="h-4 w-full bg-primary/20 rounded-md mb-2" /> 
+                    <Skeleton className="h-4 w-2/3 bg-primary/20 rounded-md" />
+                    <div className="flex gap-1 mt-2">
+                      <Skeleton className="h-5 w-16 bg-primary/20 rounded-full" />
+                      <Skeleton className="h-5 w-16 bg-primary/20 rounded-full" />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex flex-col items-stretch gap-2">
+                    <div className="flex justify-between items-center">
+                      <Skeleton className="h-4 w-20 bg-primary/20 rounded-md" />
+                      <Skeleton className="h-4 w-20 bg-primary/20 rounded-md" />
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Skeleton className="h-9 w-full bg-primary/20 rounded-md" />
+                      <Skeleton className="h-9 w-10 bg-primary/20 rounded-md" />
+                    </div>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Oturum yoksa giriş sayfasına yönlendir
   if (status === "unauthenticated") {
     redirect("/");
     return null;
   }
 
-  // Kullanıcı yetkisi kontrol edilir
   const userRole = session?.user?.role as UserRole;
   if (userRole !== UserRole.ADMIN && userRole !== UserRole.SUPERADMIN) {
     redirect("/");
@@ -454,7 +481,7 @@ export default function ContentManagementPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container max-w-7xl mx-auto py-8 px-4">
       <div className="text-center mb-6">
         <h1 className="text-3xl font-bold">İçerik Yönetimi</h1>
         <p className="text-muted-foreground mt-1">
@@ -513,7 +540,6 @@ export default function ContentManagementPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tüm Yazarlar</SelectItem>
-                {/* Filtrelenmiş yazarlar yerine tüm yazarları göster */}
                 {allAuthors.map((author) => (
                   <SelectItem key={author.id} value={author.id}>
                     {author.name} {author.lastname}
@@ -567,15 +593,37 @@ export default function ContentManagementPage() {
 
         <TabsContent value="pending" className="mt-6">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, index) => (
+                <Card key={`skeleton-${index}`} className="overflow-hidden">
+                  <Skeleton className="w-full h-40 bg-primary/20" />
+                  <CardHeader className="pb-2">
+                    <Skeleton className="h-6 w-full bg-primary/20 rounded-md" />
+                    <Skeleton className="h-4 w-3/4 bg-primary/20 rounded-md mt-2" />
+                  </CardHeader>
+                  <CardContent className="pb-2">
+                    <Skeleton className="h-4 w-full bg-primary/20 rounded-md mb-2" />
+                    <Skeleton className="h-4 w-full bg-primary/20 rounded-md mb-2" /> 
+                    <Skeleton className="h-4 w-2/3 bg-primary/20 rounded-md" />
+                    <div className="flex gap-1 mt-2">
+                      <Skeleton className="h-5 w-16 bg-primary/20 rounded-full" />
+                      <Skeleton className="h-5 w-16 bg-primary/20 rounded-full" />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex flex-col items-stretch gap-2">
+                    <Skeleton className="h-4 w-full bg-primary/20 rounded-md" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-9 w-full bg-primary/20 rounded-md" />
+                      <Skeleton className="h-9 w-full bg-primary/20 rounded-md" />
+                    </div>
+                  </CardFooter>
+                </Card>
+              ))}
             </div>
           ) : pendingArticles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Onay bekleyen kartları */}
               {pendingArticles.map((article) => (
                 <Card key={article.id} className="overflow-hidden">
-                  {/* Thumbnail ekliyoruz */}
                   <div className="w-full h-40 overflow-hidden">
                     <ArticleThumbnail article={article} className="w-full h-40" />
                   </div>
@@ -602,7 +650,6 @@ export default function ContentManagementPage() {
                     ) : (
                       <p className="text-sm">İçerik bulunamadı</p>
                     )}
-                    {/* Etiketleri göster */}
                     {renderTags(article.tags || [])}
                   </CardContent>
                   <CardFooter className="flex flex-col items-stretch gap-2">
@@ -711,7 +758,6 @@ export default function ContentManagementPage() {
                         </Link>
                       </Button>
                       
-                      {/* Durum değiştirme dropdown menüsü (kart görünümü için) */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="secondary" size="sm" disabled={isUpdatingStatus}>
@@ -756,8 +802,55 @@ export default function ContentManagementPage() {
 
         <TabsContent value="all" className="mt-6">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Thumbnail</TableHead>
+                    <TableHead>Başlık</TableHead>
+                    <TableHead>Yazar</TableHead>
+                    <TableHead>Durum</TableHead>
+                    <TableHead>Tarih</TableHead>
+                    <TableHead>Görüntülenme</TableHead>
+                    <TableHead className="text-right">İşlemler</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...Array(5)].map((_, index) => (
+                    <TableRow key={`skeleton-row-${index}`}>
+                      <TableCell>
+                        <Skeleton className="w-16 h-16 bg-primary/20" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-full max-w-[200px] bg-primary/20 rounded-md mb-2" />
+                        <div className="flex gap-1">
+                          <Skeleton className="h-4 w-16 bg-primary/20 rounded-full" />
+                          <Skeleton className="h-4 w-16 bg-primary/20 rounded-full" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-32 bg-primary/20 rounded-md" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-24 bg-primary/20 rounded-md" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-24 bg-primary/20 rounded-md" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-16 bg-primary/20 rounded-md" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 justify-end">
+                          <Skeleton className="h-8 w-8 bg-primary/20 rounded-md" />
+                          <Skeleton className="h-8 w-8 bg-primary/20 rounded-md" />
+                          <Skeleton className="h-8 w-8 bg-primary/20 rounded-md" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : articles.length > 0 ? (
             <div className="overflow-x-auto">
@@ -783,7 +876,6 @@ export default function ContentManagementPage() {
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="font-medium">{article.title}</div>
-                        {/* Etiketler */}
                         {renderTags(article.tags || [])}
                       </TableCell>
                       <TableCell>
@@ -806,7 +898,6 @@ export default function ContentManagementPage() {
                             </Link>
                           </Button>
 
-                          {/* Durum değiştirme dropdown menüsü */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="outline" size="sm" disabled={isUpdatingStatus}>
@@ -866,7 +957,6 @@ export default function ContentManagementPage() {
                             </>
                           )}
 
-                          {/* Silme butonu - Kullanıcı kendi yazısını veya admin herhangi bir yazıyı silebilir */}
                           {(session?.user?.id === article.author?.id ||
                             session?.user?.role === UserRole.ADMIN ||
                             session?.user?.role === UserRole.SUPERADMIN) && (
@@ -897,14 +987,37 @@ export default function ContentManagementPage() {
 
         <TabsContent value="published" className="mt-6">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, index) => (
+                <Card key={`skeleton-published-${index}`} className="overflow-hidden">
+                  <Skeleton className="w-full h-40 bg-primary/20" />
+                  <CardHeader className="pb-2">
+                    <Skeleton className="h-6 w-full bg-primary/20 rounded-md" />
+                    <Skeleton className="h-4 w-3/4 bg-primary/20 rounded-md mt-2" />
+                  </CardHeader>
+                  <CardContent className="pb-2">
+                    <Skeleton className="h-4 w-full bg-primary/20 rounded-md mb-2" />
+                    <Skeleton className="h-4 w-full bg-primary/20 rounded-md mb-2" />
+                    <Skeleton className="h-4 w-2/3 bg-primary/20 rounded-md" />
+                    <div className="flex gap-1 mt-2">
+                      <Skeleton className="h-5 w-16 bg-primary/20 rounded-full" />
+                      <Skeleton className="h-5 w-16 bg-primary/20 rounded-full" />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex flex-col items-stretch gap-2">
+                    <Skeleton className="h-4 w-full bg-primary/20 rounded-md" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-9 w-full bg-primary/20 rounded-md" />
+                      <Skeleton className="h-9 w-10 bg-primary/20 rounded-md" />
+                    </div>
+                  </CardFooter>
+                </Card>
+              ))}
             </div>
           ) : publishedArticles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {publishedArticles.map((article) => (
                 <Card key={article.id} className="overflow-hidden">
-                  {/* Thumbnail ekliyoruz */}
                   <div className="w-full h-40 overflow-hidden">
                     <ArticleThumbnail article={article} className="w-full h-40" />
                   </div>
@@ -929,7 +1042,6 @@ export default function ContentManagementPage() {
                     ) : (
                       <p className="text-sm">İçerik bulunamadı</p>
                     )}
-                    {/* Etiketleri göster */}
                     {renderTags(article.tags || [])}
                   </CardContent>
                   <CardFooter className="flex flex-col items-stretch gap-2">
@@ -957,7 +1069,6 @@ export default function ContentManagementPage() {
                         </Link>
                       </Button>
                       
-                      {/* Durum değiştirme dropdown menüsü (kart görünümü için) */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="secondary" size="sm" disabled={isUpdatingStatus}>
@@ -1022,7 +1133,6 @@ export default function ContentManagementPage() {
         </Button>
       </div>
 
-      {/* Silme onay diyaloğu */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

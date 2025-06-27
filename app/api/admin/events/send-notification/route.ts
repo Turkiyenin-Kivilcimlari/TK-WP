@@ -101,7 +101,6 @@ export async function POST(req: NextRequest) {
 
         successCount++;
       } catch (emailError) {
-        console.error(`Failed to send email to ${user.email}:`, emailError);
       }
     }
 
@@ -112,7 +111,6 @@ export async function POST(req: NextRequest) {
       totalUsers: users.length
     });
   } catch (error) {
-    console.error("Error sending event notifications:", error);
     return encryptedJson(
       { success: false, message: "E-posta gönderirken bir hata oluştu" },
       { status: 500 }

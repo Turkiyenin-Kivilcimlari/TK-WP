@@ -155,6 +155,19 @@ const EventDaySchema = new Schema<IEventDay>({
         this.eventType === EventType.HYBRID
       );
     },
+    // URL validasyonu ekleyelim
+    validate: {
+      validator: function (v: string | undefined) {
+        if (!v) return true; // Boş olabilir (zorunluluğu yukarıda kontrol ediyoruz)
+        try {
+          new URL(v);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      message: (props) => `${props.value} geçerli bir URL değil!`,
+    },
   },
 });
 

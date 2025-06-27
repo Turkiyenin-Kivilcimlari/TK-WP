@@ -1,9 +1,10 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Document, model, Model, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 // Make sure these imports are explicitly typed
 import * as ms from 'ms';
 import { StringValue } from 'ms';
+import { safeParseDate, slugify } from '@/lib/utils';
 
 export enum UserRole {
   USER = 'USER',
@@ -34,8 +35,23 @@ export interface IUser extends Document {
   generateTwoFactorSecret: () => Promise<string>;
   verifyTwoFactorToken: (token: string) => Promise<boolean>;
   allowEmails: boolean;
+  slug: string;
+  about: string;
+  title?: string;
+  github?: string;
+  linkedin?: string;
+  kaggle?: string;
+  huggingface?: string;
+  website?: string;
+  // Yeni alan: yedekleme izinleri
+  backupPermissions?: {
+    canView: boolean;
+    canManage: boolean;
+    canDownload: boolean;
+  };
 }
 
+// Schema içinde setter kullanarak tarih alanları için dönüşüm ekleyelim
 const userSchema = new Schema<IUser>(
   {
     name: { 
@@ -98,9 +114,71 @@ const userSchema = new Schema<IUser>(
     allowEmails: {
       type: Boolean,
       default: false,
+    },
+    slug: { 
+      type: String, 
+      unique: true,
+      sparse: true, // Boş değerler için unique kontrolü yapmaz
+      trim: true 
+    },
+    about: { 
+      type: String, 
+      default: '',
+      trim: true 
+    },
+    title: {
+      type: String,
+      default: ''
+    },
+    github: {
+      type: String,
+      trim: true,
+    },
+    linkedin: {
+      type: String,
+      trim: true,
+    },
+    kaggle: {
+      type: String,
+      trim: true,
+    },
+    huggingface: {
+      type: String,
+      trim: true,
+    },
+    website: {
+      type: String,
+      trim: true,
+    },
+    // Yedekleme izinleri - Sadece admin/moderatör kullanıcılar için
+    backupPermissions: {
+      canView: {
+        type: Boolean,
+        default: false,
+      },
+      canManage: {
+        type: Boolean,
+        default: false,
+      },
+      canDownload: {
+        type: Boolean,
+        default: false,
+      }
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      set: (v: any) => safeParseDate(v)
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+      set: (v: any) => safeParseDate(v)
     }
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 // Şifre karşılaştırma metodunu güçlendirelim
@@ -150,7 +228,8 @@ userSchema.methods.getJwtToken = function (): string {
     { 
       id: this._id.toString(), 
       role: this.role,
-      email: this.email
+      email: this.email,
+      slug: this.slug,
     }, 
     jwtSecret,
     options
@@ -168,6 +247,31 @@ userSchema.pre('save', async function(next) {
   } catch (error: any) {
     next(error);
   }
+});
+
+// Slug oluşturmak için pre-save hook
+userSchema.pre('save', async function(next) {
+  // Eğer slug boşsa veya yeni bir kullanıcı oluşturuluyorsa
+  if (!this.slug && (this.isNew || this.isModified('name') || this.isModified('lastname'))) {
+    let baseSlug = slugify(`${this.name} ${this.lastname}`);
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Benzersiz slug oluştur
+    while (true) {
+      // Aynı slug'a sahip başka bir kullanıcı var mı kontrol et
+      const existingUser = await mongoose.model('User').findOne({ slug, _id: { $ne: this._id } });
+      if (!existingUser) break;
+      
+      // Varsa slug'a sayı ekle
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
+    this.slug = slug;
+  }
+  
+  next();
 });
 
 // 2FA için yeni metodlar ekleyin
@@ -192,15 +296,7 @@ userSchema.methods.verifyTwoFactorToken = async function(token: string) {
   }
 };
 
-// Güvenli model tanımlaması
-let User: Model<IUser>;
-
-try {
-  // Eğer model zaten tanımlıysa, varolan modeli kullan
-  User = mongoose.model<IUser>('User');
-} catch (error) {
-  // Model henüz tanımlanmamışsa yeni model oluştur
-  User = mongoose.model<IUser>('User', userSchema);
-}
+// Model zaten oluşturulduysa onu kullan, yoksa yeni oluştur
+const User = (mongoose.models?.User as Model<IUser>) || model<IUser>('User', userSchema);
 
 export default User;

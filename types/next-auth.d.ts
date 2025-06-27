@@ -7,7 +7,13 @@ declare module "next-auth" {
     name: string;
     email: string;
     role: UserRole;
+    slug?: string;
     requiresTwoFactor?: boolean;
+    github?: string;
+    linkedin?: string;
+    kaggle?: string; 
+    huggingface?: string;
+    website?: string;
   }
 
   interface Session {
@@ -16,6 +22,7 @@ declare module "next-auth" {
       name: string;
       email: string;
       role: UserRole;
+      slug?: string;
       requiresTwoFactor?: boolean;
     }
   }

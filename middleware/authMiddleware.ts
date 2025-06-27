@@ -30,7 +30,8 @@ export async function authenticateUser(req: NextRequest) {
       return {
         id: session.user.id,
         role: session.user.role as UserRole,
-        email: session.user.email as string
+        email: session.user.email as string,
+        slug: session.user.slug as string
       };
     }
     

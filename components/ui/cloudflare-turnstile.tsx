@@ -18,13 +18,18 @@ export function CloudflareTurnstile({
   const widgetIdRef = useRef<string | null>(null);
   const initialized = useRef(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [turnstileVerified, setTurnstileVerified] = useState(false);
   
   // Localhost kontrolü
   const [isLocalhost, setIsLocalhost] = useState(false);
   
   // Hard-coded site key
-  const SITE_KEY = "0x4AAAAAABEm1LyPmKRYL-Of";
-
+  const SITE_KEY = process.env.NEXT_PUBLIC_CLOUDFLARE_SITE_KEY;
+  if (!SITE_KEY) {
+    console.error("CLOUDFLARE_SITE_KEY environment variable is not set.");
+    return null; // Site key eksikse hiçbir şey render etme
+  }
+  
   // İstemci tarafında çalışacak kodlar için
   useEffect(() => {
     setIsMounted(true);
@@ -37,8 +42,14 @@ export function CloudflareTurnstile({
   // Localhost ise hemen doğrula
   useEffect(() => {
     if (isLocalhost && isMounted) {
-      // Localhost'ta otomatik doğrulama yapalım
-      onVerify("localhost-dev-verification-token");
+      // Güvenlik için localhost'ta bile token üretme
+      const localhostToken = `dev-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+      
+      // 100ms gecikme ile doğrula
+      setTimeout(() => {
+        if (onVerify) onVerify(localhostToken);
+        setTurnstileVerified(true);
+      }, 100);
     }
   }, [isLocalhost, onVerify, isMounted]);
 

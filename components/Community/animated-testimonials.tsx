@@ -24,6 +24,11 @@ export const AnimatedTestimonials = ({
 }) => {
   const [active, setActive] = useState(0);
 
+  // Boş dizi kontrolü
+  if (!testimonials || testimonials.length === 0) {
+    return null;
+  }
+
   const handleNext = () => {
     setActive((prev) => (prev + 1) % testimonials.length);
   };
@@ -118,13 +123,13 @@ export const AnimatedTestimonials = ({
             }}
           >
             <h3 className="text-2xl font-bold text-foreground">
-              {testimonials[active].name}
+              {testimonials[active]?.name || 'İsim bulunamadı'}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {testimonials[active].designation}
+              {testimonials[active]?.designation || 'Görev bulunamadı'}
             </p>
-            <motion.p className="text-lg text-muted-foreground mt-8">
-              {testimonials[active].quote.split(" ").map((word, index) => (
+            <motion.p className="text-lg text-muted-foreground mt-3">
+              {(testimonials[active]?.quote || 'Açıklama bulunamadı').split(" ").map((word, index) => (
                 <motion.span
                   key={index}
                   initial={{
@@ -149,7 +154,7 @@ export const AnimatedTestimonials = ({
               ))}
             </motion.p>
           </motion.div>
-          <div className="flex gap-4 pt-12 md:pt-0">
+          <div className="flex gap-4 pt-12 mt-5 md:pt-0">
             <button
               onClick={handlePrev}
               className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center group/button"

@@ -16,7 +16,7 @@ export async function GET(
     await connectToDatabase();
     
     const event = await Event.findOne({ slug: params.slug })
-      .populate('author', 'name lastname avatar');
+      .populate('author', 'name lastname avatar slug');
     
     if (!event) {
       return encryptedJson({ success: false, message: 'Etkinlik bulunamadı' }, { status: 404 });
@@ -63,7 +63,8 @@ export async function GET(
         id: event.author._id.toString(),
         name: event.author.name,
         lastname: 'lastname' in event.author ? event.author.lastname : '',
-        avatar: 'avatar' in event.author ? event.author.avatar || null : null
+        avatar: 'avatar' in event.author ? event.author.avatar || null : null,
+        slug: 'slug' in event.author ? event.author.slug || null : null,
       } : null
     };
     

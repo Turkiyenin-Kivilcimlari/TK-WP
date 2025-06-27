@@ -10,6 +10,8 @@ import { useAuth, RegisterFormData } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { CloudflareTurnstile } from "../ui/cloudflare-turnstile";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useRouter } from "next/navigation";
+import api from "@/lib/api";
 
 interface SignupFormProps extends React.HTMLAttributes<HTMLDivElement> {
   turnstileToken?: string;
@@ -23,14 +25,92 @@ interface FormErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  title?: string; // Title için hata mesajı alanı ekleyelim
 }
+
+const signupSchema = {
+  name: (value: string) => {
+    if (!value.trim()) {
+      return "Ad alanı zorunludur";
+    }
+    if (!/^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]+$/.test(value.trim())) {
+      return "Ad sadece harf içermelidir, sayı içeremez";
+    }
+    if (value.trim().length < 2) {
+      return "Ad en az 2 karakter olmalıdır";
+    }
+  },
+  lastname: (value: string) => {
+    if (!value.trim()) {
+      return "Soyad alanı zorunludur";
+    }
+    if (!/^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]+$/.test(value.trim())) {
+      return "Soyad sadece harf içermelidir, sayı içeremez";
+    }
+    if (value.trim().length < 2) {
+      return "Soyad en az 2 karakter olmalıdır";
+    }
+  },
+  title: (value: string) => {
+    if (value.trim().length > 50) {
+      return "Unvan en fazla 50 karakter olabilir";
+    }
+  },
+  phone: (value: string) => {
+    // Telefon alanı artık zorunlu değil, boşsa hata vermeyelim
+    if (!value.trim()) {
+      return;
+    }
+    if (value.replace(/[^\d]/g, "").length < 10) {
+      return "Geçerli bir telefon numarası giriniz";
+    }
+  },
+  email: (value: string) => {
+    if (!value.trim()) {
+      return "E-posta adresi zorunludur";
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return "Geçerli bir e-posta adresi giriniz";
+    }
+  },
+  password: (value: string) => {
+    if (!value) {
+      return "Şifre zorunludur";
+    }
+    if (value.length < 8) {
+      return "Şifre en az 8 karakter olmalıdır";
+    }
+    if (!/(?=.*[a-z])/.test(value)) {
+      return "Şifre en az bir küçük harf içermelidir";
+    }
+    if (!/(?=.*[A-Z])/.test(value)) {
+      return "Şifre en az bir büyük harf içermelidir";
+    }
+    if (!/(?=.*\d)/.test(value)) {
+      return "Şifre en az bir rakam içermelidir";
+    }
+    if (/[ğüşıöçĞÜŞİÖÇ]/.test(value)) {
+      return "Şifre Türkçe karakter içermemelidir";
+    }
+  },
+  confirmPassword: (value: string, password: string) => {
+    if (!value) {
+      return "Şifre tekrarı zorunludur";
+    }
+    if (value !== password) {
+      return "Şifreler eşleşmiyor";
+    }
+  },
+};
 
 export function SignupForm({ className, ...props }: SignupFormProps) {
   const { register, isRegistering } = useAuth();
+  const router = useRouter();
 
   const [showPassword, setShowPassword] = React.useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     React.useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
 
   const [formValues, setFormValues] = React.useState<RegisterFormData>({
     name: "",
@@ -39,7 +119,8 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
     email: "",
     password: "",
     confirmPassword: "",
-    allowEmails: false, // Default değeri false olarak değiştirildi
+    allowEmails: false,
+    title: "", // Title alanını ekleyelim
   });
 
   const [errors, setErrors] = React.useState<FormErrors>({});
@@ -191,9 +272,18 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
         delete newErrors.lastname;
         break;
 
+      case "title":
+        if (value.trim().length > 50) {
+          newErrors.title = "Unvan en fazla 50 karakter olabilir";
+          break;
+        }
+        delete newErrors.title;
+        break;
+
       case "phone":
+        // Telefon alanı artık zorunlu değil, boşsa hata vermeyelim
         if (!value.trim()) {
-          newErrors.phone = "Telefon numarası zorunludur";
+          delete newErrors.phone;
           break;
         }
         if (value.replace(/[^\d]/g, "").length < 10) {
@@ -270,7 +360,7 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
       Object.keys(newErrors).length === 0 &&
       Boolean(formValues.name) &&
       Boolean(formValues.lastname) &&
-      Boolean(formValues.phone) &&
+      // Telefon zorunlu olmadığı için kontrol etmiyoruz
       Boolean(formValues.email) &&
       Boolean(formValues.password) &&
       Boolean(formValues.confirmPassword);
@@ -299,10 +389,16 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
       newErrors.lastname = "Soyad sadece harf içermelidir, sayı içeremez";
     }
 
-    if (!formValues.phone.trim()) {
-      newErrors.phone = "Telefon numarası zorunludur";
-    } else if (formValues.phone.replace(/[^\d]/g, "").length < 10) {
-      newErrors.phone = "Geçerli bir telefon numarası giriniz";
+    // Title validasyonu - title uzunluk kontrolü yapıyoruz ama zorunlu değil
+    if (formValues.title && formValues.title.trim().length > 50) {
+      newErrors.title = "Unvan en fazla 50 karakter olabilir";
+    }
+
+    // Telefon validasyonu - artık zorunlu değil
+    if (formValues.phone.trim()) {
+      if (formValues.phone.replace(/[^\d]/g, "").length < 10) {
+        newErrors.phone = "Geçerli bir telefon numarası giriniz";
+      }
     }
 
     if (!formValues.email.trim()) {
@@ -340,34 +436,54 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
+    if (isSubmitting) return; // Çoklu submit'i engelle
+
     setShowErrors(true);
-
-    if (!turnstileVerified && process.env.NODE_ENV !== "development") {
-      toast.error("Robot Doğrulama Hatası", {
-        description: "Lütfen robot olmadığınızı doğrulayın.",
-        position: "top-center",
-      });
-      return;
-    }
-
-    const newErrors = validateForm();
-
-    if (Object.keys(newErrors).length > 0) {
-      toast.error("Form Hatası", {
-        description: "Lütfen form alanlarını kontrol ediniz.",
-        position: "top-center",
-      });
-      return;
-    }
+    setIsSubmitting(true);
 
     try {
-      await register({
+      if (!turnstileVerified && process.env.NODE_ENV !== "development") {
+        toast.error("Robot Doğrulama Hatası", {
+          description: "Lütfen robot olmadığınızı doğrulayın.",
+          position: "top-center",
+        });
+        return;
+      }
+
+      const newErrors = validateForm();
+
+      if (Object.keys(newErrors).length > 0) {
+        toast.error("Form Hatası", {
+          description: "Lütfen form alanlarını kontrol ediniz.",
+          position: "top-center",
+        });
+        return;
+      }
+
+      const response = await api.post("/auth/register", {
         ...formValues,
         turnstileToken,
         allowEmails: formValues.allowEmails,
       });
-    } catch (error) {
-      toast.error("Kayıt Hatası");
+
+      if (response.data.success) {
+        toast.success("Kayıt başarılı!", {
+          description: "E-posta doğrulama bağlantısı gönderildi.",
+        });
+
+        if (response.data.redirectUrl) {
+          router.push(response.data.redirectUrl);
+        } else {
+          router.push(`/verify-email?email=${encodeURIComponent(formValues.email)}`);
+        }
+      }
+    } catch (error: any) {
+      toast.error("Kayıt başarısız", {
+        description: "Kayıt sırasında bir hata oluştu",
+      });
+    } finally {
+      setIsSubmitting(false);
+      setIsFormValidated(false);
     }
   };
 
@@ -449,9 +565,38 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
           </div>
         </div>
 
+        {/* Title (Unvan) alanı */}
+        <div className="grid gap-1">
+          <Label htmlFor="title" className="flex">
+            Unvan (Opsiyonel)
+            {showErrors && errors.title && (
+              <span className="ml-auto text-xs text-destructive font-normal">
+                {errors.title}
+              </span>
+            )}
+          </Label>
+          <Input
+            id="title"
+            placeholder="Örn: Yazılım Geliştirici, Öğrenci, Öğretmen"
+            type="text"
+            disabled={isRegistering}
+            value={formValues.title}
+            onChange={handleInputChange}
+            className={cn(
+              showErrors &&
+                errors.title &&
+                "border-destructive focus-visible:ring-destructive"
+            )}
+            aria-invalid={showErrors && errors.title ? "true" : "false"}
+            aria-describedby={
+              showErrors && errors.title ? "title-error" : undefined
+            }
+          />
+        </div>
+
         <div className="grid gap-1">
           <Label htmlFor="phone" className="flex">
-            Telefon Numarası
+            Telefon Numarası (Opsiyonel)
             {showErrors && errors.phone && (
               <span className="ml-auto text-xs text-destructive font-normal">
                 {errors.phone}
@@ -637,14 +782,14 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
 
         <Button
           disabled={
-            isRegistering ||
+            isSubmitting ||
             (!turnstileVerified && process.env.NODE_ENV !== "development")
           }
           type="submit"
           className="w-full"
         >
-          {isRegistering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isRegistering ? "Kayıt olunuyor..." : "Kayıt Ol"}
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSubmitting ? "Kayıt olunuyor..." : "Kayıt Ol"}
         </Button>
       </form>
     </div>
