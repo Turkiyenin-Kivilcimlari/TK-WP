@@ -182,9 +182,7 @@ export function Articles() {
             <div
               key={index}
               className={`${
-                isMobile
-                  ? "w-full max-w-[80%] mx-auto"
-                  : "w-[300px]"
+                isMobile ? "w-full max-w-[80%] mx-auto" : "w-[300px]"
               }`}
             >
               <div className="w-full h-full border rounded-lg overflow-hidden shadow-sm p-3">
@@ -243,23 +241,20 @@ export function Articles() {
     enter: (direction: number) => {
       return {
         x: direction > 0 ? 1000 : -1000,
-        opacity: 0
+        opacity: 0,
       };
     },
     center: {
       x: 0,
-      opacity: 1
+      opacity: 1,
     },
     exit: (direction: number) => {
       return {
         x: direction < 0 ? 1000 : -1000,
-        opacity: 0
+        opacity: 0,
       };
-    }
+    },
   };
-console.log("articles", articles);
-console.log("displayedArticles", displayedArticles);
-console.log(displayedArticles[0]?.author)
   return (
     <div className="w-full py-6">
       <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">
@@ -268,7 +263,7 @@ console.log(displayedArticles[0]?.author)
 
       <div className="relative overflow-hidden">
         <AnimatePresence initial={false} custom={direction} mode="wait">
-          <motion.div 
+          <motion.div
             key={currentPage}
             custom={direction}
             variants={variants}
@@ -277,18 +272,16 @@ console.log(displayedArticles[0]?.author)
             exit="exit"
             transition={{
               x: { type: "spring", stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 }
+              opacity: { duration: 0.2 },
             }}
-            className="flex flex-row flex-wrap gap-4 justify-center w-full" 
+            className="flex flex-row flex-wrap gap-4 justify-center w-full"
           >
             {displayedArticles.length > 0 ? (
               displayedArticles.map((article) => {
                 return (
                   <div
                     className={`${
-                      isMobile
-                        ? "w-full max-w-[80%] mx-auto"
-                        : "w-[300px]" 
+                      isMobile ? "w-full max-w-[80%] mx-auto" : "w-[300px]"
                     }`}
                     key={article.id}
                   >
@@ -299,7 +292,9 @@ console.log(displayedArticles[0]?.author)
               })
             ) : (
               <div className="text-center py-8 w-full">
-                <p className="text-muted-foreground">Henüz makale bulunmuyor.</p>
+                <p className="text-muted-foreground">
+                  Henüz makale bulunmuyor.
+                </p>
               </div>
             )}
           </motion.div>
@@ -309,7 +304,7 @@ console.log(displayedArticles[0]?.author)
       <div className="flex justify-center items-center gap-4 mt-4 mb-2">
         <Button
           onClick={goToPrevPage}
-          className="p-1.5 rounded-full h-8 w-8" 
+          className="p-1.5 rounded-full h-8 w-8"
           variant="outline"
           disabled={currentPage === 0}
           aria-label="Önceki sayfa"
@@ -323,7 +318,7 @@ console.log(displayedArticles[0]?.author)
 
         <Button
           onClick={goToNextPage}
-          className="p-1.5 rounded-full h-8 w-8" 
+          className="p-1.5 rounded-full h-8 w-8"
           variant="outline"
           disabled={currentPage === totalPages - 1}
           aria-label="Sonraki sayfa"

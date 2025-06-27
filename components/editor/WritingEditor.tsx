@@ -407,10 +407,8 @@ export function WritingEditor({ articleData, isEdit = false }: {
       router.push("/articles");
     } catch (error: any) {
       
-      // Daha detaylı hata mesajları
-      const errorMessage = "Yazınız kaydedilirken bir hata oluştu";
       
-      toast.error(errorMessage);
+      toast.error("Yazınız kaydedilirken bir hata oluştu");
     } finally {
       setIsSaving(false);
     }
@@ -492,16 +490,8 @@ export function WritingEditor({ articleData, isEdit = false }: {
       
       router.push("/articles");
     } catch (error: any) {
-      
-      // Daha detaylı hata yakalama
-      const errorResponse = error.response?.data;
-      let errorMessage = "Makale gönderilemedi";
-      
-      if (errorResponse) {
-        errorMessage = "Makale gönderilirken bir hata oluştu";
-      }
-      
-      toast.error(errorMessage);
+    
+      toast.error("Makale gönderilirken bir hata oluştu");
     } finally {
       setIsSaving(false);
     }

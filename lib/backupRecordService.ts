@@ -1,7 +1,7 @@
-import { v4 as uuidv4 } from 'uuid';
-import * as fs from 'fs';
-import * as path from 'path';
-import { BackupOperationStatus, BackupType } from '@/models/Backup';
+import { v4 as uuidv4 } from "uuid";
+import * as fs from "fs";
+import * as path from "path";
+import { BackupOperationStatus, BackupType } from "@/models/Backup";
 
 export interface BackupRecord {
   id: string;
@@ -13,7 +13,7 @@ export interface BackupRecord {
   updatedAt: string;
 }
 
-const RECORDS_FILE = path.join(process.cwd(), 'data', 'backupRecords.json');
+const RECORDS_FILE = path.join(process.cwd(), "data", "backupRecords.json");
 
 /**
  * Yedekleme kayıtlarını okur
@@ -21,12 +21,11 @@ const RECORDS_FILE = path.join(process.cwd(), 'data', 'backupRecords.json');
 function readBackupRecords(): BackupRecord[] {
   try {
     if (fs.existsSync(RECORDS_FILE)) {
-      const data = fs.readFileSync(RECORDS_FILE, 'utf8');
+      const data = fs.readFileSync(RECORDS_FILE, "utf8");
       return JSON.parse(data);
     }
     return [];
   } catch (error) {
-    console.error('Backup records okuma hatası:', error);
     return [];
   }
 }
@@ -41,20 +40,20 @@ function writeBackupRecords(records: BackupRecord[]): void {
       fs.mkdirSync(dataDir, { recursive: true });
     }
     fs.writeFileSync(RECORDS_FILE, JSON.stringify(records, null, 2));
-  } catch (error) {
-    console.error('Backup records yazma hatası:', error);
-  }
+  } catch (error) {}
 }
 
 /**
  * Yeni yedekleme kaydı oluşturur
  */
-export async function createBackupRecord(data: Omit<BackupRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<BackupRecord> {
+export async function createBackupRecord(
+  data: Omit<BackupRecord, "id" | "createdAt" | "updatedAt">
+): Promise<BackupRecord> {
   const record: BackupRecord = {
     ...data,
     id: uuidv4(),
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   const records = readBackupRecords();
@@ -67,10 +66,13 @@ export async function createBackupRecord(data: Omit<BackupRecord, 'id' | 'create
 /**
  * Yedekleme kaydını günceller
  */
-export async function updateBackupRecord(id: string, updates: Partial<Omit<BackupRecord, 'id' | 'createdAt'>>): Promise<BackupRecord | null> {
+export async function updateBackupRecord(
+  id: string,
+  updates: Partial<Omit<BackupRecord, "id" | "createdAt">>
+): Promise<BackupRecord | null> {
   const records = readBackupRecords();
-  const index = records.findIndex(r => r.id === id);
-  
+  const index = records.findIndex((r) => r.id === id);
+
   if (index === -1) {
     return null;
   }
@@ -78,7 +80,7 @@ export async function updateBackupRecord(id: string, updates: Partial<Omit<Backu
   records[index] = {
     ...records[index],
     ...updates,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   writeBackupRecords(records);
@@ -95,7 +97,9 @@ export async function getAllBackupRecords(): Promise<BackupRecord[]> {
 /**
  * ID'ye göre yedekleme kaydını getirir
  */
-export async function getBackupRecordById(id: string): Promise<BackupRecord | null> {
+export async function getBackupRecordById(
+  id: string
+): Promise<BackupRecord | null> {
   const records = readBackupRecords();
-  return records.find(r => r.id === id) || null;
+  return records.find((r) => r.id === id) || null;
 }

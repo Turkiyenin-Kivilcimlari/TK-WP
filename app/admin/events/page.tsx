@@ -331,12 +331,12 @@ export default function AdminEventsPage() {
         });
       } else {
         toast.error("E-posta gönderilemedi", {
-          description: response.data.message || "Bir hata oluştu.",
+          description: "Bir hata oluştu.",
         });
       }
     } catch (error: any) {
       toast.error("E-posta gönderilemedi", {
-        description: error.message || "Bir hata oluştu.",
+        description: "Bir hata oluştu.",
       });
     } finally {
       setEmailSending((prev) => ({ ...prev, [event.id]: false }));

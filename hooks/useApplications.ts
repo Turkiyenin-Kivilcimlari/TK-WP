@@ -31,7 +31,7 @@ export default function useApplications() {
     },
     onError: (error: any) => {
       toast.error('Başvuru gönderilirken bir hata oluştu', {
-        description: error.response?.data?.message || 'Lütfen daha sonra tekrar deneyin'
+        description: 'Lütfen daha sonra tekrar deneyin'
       });
     }
   });

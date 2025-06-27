@@ -89,8 +89,7 @@ export default function AdminDashboardPage() {
 
         setError(null);
       } catch (error: any) {
-        console.error("Stats loading error:", error);
-        setError(error.message || "İstatistikler yüklenirken bir hata oluştu");
+        setError("İstatistikler yüklenirken bir hata oluştu");
       } finally {
         setIsLoading(false);
       }

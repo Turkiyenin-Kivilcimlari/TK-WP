@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
     });
     
   } catch (error: any) {
-    console.error("Board sıralama hatası:", error);
     return encryptedJson(
       { success: false, message: 'Sıralama güncellenirken bir hata oluştu' },
       { status: 500 }

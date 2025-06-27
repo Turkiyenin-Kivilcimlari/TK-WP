@@ -110,6 +110,7 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
   const [showPassword, setShowPassword] = React.useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     React.useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
 
   const [formValues, setFormValues] = React.useState<RegisterFormData>({
     name: "",
@@ -435,27 +436,30 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
+    if (isSubmitting) return; // Çoklu submit'i engelle
+
     setShowErrors(true);
-
-    if (!turnstileVerified && process.env.NODE_ENV !== "development") {
-      toast.error("Robot Doğrulama Hatası", {
-        description: "Lütfen robot olmadığınızı doğrulayın.",
-        position: "top-center",
-      });
-      return;
-    }
-
-    const newErrors = validateForm();
-
-    if (Object.keys(newErrors).length > 0) {
-      toast.error("Form Hatası", {
-        description: "Lütfen form alanlarını kontrol ediniz.",
-        position: "top-center",
-      });
-      return;
-    }
+    setIsSubmitting(true);
 
     try {
+      if (!turnstileVerified && process.env.NODE_ENV !== "development") {
+        toast.error("Robot Doğrulama Hatası", {
+          description: "Lütfen robot olmadığınızı doğrulayın.",
+          position: "top-center",
+        });
+        return;
+      }
+
+      const newErrors = validateForm();
+
+      if (Object.keys(newErrors).length > 0) {
+        toast.error("Form Hatası", {
+          description: "Lütfen form alanlarını kontrol ediniz.",
+          position: "top-center",
+        });
+        return;
+      }
+
       const response = await api.post("/auth/register", {
         ...formValues,
         turnstileToken,
@@ -474,12 +478,11 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
         }
       }
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Kayıt sırasında bir hata oluştu";
       toast.error("Kayıt başarısız", {
-        description: errorMessage,
+        description: "Kayıt sırasında bir hata oluştu",
       });
     } finally {
+      setIsSubmitting(false);
       setIsFormValidated(false);
     }
   };
@@ -779,14 +782,14 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
 
         <Button
           disabled={
-            isRegistering ||
+            isSubmitting ||
             (!turnstileVerified && process.env.NODE_ENV !== "development")
           }
           type="submit"
           className="w-full"
         >
-          {isRegistering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isRegistering ? "Kayıt olunuyor..." : "Kayıt Ol"}
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSubmitting ? "Kayıt olunuyor..." : "Kayıt Ol"}
         </Button>
       </form>
     </div>

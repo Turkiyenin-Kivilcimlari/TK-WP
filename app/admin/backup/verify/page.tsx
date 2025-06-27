@@ -112,7 +112,6 @@ export default function BackupVerifyPage() {
         setSelectedBackup(completedBackups[0].id);
       }
     } catch (error) {
-      console.error('Yedeklemeler yüklenirken hata oluştu:', error);
       toast.error('Yedeklemeler yüklenemedi');
     } finally {
       setIsLoading(false);
@@ -139,11 +138,8 @@ export default function BackupVerifyPage() {
         credentials: 'include'  // Kimlik bilgilerini ekle
       });
       
-      // API yanıtını konsola yazdır (sorun tespiti için)
-      console.log('API yanıt durumu:', response.status);
       
       const data = await response.json();
-      console.log('API yanıt verisi:', data);
       
       // API yanıtı başarılı olsa bile data.success false olabilir
       // Bu nedenle yanıt verisi içeriğini kontrol etmeliyiz
@@ -158,12 +154,9 @@ export default function BackupVerifyPage() {
         }
       } else {
         // Yanıt başarılı değilse veya doğrulama başarısız olduysa
-        const errorMessage = data.message || data.error || 'Şifre doğrulanamadı';
-        console.error('Doğrulama hatası:', errorMessage);
-        toast.error(errorMessage);
+        toast.error('Şifre doğrulanamadı');
       }
     } catch (error) {
-      console.error('Şifre doğrulanırken beklenmeyen hata oluştu:', error);
       toast.error('Şifre doğrulama işlemi sırasında bir hata oluştu');
     } finally {
       setIsVerifying(false);
@@ -196,8 +189,7 @@ export default function BackupVerifyPage() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Yedek yüklenemedi');
+        throw new Error('Yedek yüklenemedi');
       }
       
       const data = await response.json();
@@ -219,10 +211,9 @@ export default function BackupVerifyPage() {
           saveBackupAccessToken(data.accessToken, data.expiresAt);
         }
       } else {
-        toast.error(data.message || 'Yedek yüklenemedi');
+        toast.error('Yedek yüklenemedi');
       }
     } catch (error) {
-      console.error('Yedek yüklenirken hata oluştu:', error);
       toast.error('Yedek yüklenemedi');
     } finally {
       setIsUploading(false);
@@ -271,7 +262,6 @@ export default function BackupVerifyPage() {
             }));
           }
         } catch (error) {
-          console.error('Progress tracking hatası:', error);
         }
       };
       
@@ -296,7 +286,7 @@ export default function BackupVerifyPage() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'Geri yükleme başarısız oldu');
+        throw new Error('Geri yükleme başarısız oldu');
       }
       
       if (data.success) {
@@ -316,14 +306,13 @@ export default function BackupVerifyPage() {
           progress: 100
         });
         
-        toast.error(data.message || 'Geri yükleme kısmen başarısız oldu');
+        toast.error('Geri yükleme kısmen başarısız oldu');
       }
     } catch (error: any) {
-      console.error('Geri yükleme sırasında hata oluştu:', error);
       setRestoringProgress({
         status: 'error',
         message: 'Geri yükleme başarısız oldu',
-        details: error.message || 'Beklenmeyen bir hata oluştu. Lütfen API loglarını kontrol edin.',
+        details: 'Beklenmeyen bir hata oluştu. Lütfen API loglarını kontrol edin.',
         progress: 0
       });
       

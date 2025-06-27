@@ -113,9 +113,8 @@ export async function GET(req: NextRequest) {
       comments: formattedComments
     });
   } catch (error: any) {
-    console.error('Admin comments error:', error);
     return encryptedJson(
-      { success: false, message: 'Bir hata oluştu', error: error.message },
+      { success: false, message: 'Bir hata oluştu'},
       { status: 500 }
     );
   }
@@ -162,9 +161,8 @@ export async function DELETE(req: NextRequest) {
       message: 'Yorum başarıyla silindi'
     });
   } catch (error: any) {
-    console.error('Admin delete comment error:', error);
     return encryptedJson(
-      { success: false, message: 'Bir hata oluştu', error: error.message },
+      { success: false, message: 'Bir hata oluştu'},
       { status: 500 }
     );
   }

@@ -75,7 +75,7 @@ function VerifyEmailClient() {
         });
       } else {
         toast.error("Doğrulama kodu gönderilemedi", {
-          description: response.data.message,
+          description: "Bir hata oluştu",
         });
         setResendDisabled(false);
         setCountdown(0);
@@ -115,7 +115,7 @@ function VerifyEmailClient() {
         });
       } else {
         toast.error("Doğrulama kodu gönderilemedi", {
-          description: response.data.message,
+          description: "Bir hata oluştu",
         });
         setResendDisabled(false);
         setCountdown(0);
@@ -150,9 +150,7 @@ function VerifyEmailClient() {
           router.push("/signin");
         }, 2000);
       } else {
-        toast.error("Doğrulama başarısız", {
-          description: response.data.message,
-        });
+        toast.error("Doğrulama başarısız");
       }
     } catch (error: any) {
       toast.error("Doğrulama hatası", {

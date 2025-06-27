@@ -91,7 +91,6 @@ export default function BackupListPage() {
       const data = await response.json();
       setBackups(data.backups || []);
     } catch (error) {
-      console.error('Yedeklemeler yüklenirken hata oluştu:', error);
       toast.error('Yedeklemeler yüklenemedi');
     } finally {
       setIsLoading(false);
@@ -125,7 +124,6 @@ export default function BackupListPage() {
       }, 3000);
       
     } catch (error) {
-      console.error('Yedekleme oluşturulurken hata oluştu:', error);
       toast.error('Yedekleme başlatılamadı');
     } finally {
       setIsCreateLoading(false);
@@ -154,18 +152,17 @@ export default function BackupListPage() {
       if (!response.ok) {
         const errorData = await response.json();
         if (response.status === 401) {
-          setPasswordError(errorData.message || 'Hatalı şifre');
+          setPasswordError('Hatalı şifre');
           setIsDeleting(false);
           return;
         }
-        throw new Error(errorData.message || 'Yedekleme silinemedi');
+        throw new Error('Yedekleme silinemedi');
       }
       
       toast.success('Yedekleme silindi');
       fetchBackups();
       setDeletePassword(''); // Şifreyi temizle
     } catch (error: any) {
-      console.error('Yedekleme silinirken hata oluştu:', error);
       toast.error('Yedekleme silinemedi');
     } finally {
       setIsDeleting(false);

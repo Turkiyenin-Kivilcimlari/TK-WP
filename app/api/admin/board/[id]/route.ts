@@ -49,7 +49,6 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }, { status: 200 });
     
   } catch (error) {
-    console.error("Board üyesi güncellenirken hata:", error);
     return encryptedJson({ success: false, error: "İşlem başarısız" }, { status: 500 });
   }
 }
@@ -78,7 +77,6 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     }, { status: 200 });
     
   } catch (error) {
-    console.error("Board üyesi silinirken hata:", error);
     return encryptedJson({ success: false, error: "İşlem başarısız" }, { status: 500 });
   }
 }

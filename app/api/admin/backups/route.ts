@@ -5,6 +5,7 @@ import { manualBackup } from "@/lib/backup";
 import path from "path";
 import fs from "fs";
 import { checkAdminAuthWithTwoFactor } from "@/middleware/authMiddleware";
+import { encryptedJson } from "@/lib/response";
 
 // Yedekleri listele
 export async function GET(req: NextRequest) {
@@ -16,8 +17,7 @@ export async function GET(req: NextRequest) {
       !session ||
       (session.user.role !== "ADMIN" && session.user.role !== "SUPERADMIN")
     ) {
-      console.log("Yetkisiz erişim denemesi");
-      return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 403 });
+      return encryptedJson({ error: "Yetkisiz erişim" }, { status: 403 });
     }
     const adminCheck = await checkAdminAuthWithTwoFactor(req);
     if (adminCheck) return adminCheck;
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       process.env.BACKUP_DIR || path.join(process.cwd(), "backups");
 
     if (!fs.existsSync(backupDir)) {
-      return NextResponse.json({ backups: [] });
+      return encryptedJson({ backups: [] });
     }
 
     // Klasörleri tarihe göre sırala
@@ -49,7 +49,10 @@ export async function GET(req: NextRequest) {
         // Cloudinary backup kontrolü - ZIP dosyaları ara
         const cloudinaryFiles = fs
           .readdirSync(dirPath)
-          .filter((file) => file.startsWith('cloudinary_backup_') && file.endsWith('.zip'));
+          .filter(
+            (file) =>
+              file.startsWith("cloudinary_backup_") && file.endsWith(".zip")
+          );
 
         // Tür belirle - sadece Cloudinary
         let type = "cloudinary";
@@ -95,10 +98,9 @@ export async function GET(req: NextRequest) {
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    return NextResponse.json({ backups: backupFolders });
+    return encryptedJson({ backups: backupFolders });
   } catch (error: any) {
-    console.error("Backups listing error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return encryptedJson({ error: "Yedekleme verileri yüklenirken bir hata oluştu" }, { status: 500 });
   }
 }
 
@@ -112,8 +114,7 @@ export async function POST(req: NextRequest) {
       !session ||
       (session.user.role !== "ADMIN" && session.user.role !== "SUPERADMIN")
     ) {
-      console.log("Yetkisiz erişim denemesi");
-      return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 403 });
+      return encryptedJson({ error: "Yetkisiz erişim" }, { status: 403 });
     }
 
     // Request body'den parametreleri al
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (result.success) {
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         message: "Cloudinary yedekleme işlemi başlatıldı",
       });
@@ -134,10 +135,6 @@ export async function POST(req: NextRequest) {
       throw new Error("Cloudinary yedekleme işlemi başlatılamadı");
     }
   } catch (error: any) {
-    console.error("Backup creation error:", error);
-    return NextResponse.json(
-      { error: error.message, success: false },
-      { status: 500 }
-    );
+    return encryptedJson({ error: " ", success: false }, { status: 500 });
   }
 }

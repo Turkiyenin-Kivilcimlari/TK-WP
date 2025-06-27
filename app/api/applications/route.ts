@@ -66,12 +66,11 @@ export async function POST(req: NextRequest) {
     );
     
   } catch (error: any) {
-    console.error('Application save error:', error);
     
     return encryptedJson(
       { 
         success: false, 
-        message: error.message || 'Başvuru kaydedilirken bir hata oluştu'
+        message: 'Başvuru kaydedilirken bir hata oluştu'
       },
       { status: 500 }
     );

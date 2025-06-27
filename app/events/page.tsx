@@ -415,15 +415,8 @@ export default function EventsPage() {
 
       if (!event.eventDays || event.eventDays.length === 0) {
         toast.error("Etkinlik gün bilgileri eksik, kayıt yapılamadı");
-        console.error("Missing event days in event:", event.id, event.title);
         return;
       }
-
-      console.log("Event registration details:", {
-        slug: event.slug,
-        title: event.title,
-        eventDays: event.eventDays,
-      });
 
       const response = await api.post(`/api/events/${event.slug}/register`);
 
@@ -431,15 +424,10 @@ export default function EventsPage() {
         toast.success("Etkinliğe başarıyla kaydoldunuz");
         await refetch();
       } else {
-        toast.error(response.data.message || "Kayıt işlemi başarısız");
+        toast.error("Kayıt işlemi başarısız");
       }
     } catch (error: any) {
-      console.error("Registration error:", error);
-
       if (error.response) {
-        console.error("Response data:", error.response.data);
-        console.error("Response status:", error.response.status);
-
         try {
           const fallbackResponse = await api.post(
             `/api/events/${event.slug}/register`,
@@ -452,7 +440,6 @@ export default function EventsPage() {
             return;
           }
         } catch (fallbackError) {
-          console.error("Fallback registration failed:", fallbackError);
           toast.error(
             "Etkinliğe kayıt yapılamadı. Lütfen daha sonra tekrar deneyin."
           );
@@ -486,20 +473,14 @@ export default function EventsPage() {
         toast.success("Etkinlik kaydınız iptal edildi");
         await refetch();
       } else {
-        toast.error(response.data.message || "İptal işlemi başarısız");
+        toast.error("İptal işlemi başarısız");
       }
     } catch (error: any) {
-      console.error("Unregistration error:", error);
-
       if (error.response) {
         if (error.response.status === 400) {
-          toast.error(
-            error.response?.data?.message || "Bu etkinliğe kayıtlı değilsiniz"
-          );
+          toast.error("Bu etkinliğe kayıtlı değilsiniz");
         } else {
-          toast.error(
-            error.response?.data?.message || "İptal işlemi başarısız"
-          );
+          toast.error("İptal işlemi başarısız");
         }
       } else if (error.request) {
         toast.error(
@@ -522,7 +503,6 @@ export default function EventsPage() {
 
       const firstDay = getFirstEventDay(event);
       if (!firstDay) {
-        console.error("Missing event day information");
         return;
       }
 
@@ -543,7 +523,6 @@ export default function EventsPage() {
 
           return dateStr;
         } catch (err) {
-          console.error("Date normalization error:", err);
           return dateStr;
         }
       };
@@ -560,7 +539,6 @@ export default function EventsPage() {
       const startTime = normalizeTime(firstDay.startTime);
 
       if (!dateStr || !startTime) {
-        console.error("Missing date or start time");
         toast.error("Etkinlik tarih veya saat bilgisi eksik");
         return;
       }
@@ -574,12 +552,10 @@ export default function EventsPage() {
           const [hours, minutes] = startTime.split(":");
 
           if (!year || !month || !day) {
-            console.error("Invalid date components:", { dateStr });
             throw new Error("Invalid date format");
           }
 
           if (!hours || !minutes) {
-            console.error("Invalid time components:", { startTime });
             throw new Error("Invalid time format");
           }
 
@@ -596,19 +572,11 @@ export default function EventsPage() {
           }
         }
       } catch (e) {
-        console.error("Date parsing failed for start time:", e, {
-          dateStr,
-          startTime,
-        });
         toast.error("Geçersiz tarih veya saat formatı");
         return;
       }
 
       if (isNaN(startDateTime.getTime())) {
-        console.error("Invalid start date/time after all attempts:", {
-          dateStr,
-          startTime,
-        });
         toast.error("Geçersiz başlangıç tarihi veya saati");
         return;
       }
@@ -636,12 +604,10 @@ export default function EventsPage() {
           endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
         }
       } catch (e) {
-        console.warn("End time parsing failed, using default:", e);
         endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
       }
 
       if (isNaN(endDateTime.getTime())) {
-        console.warn("Invalid end date/time, using default");
         endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
       }
 
@@ -689,7 +655,6 @@ export default function EventsPage() {
 
       window.open(googleCalendarUrl, "_blank");
     } catch (error) {
-      console.error("Google Calendar error:", error);
       toast.error("Takvime eklenirken bir hata oluştu");
     }
   };

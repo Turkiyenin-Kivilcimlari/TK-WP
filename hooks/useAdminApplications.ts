@@ -29,8 +29,7 @@ export default function useAdminApplications() {
       const response = await api.get('/api/admin/applications');
       setApplications(response.data.applications || []);
     } catch (err: any) {
-      console.error('Error fetching applications:', err);
-      setError(err.message || 'Başvurular yüklenirken bir hata oluştu');
+      setError('Başvurular yüklenirken bir hata oluştu');
       toast.error('Hata!', {
         description: 'Başvurular yüklenirken bir hata oluştu.'
       });
@@ -43,8 +42,6 @@ export default function useAdminApplications() {
     try {
       setIsUpdating(true);
       
-      // Log what we're sending to help debug
-      console.log('Updating application status:', params);
       
       // Make the API call to update status using the correct path
       const response = await api.put(`/api/admin/applications/${params.id}`, {
@@ -66,12 +63,11 @@ export default function useAdminApplications() {
         
         return true;
       } else {
-        throw new Error(response.data.message || 'Durum güncellenirken bir hata oluştu');
+        throw new Error('Durum güncellenirken bir hata oluştu');
       }
     } catch (err: any) {
-      console.error('Error updating application status:', err);
       toast.error('Hata!', {
-        description: err.message || 'Durum güncellenirken bir hata oluştu.'
+        description: 'Durum güncellenirken bir hata oluştu.'
       });
       return false;
     } finally {

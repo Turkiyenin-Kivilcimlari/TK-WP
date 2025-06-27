@@ -127,12 +127,11 @@ export async function GET(req: NextRequest) {
     });
     
   } catch (error) {
-    console.error("Stats API error:", error);
     return encryptedJson(
       { 
         success: false, 
         message: 'İstatistik verileri alınamadı',
-        error: error instanceof Error ? error.message : 'Bilinmeyen hata',
+        error: 'Bilinmeyen hata',
         // Dashboard'ın hata durumunda kullanacağı minimum veri
         totalUsers: 0,
         newUsers: { count: 0, percentChange: 0 },

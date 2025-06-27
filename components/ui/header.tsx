@@ -167,11 +167,6 @@ function Header({ children }: { children?: React.ReactNode }) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <Link href={`/u/${userData.slug}`} className="w-full">
-            Herkese Açık Profilim
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
           <Link href="/applications" className="w-full">
             Başvurularım
           </Link>

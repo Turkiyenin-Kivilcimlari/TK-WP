@@ -45,7 +45,6 @@ export async function GET(
 
     return encryptedJson({ success: true, teamMember });
   } catch (error) {
-    console.error("Takım üyesi getirme hatası:", error);
     return encryptedJson(
       { success: false, message: "Takım üyesi getirilemedi" },
       { status: 500 }
@@ -59,8 +58,6 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Admin yetkisi doğrulama - hata ayıklama için detaylı loglar ekleyelim
-    console.log("Admin kimlik doğrulama başlıyor...");
     // Admin işlemi olduğu için 2FA kontrolü ekliyoruz
     const adminCheck = await checkAdminAuthWithTwoFactor(req);
 
@@ -90,22 +87,18 @@ export async function PUT(
 
     // Gelen verileri al ve logla
     const body = await req.json();
-    console.log("Gelen veriler:", body);
     
     // Güncellenecek ID'yi logla
-    console.log("Güncellenecek üye ID:", id);
     
     // Önce belgenin var olup olmadığını kontrol et
     const existingMember = await CommunityTeamMember.findById(id);
     if (!existingMember) {
-      console.log(`ID: ${id} ile eşleşen takım üyesi bulunamadı`);
       return encryptedJson(
         { success: false, message: "Takım üyesi bulunamadı" },
         { status: 404 }
       );
     }
     
-    console.log("Mevcut üye bulundu:", existingMember._id);
     
     // Güncellenebilir alanları belirle
     const updateData = {
@@ -123,23 +116,20 @@ export async function PUT(
     );
 
     if (!updatedMember) {
-      console.log("Güncelleme işlemi başarısız, üye bulunamadı");
       return encryptedJson(
         { success: false, message: "Takım üyesi bulunamadı veya güncellenemedi" },
         { status: 404 }
       );
     }
 
-    console.log("Üye başarıyla güncellendi:", updatedMember._id);
     return encryptedJson({
       success: true,
       message: "Takım üyesi başarıyla güncellendi",
       teamMember: updatedMember,
     });
   } catch (error) {
-    console.error("Takım üyesi güncelleme hatası:", error);
     return encryptedJson(
-      { success: false, message: "Takım üyesi güncellenemedi: " + (error instanceof Error ? error.message : String(error)) },
+      { success: false, message: "Takım üyesi güncellenemedi. " },
       { status: 500 }
     );
   }
@@ -184,7 +174,6 @@ export async function DELETE(
       message: "Takım üyesi başarıyla silindi",
     });
   } catch (error) {
-    console.error("Takım üyesi silme hatası:", error);
     return encryptedJson(
       { success: false, message: "Takım üyesi silinemedi" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@/models/User';
+import { encryptedJson } from '@/lib/response';
 
 // Route'u dynamic olarak işaretle
 export const dynamic = 'force-dynamic';
@@ -12,14 +13,14 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session || (session.user.role !== UserRole.ADMIN && session.user.role !== UserRole.SUPERADMIN)) {
-      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 403 });
+      return encryptedJson({ error: 'Yetkisiz erişim' }, { status: 403 });
     }
     
     const url = new URL(req.url);
     const backupId = url.searchParams.get('backupId');
     
     if (!backupId) {
-      return NextResponse.json({ error: 'Backup ID gerekli' }, { status: 400 });
+      return encryptedJson({ error: 'Backup ID gerekli' }, { status: 400 });
     }
     
     // Server-Sent Events response
@@ -83,7 +84,6 @@ export async function GET(req: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Progress tracking error:', error);
-    return NextResponse.json({ error: 'Progress tracking başarısız' }, { status: 500 });
+    return encryptedJson({ error: 'Progress tracking başarısız' }, { status: 500 });
   }
 }

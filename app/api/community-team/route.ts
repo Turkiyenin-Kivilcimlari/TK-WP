@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     
   } catch (error: any) {
     return encryptedJson(
-      { success: false, message: 'Bir hata oluştu', error: error.message },
+      { success: false, message: 'Bir hata oluştu'},
       { status: 500 }
     );
   }

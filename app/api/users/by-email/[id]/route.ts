@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
-import User from '@/models/User';
-import { UserRole } from '@/models/User';
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongodb";
+import User from "@/models/User";
+import { UserRole } from "@/models/User";
+import { encryptedJson } from "@/lib/response";
 
 // E-posta adresine göre kullanıcıları getir
 export async function GET(
@@ -10,17 +11,20 @@ export async function GET(
 ) {
   try {
     const email = decodeURIComponent(params.id); // URL-encoded e-postayı çöz
-    
+
     // MongoDB veritabanına bağlan
     await connectToDatabase();
-    
+
     // Veritabanından kullanıcıyı sorgu yap
     const user = await User.findOne({ email: email }).lean();
-    
+
     if (!user) {
-      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 });
+      return encryptedJson(
+        { error: "Kullanıcı bulunamadı" },
+        { status: 404 }
+      );
     }
-    
+
     // Kullanıcı verisini düzenle
     const userData = {
       id: user._id.toString(),
@@ -29,10 +33,12 @@ export async function GET(
       lastname: user.lastname,
       role: user.role,
     };
-    
-    return NextResponse.json(userData);
+
+    return encryptedJson(userData);
   } catch (error) {
-    console.error('Kullanıcı bilgisi alınırken hata oluştu:', error);
-    return NextResponse.json({ error: 'Kullanıcı bilgisi alınamadı' }, { status: 500 });
+    return encryptedJson(
+      { error: "Kullanıcı bilgisi alınamadı" },
+      { status: 500 }
+    );
   }
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useUsers, UsersParams } from '@/hooks/useUsers';
-import { UserRole } from '@/models/User';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect } from "react";
+import { useUsers, UsersParams } from "@/hooks/useUsers";
+import { UserRole } from "@/models/User";
+import { useSession } from "next-auth/react";
 import {
   Table,
   TableBody,
@@ -11,26 +11,26 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { 
+} from "@/components/ui/select";
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination';
-import { Loader2, Search, Trash, UserCog, Database } from 'lucide-react';
-import { 
+} from "@/components/ui/pagination";
+import { Loader2, Search, Trash, UserCog, Database } from "lucide-react";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -40,15 +40,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface UsersListProps {
   currentUserId: string;
@@ -63,18 +69,20 @@ interface BackupPermissions {
 
 export function UsersList({ currentUserId }: UsersListProps) {
   const { data: session } = useSession();
-  
+
   const [params, setParams] = useState<UsersParams>({
     page: 1,
     limit: 10,
-    search: '',
+    search: "",
     role: undefined,
   });
-  
-  const [searchInput, setSearchInput] = useState('');
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
-  
+
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
+  const [selectedRole, setSelectedRole] = useState<UserRole | "all">("all");
+
   const {
     users,
     totalUsers,
@@ -86,11 +94,11 @@ export function UsersList({ currentUserId }: UsersListProps) {
     updateUserRole,
     isUpdatingRole,
   } = useUsers(params);
-  
+
   // Kullanıcının baş harflerini alma fonksiyonu
   const getUserInitials = (name?: string, lastname?: string) => {
-    const firstInitial = name ? name.charAt(0).toUpperCase() : '';
-    const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : '';
+    const firstInitial = name ? name.charAt(0).toUpperCase() : "";
+    const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
     return `${firstInitial}${lastInitial}`;
   };
 
@@ -100,7 +108,7 @@ export function UsersList({ currentUserId }: UsersListProps) {
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
-    
+
     // 500ms sonra aramayı gerçekleştir
     const timeout = setTimeout(() => {
       setParams((prev) => ({
@@ -109,41 +117,40 @@ export function UsersList({ currentUserId }: UsersListProps) {
         search: searchInput,
       }));
     }, 500); // 500ms debounce
-    
+
     setSearchTimeout(timeout);
-    
+
     // Component unmount olduğunda timeout'u temizle
     return () => {
       if (searchTimeout) clearTimeout(searchTimeout);
     };
   }, [searchInput]);
-  
+
   // Sayfa değişikliği
   const handlePageChange = (page: number) => {
     setParams((prev) => ({ ...prev, page }));
   };
-  
+
   // Rol filtreleme
-  const handleRoleFilter = (role: UserRole | 'all') => {
+  const handleRoleFilter = (role: UserRole | "all") => {
     setSelectedRole(role);
     setParams((prev) => ({
       ...prev,
       page: 1,
-      role: role === 'all' ? undefined : role,
+      role: role === "all" ? undefined : role,
     }));
   };
-  
+
   // Kullanıcı rolünü değiştirme
   const handleRoleChange = (userId: string, role: UserRole) => {
     // ID doğrulaması yapalım
-    if (!userId || typeof userId !== 'string') {
+    if (!userId || typeof userId !== "string") {
       toast.error("Rol değiştirme işlemi başarısız", {
-        description: "Kullanıcı kimliği geçersiz."
+        description: "Kullanıcı kimliği geçersiz.",
       });
       return;
     }
-    
-    
+
     // Rol güncellemesini başlat
     toast.promise(
       async () => {
@@ -151,27 +158,26 @@ export function UsersList({ currentUserId }: UsersListProps) {
           await updateUserRole({ userId, role });
           return "başarılı";
         } catch (error: any) {
-          toast.error("Rol güncelleme işlemi başarısız")
+          toast.error("Rol güncelleme işlemi başarısız");
         }
       },
       {
-        loading: 'Kullanıcı rolü güncelleniyor...',
-        success: () => 'Kullanıcı rolü başarıyla güncellendi',
-        error: (err) => `Güncelleme başarısız.`
+        loading: "Kullanıcı rolü güncelleniyor...",
+        success: () => "Kullanıcı rolü başarıyla güncellendi",
+        error: (err) => `Güncelleme başarısız.`,
       }
     );
   };
-  
+
   // Kullanıcı silme
   const handleDeleteUser = (userId: string) => {
     // ID kontrolü ekleyelim
-    if (!userId || typeof userId !== 'string') {
+    if (!userId || typeof userId !== "string") {
       toast.error("Silme işlemi başarısız", {
-        description: "Kullanıcı kimliği geçersiz."
+        description: "Kullanıcı kimliği geçersiz.",
       });
       return;
     }
-    
 
     // Silme işlemini başlat
     toast.promise(
@@ -185,9 +191,9 @@ export function UsersList({ currentUserId }: UsersListProps) {
         }
       },
       {
-        loading: 'Kullanıcı siliniyor...',
-        success: () => 'Kullanıcı başarıyla silindi',
-        error: (err) => `Silme başarısız.`
+        loading: "Kullanıcı siliniyor...",
+        success: () => "Kullanıcı başarıyla silindi",
+        error: (err) => `Silme başarısız.`,
       }
     );
   };
@@ -198,9 +204,9 @@ export function UsersList({ currentUserId }: UsersListProps) {
     if (userId === currentUserId) {
       return false;
     }
-    
+
     const currentUserRole = session?.user?.role;
-    
+
     // SUPERADMIN tüm kullanıcıları silebilir (kendisi ve diğer süper yöneticiler hariç)
     if (currentUserRole === UserRole.SUPERADMIN) {
       // Süper yöneticiler birbirini silemez
@@ -209,7 +215,7 @@ export function UsersList({ currentUserId }: UsersListProps) {
       }
       return true;
     }
-    
+
     // ADMIN rolündeki kullanıcılar yalnızca MEMBER ve REPRESENTATIVE rolündeki kullanıcıları silebilir
     if (currentUserRole === UserRole.ADMIN) {
       if (userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN) {
@@ -217,42 +223,47 @@ export function UsersList({ currentUserId }: UsersListProps) {
       }
       return true;
     }
-    
+
     // Diğer roller hiçbir kullanıcıyı silemez
     return false;
   };
-  
+
   // Kullanıcıyı silme neden açıklaması
   const getDeleteDisabledReason = (userId: string, userRole: UserRole) => {
     const currentUserRole = session?.user?.role;
-    
+
     if (userId === currentUserId) {
       return "Kendi hesabınızı silemezsiniz";
     }
-    
-    if (currentUserRole === UserRole.SUPERADMIN && userRole === UserRole.SUPERADMIN) {
+
+    if (
+      currentUserRole === UserRole.SUPERADMIN &&
+      userRole === UserRole.SUPERADMIN
+    ) {
       return "Süper yöneticiler birbirini silemez";
     }
-    
-    if (currentUserRole === UserRole.ADMIN && 
-        (userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN)) {
+
+    if (
+      currentUserRole === UserRole.ADMIN &&
+      (userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN)
+    ) {
       return "Yönetim üyeleri ve süper yöneticiler silinemez";
     }
-    
+
     return "";
   };
-  
+
   // Rol badge rengi
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
       case UserRole.SUPERADMIN:
-        return 'destructive'; // Kırmızı
+        return "destructive"; // Kırmızı
       case UserRole.ADMIN:
-        return 'default'; // Mavi
+        return "default"; // Mavi
       case UserRole.REPRESENTATIVE:
-        return 'secondary'; // Gri
+        return "secondary"; // Gri
       default:
-        return 'outline'; // Beyaz
+        return "outline"; // Beyaz
     }
   };
 
@@ -260,13 +271,13 @@ export function UsersList({ currentUserId }: UsersListProps) {
   const getRoleDisplayName = (role: UserRole) => {
     switch (role) {
       case UserRole.SUPERADMIN:
-        return 'Süper Yönetici';
+        return "Süper Yönetici";
       case UserRole.ADMIN:
-        return 'Yönetim Üyesi';
+        return "Yönetim Üyesi";
       case UserRole.REPRESENTATIVE:
-        return 'Topluluk Temsilcisi';
+        return "Topluluk Temsilcisi";
       case UserRole.MEMBER:
-        return 'Üye';
+        return "Üye";
       default:
         return role;
     }
@@ -278,9 +289,9 @@ export function UsersList({ currentUserId }: UsersListProps) {
     if (userId === currentUserId) {
       return false;
     }
-    
+
     const currentUserRole = session?.user?.role;
-    
+
     // SUPERADMIN tüm kullanıcıların rolünü değiştirebilir
     if (currentUserRole === UserRole.SUPERADMIN) {
       // Süper yöneticiler birbirinin rolünü değiştiremez
@@ -289,7 +300,7 @@ export function UsersList({ currentUserId }: UsersListProps) {
       }
       return true;
     }
-    
+
     // ADMIN rolündeki kullanıcılar sadece normal üyelerin rolünü değiştirebilir
     if (currentUserRole === UserRole.ADMIN) {
       // Admin diğer adminlerin ve süper adminlerin rolünü değiştiremez
@@ -298,79 +309,89 @@ export function UsersList({ currentUserId }: UsersListProps) {
       }
       return true;
     }
-    
+
     // Diğer roller hiçbir rolü değiştiremez
     return false;
   };
-  
+
   // Rol değiştirme neden açıklaması
   const getRoleChangeDisabledReason = (userId: string, userRole: UserRole) => {
     const currentUserRole = session?.user?.role;
-    
+
     if (userId === currentUserId) {
       return "Kendi rolünüzü değiştiremezsiniz";
     }
-    
-    if (currentUserRole === UserRole.SUPERADMIN && userRole === UserRole.SUPERADMIN) {
+
+    if (
+      currentUserRole === UserRole.SUPERADMIN &&
+      userRole === UserRole.SUPERADMIN
+    ) {
       return "Süper yöneticilerin rolünü değiştiremezsiniz";
     }
-    
-    if (currentUserRole === UserRole.ADMIN && 
-        (userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN)) {
+
+    if (
+      currentUserRole === UserRole.ADMIN &&
+      (userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN)
+    ) {
       return "Yönetici ve üstü kullanıcıların rolünü değiştiremezsiniz";
     }
-    
+
     return "";
   };
 
   // Ekran genişliğini izlemek için durum
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Ekran genişliğini izle
   useEffect(() => {
     const checkMobileView = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     // İlk yükleme kontrolü
     checkMobileView();
-    
+
     // Pencere boyutu değiştiğinde kontrol et
-    window.addEventListener('resize', checkMobileView);
-    
+    window.addEventListener("resize", checkMobileView);
+
     // Temizleme
-    return () => window.removeEventListener('resize', checkMobileView);
+    return () => window.removeEventListener("resize", checkMobileView);
   }, []);
-  
+
   // Modaller için state
   const [backupDialogOpen, setBackupDialogOpen] = useState(false);
   const [selectedUserForBackup, setSelectedUserForBackup] = useState<any>(null);
-  const [backupPermissions, setBackupPermissions] = useState<BackupPermissions>({
-    canView: false,
-    canManage: false,
-    canDownload: false
-  });
+  const [backupPermissions, setBackupPermissions] = useState<BackupPermissions>(
+    {
+      canView: false,
+      canManage: false,
+      canDownload: false,
+    }
+  );
   const [savingBackupPermissions, setSavingBackupPermissions] = useState(false);
-  const [loadingBackupPermissions, setLoadingBackupPermissions] = useState(false);
-  
+  const [loadingBackupPermissions, setLoadingBackupPermissions] =
+    useState(false);
+
   // Yedekleme iznini açma metodu
   const handleOpenBackupDialog = async (user: any) => {
     setSelectedUserForBackup(user);
     setBackupDialogOpen(true);
-    
+
     // Kullanıcının mevcut yedekleme izinlerini getir
     await fetchBackupPermissions(user.id || user._id);
   };
-  
+
   // Kullanıcının yedekleme izinlerini getirme
   const fetchBackupPermissions = async (userId: string) => {
     if (!userId) return;
-    
+
     setLoadingBackupPermissions(true);
     try {
-      const response = await fetch(`/api/admin/users/backup-permissions?userId=${userId}`);
+      const response = await fetch(
+        `/api/admin/users/backup-permissions?userId=${userId}`
+      );
       const data = await response.json();
-      
+
       if (data.success && data.user?.backupPermissions) {
         setBackupPermissions(data.user.backupPermissions);
       } else {
@@ -378,156 +399,164 @@ export function UsersList({ currentUserId }: UsersListProps) {
         setBackupPermissions({
           canView: false,
           canManage: false,
-          canDownload: false
+          canDownload: false,
         });
       }
     } catch (error) {
-      console.error("Yedekleme izinleri getirilemedi:", error);
       toast.error("Yedekleme izinleri getirilemedi");
     } finally {
       setLoadingBackupPermissions(false);
     }
   };
-  
+
   // Yedekleme izinlerini kaydetme
   const saveBackupPermissions = async () => {
     if (!selectedUserForBackup) return;
-    
+
     const userId = selectedUserForBackup.id || selectedUserForBackup._id;
     if (!userId) {
       toast.error("Kullanıcı kimliği geçersiz");
       return;
     }
-    
+
     setSavingBackupPermissions(true);
     try {
-      const response = await fetch('/api/admin/users/backup-permissions', {
-        method: 'PUT',
+      const response = await fetch("/api/admin/users/backup-permissions", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId,
-          permissions: backupPermissions
+          permissions: backupPermissions,
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         toast.success("Yedekleme izinleri güncellendi");
         setBackupDialogOpen(false);
       } else {
-        toast.error(data.error || "İzinler güncellenemedi");
+        toast.error("İzinler güncellenemedi");
       }
     } catch (error) {
-      console.error("Yedekleme izinleri kaydedilemedi:", error);
       toast.error("Yedekleme izinleri kaydedilemedi");
     } finally {
       setSavingBackupPermissions(false);
     }
   };
-  
+
   // Yedekleme izinlerinin değişimini işleme
-  const handlePermissionChange = (key: keyof BackupPermissions, value: boolean) => {
+  const handlePermissionChange = (
+    key: keyof BackupPermissions,
+    value: boolean
+  ) => {
     const newPermissions = { ...backupPermissions, [key]: value };
-    
+
     // Bağımlı izinleri otomatik ayarla
-    if ((key === 'canManage' || key === 'canDownload') && value === true) {
+    if ((key === "canManage" || key === "canDownload") && value === true) {
       newPermissions.canView = true;
     }
-    
+
     // Görüntüleme kapatılırsa diğer izinler de kapatılmalı
-    if (key === 'canView' && value === false) {
+    if (key === "canView" && value === false) {
       newPermissions.canManage = false;
       newPermissions.canDownload = false;
     }
-    
+
     setBackupPermissions(newPermissions);
   };
-  
+
   // Kullanıcının süper admin olup olmadığını kontrol et
   const isSuperAdmin = session?.user?.role === UserRole.SUPERADMIN;
-  
+
   if (isLoading) {
     return (
       <div className="space-y-4">
         {/* Arama ve filtre alanı skeleton */}
         <div className="flex flex-col md:flex-row gap-4">
-          <Skeleton className="h-10 w-full bg-primary/20"/>
-          <Skeleton className="h-10 w-full md:w-40 bg-primary/20"/>
+          <Skeleton className="h-10 w-full bg-primary/20" />
+          <Skeleton className="h-10 w-full md:w-40 bg-primary/20" />
         </div>
-        
+
         {/* Mobil ve masaüstü görünümler için farklı skeleton yapıları */}
         <div className="md:hidden space-y-4">
-          {Array(5).fill(0).map((_, index) => (
-            <div key={index} className="border rounded-md p-4">
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <Skeleton className="h-6 w-[150px] bg-primary/20"/>
-                  <Skeleton className="h-6 w-[70px] bg-primary/20"/>
-                </div>
-                <Skeleton className="h-4 w-full max-w-[200px] bg-primary/20"/>
-                <div className="pt-3 space-y-2">
-                  <Skeleton className="h-10 w-full bg-primary/20"/>
-                  <Skeleton className="h-10 w-full bg-primary/20"/>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <div className="hidden md:block rounded-md border overflow-hidden">
-          <div className="p-4">
-            <div className="flex py-3 border-b">
-              <Skeleton className="h-5 w-[120px] bg-primary/20"/>
-              <Skeleton className="h-5 w-[120px] bg-primary/20 ml-8"/>
-              <Skeleton className="h-5 w-[100px] bg-primary/20 ml-8"/>
-              <Skeleton className="h-5 w-[100px] bg-primary/20 ml-auto"/>
-            </div>
-            {Array(6).fill(0).map((_, index) => (
-              <div key={index} className="flex items-center py-4 border-b last:border-0">
-                <Skeleton className="h-5 w-[120px] bg-primary/20"/>
-                <Skeleton className="h-5 w-[180px] bg-primary/20 ml-8"/>
-                <Skeleton className="h-6 w-[80px] bg-primary/20 ml-8"/>
-                <div className="flex gap-2 ml-auto">
-                  <Skeleton className="h-9 w-[180px] bg-primary/20"/>
-                  <Skeleton className="h-9 w-[60px] bg-primary/20"/>
+          {Array(5)
+            .fill(0)
+            .map((_, index) => (
+              <div key={index} className="border rounded-md p-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-6 w-[150px] bg-primary/20" />
+                    <Skeleton className="h-6 w-[70px] bg-primary/20" />
+                  </div>
+                  <Skeleton className="h-4 w-full max-w-[200px] bg-primary/20" />
+                  <div className="pt-3 space-y-2">
+                    <Skeleton className="h-10 w-full bg-primary/20" />
+                    <Skeleton className="h-10 w-full bg-primary/20" />
+                  </div>
                 </div>
               </div>
             ))}
+        </div>
+
+        <div className="hidden md:block rounded-md border overflow-hidden">
+          <div className="p-4">
+            <div className="flex py-3 border-b">
+              <Skeleton className="h-5 w-[120px] bg-primary/20" />
+              <Skeleton className="h-5 w-[120px] bg-primary/20 ml-8" />
+              <Skeleton className="h-5 w-[100px] bg-primary/20 ml-8" />
+              <Skeleton className="h-5 w-[100px] bg-primary/20 ml-auto" />
+            </div>
+            {Array(6)
+              .fill(0)
+              .map((_, index) => (
+                <div
+                  key={index}
+                  className="flex items-center py-4 border-b last:border-0"
+                >
+                  <Skeleton className="h-5 w-[120px] bg-primary/20" />
+                  <Skeleton className="h-5 w-[180px] bg-primary/20 ml-8" />
+                  <Skeleton className="h-6 w-[80px] bg-primary/20 ml-8" />
+                  <div className="flex gap-2 ml-auto">
+                    <Skeleton className="h-9 w-[180px] bg-primary/20" />
+                    <Skeleton className="h-9 w-[60px] bg-primary/20" />
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
-        
+
         {/* Sayfalama skeleton */}
         <div className="flex justify-center">
-          <Skeleton className="h-10 w-[300px] bg-primary/20"/>
+          <Skeleton className="h-10 w-[300px] bg-primary/20" />
         </div>
-        
+
         {/* Toplam sonuç skeleton */}
         <div className="flex justify-center">
-          <Skeleton className="h-4 w-[100px] bg-primary/20"/>
+          <Skeleton className="h-4 w-[100px] bg-primary/20" />
         </div>
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row gap-4">
         {/* Arama input'u (form değil) */}
         <div className="flex w-full gap-3">
-          <Input 
-            placeholder="İsim, soyad veya e-posta ile ara..." 
+          <Input
+            placeholder="İsim, soyad veya e-posta ile ara..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
-        
+
         {/* Rol filtresi */}
         <div className="w-full md:w-auto">
-          <Select 
-            onValueChange={(value: any) => handleRoleFilter(value)} 
+          <Select
+            onValueChange={(value: any) => handleRoleFilter(value)}
             value={selectedRole}
           >
             <SelectTrigger className="w-full">
@@ -536,14 +565,18 @@ export function UsersList({ currentUserId }: UsersListProps) {
             <SelectContent>
               <SelectItem value="all">Tüm Roller</SelectItem>
               <SelectItem value={UserRole.MEMBER}>Üye</SelectItem>
-              <SelectItem value={UserRole.REPRESENTATIVE}>Topluluk Temsilcisi</SelectItem>
+              <SelectItem value={UserRole.REPRESENTATIVE}>
+                Topluluk Temsilcisi
+              </SelectItem>
               <SelectItem value={UserRole.ADMIN}>Yönetim Üyesi</SelectItem>
-              <SelectItem value={UserRole.SUPERADMIN}>Süper Yönetici</SelectItem>
+              <SelectItem value={UserRole.SUPERADMIN}>
+                Süper Yönetici
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
-      
+
       {/* Yedekleme İzinleri Modal */}
       <Dialog open={backupDialogOpen} onOpenChange={setBackupDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -552,13 +585,16 @@ export function UsersList({ currentUserId }: UsersListProps) {
             <DialogDescription>
               {selectedUserForBackup && (
                 <>
-                  <span className="font-semibold">{selectedUserForBackup.name} {selectedUserForBackup.lastname}</span> 
+                  <span className="font-semibold">
+                    {selectedUserForBackup.name}{" "}
+                    {selectedUserForBackup.lastname}
+                  </span>
                   kullanıcısının yedekleme izinlerini ayarlayın.
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
-          
+
           {loadingBackupPermissions ? (
             <div className="py-6 flex justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -567,53 +603,57 @@ export function UsersList({ currentUserId }: UsersListProps) {
             <div className="p-4 space-y-4">
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="canView" 
+                  <Checkbox
+                    id="canView"
                     checked={backupPermissions.canView}
-                    onCheckedChange={(checked) => 
-                      handlePermissionChange('canView', checked as boolean)
+                    onCheckedChange={(checked) =>
+                      handlePermissionChange("canView", checked as boolean)
                     }
                   />
                   <Label htmlFor="canView" className="cursor-pointer">
                     Yedeklemeleri görüntüleyebilir
                   </Label>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="canManage" 
+                  <Checkbox
+                    id="canManage"
                     checked={backupPermissions.canManage}
                     disabled={!backupPermissions.canView}
-                    onCheckedChange={(checked) => 
-                      handlePermissionChange('canManage', checked as boolean)
+                    onCheckedChange={(checked) =>
+                      handlePermissionChange("canManage", checked as boolean)
                     }
                   />
-                  <Label 
-                    htmlFor="canManage" 
-                    className={`cursor-pointer ${!backupPermissions.canView ? 'text-muted-foreground' : ''}`}
+                  <Label
+                    htmlFor="canManage"
+                    className={`cursor-pointer ${
+                      !backupPermissions.canView ? "text-muted-foreground" : ""
+                    }`}
                   >
                     Yedeklemeleri yönetebilir
                   </Label>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="canDownload" 
+                  <Checkbox
+                    id="canDownload"
                     checked={backupPermissions.canDownload}
                     disabled={!backupPermissions.canView}
-                    onCheckedChange={(checked) => 
-                      handlePermissionChange('canDownload', checked as boolean)
+                    onCheckedChange={(checked) =>
+                      handlePermissionChange("canDownload", checked as boolean)
                     }
                   />
-                  <Label 
-                    htmlFor="canDownload" 
-                    className={`cursor-pointer ${!backupPermissions.canView ? 'text-muted-foreground' : ''}`}
+                  <Label
+                    htmlFor="canDownload"
+                    className={`cursor-pointer ${
+                      !backupPermissions.canView ? "text-muted-foreground" : ""
+                    }`}
                   >
                     Yedeklemeleri indirebilir
                   </Label>
                 </div>
               </div>
-              
+
               <div className="pt-4 flex justify-end space-x-2">
                 <Button
                   variant="outline"
@@ -631,7 +671,7 @@ export function UsersList({ currentUserId }: UsersListProps) {
                       Kaydediliyor
                     </>
                   ) : (
-                    'Kaydet'
+                    "Kaydet"
                   )}
                 </Button>
               </div>
@@ -639,7 +679,7 @@ export function UsersList({ currentUserId }: UsersListProps) {
           )}
         </DialogContent>
       </Dialog>
-      
+
       {/* Mobil görünüm için kart tabanlı liste */}
       {isMobile ? (
         <div className="space-y-4">
@@ -648,7 +688,7 @@ export function UsersList({ currentUserId }: UsersListProps) {
               // MongoDB _id/id dönüşümünü ele alalım
               const userId = user.id || user._id;
               const userRole = user.role as UserRole;
-              
+
               if (!userId) {
                 return null;
               }
@@ -659,41 +699,65 @@ export function UsersList({ currentUserId }: UsersListProps) {
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.avatar} alt={`${user.name} ${user.lastname}`} />
-                          <AvatarFallback>{getUserInitials(user.name, user.lastname)}</AvatarFallback>
+                          <AvatarImage
+                            src={user.avatar}
+                            alt={`${user.name} ${user.lastname}`}
+                          />
+                          <AvatarFallback>
+                            {getUserInitials(user.name, user.lastname)}
+                          </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h3 className="font-medium">{user.name} {user.lastname}</h3>
-                          <p className="text-sm text-muted-foreground break-all mt-1">{user.email}</p>
+                          <h3 className="font-medium">
+                            {user.name} {user.lastname}
+                          </h3>
+                          <p className="text-sm text-muted-foreground break-all mt-1">
+                            {user.email}
+                          </p>
                         </div>
                       </div>
-                      <Badge variant={getRoleBadgeVariant(user.role as UserRole)}>
+                      <Badge
+                        variant={getRoleBadgeVariant(user.role as UserRole)}
+                      >
                         {getRoleDisplayName(user.role as UserRole)}
                       </Badge>
                     </div>
-                    
+
                     <div className="pt-2 border-t space-y-2">
                       <div className="w-full">
-                        <p className="text-xs text-muted-foreground mb-1">Kullanıcı Rolü:</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Kullanıcı Rolü:
+                        </p>
                         <Select
-                          onValueChange={(value) => handleRoleChange(userId, value as UserRole)}
+                          onValueChange={(value) =>
+                            handleRoleChange(userId, value as UserRole)
+                          }
                           defaultValue={user.role}
-                          disabled={isUpdatingRole || !canChangeRole(userId, userRole)}
+                          disabled={
+                            isUpdatingRole || !canChangeRole(userId, userRole)
+                          }
                         >
-                          <SelectTrigger 
-                            className="w-full" 
-                            title={getRoleChangeDisabledReason(userId, userRole)}
+                          <SelectTrigger
+                            className="w-full"
+                            title={getRoleChangeDisabledReason(
+                              userId,
+                              userRole
+                            )}
                           >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={UserRole.ADMIN}>Yönetim Üyesi</SelectItem>
-                            <SelectItem value={UserRole.REPRESENTATIVE}>Topluluk Temsilcisi</SelectItem>
+                            <SelectItem value={UserRole.ADMIN}>
+                              Yönetim Üyesi
+                            </SelectItem>
+                            <SelectItem value={UserRole.REPRESENTATIVE}>
+                              Topluluk Temsilcisi
+                            </SelectItem>
                             <SelectItem value={UserRole.MEMBER}>Üye</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      
+
                       <div className="flex flex-col gap-2">
                         {/* Yedekleme Ayarları - Sadece Admin ve SUPERADMIN görebilir */}
                         {isSuperAdmin && userRole === UserRole.ADMIN && (
@@ -707,14 +771,16 @@ export function UsersList({ currentUserId }: UsersListProps) {
                             <span>Yedekleme Ayarları</span>
                           </Button>
                         )}
-                        
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="sm"
                               className="w-full flex items-center justify-center gap-2 mt-2"
-                              disabled={isDeleting || !canDeleteUser(userId, userRole)}
+                              disabled={
+                                isDeleting || !canDeleteUser(userId, userRole)
+                              }
                               title={getDeleteDisabledReason(userId, userRole)}
                             >
                               <Trash className="h-4 w-4" />
@@ -723,31 +789,39 @@ export function UsersList({ currentUserId }: UsersListProps) {
                           </AlertDialogTrigger>
                           <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Kullanıcıyı Sil</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                Kullanıcıyı Sil
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                              Bu işlemi geri alamazsınız. Bu kullanıcının hesabını silmek istediğinizden emin misiniz?
+                                Bu işlemi geri alamazsınız. Bu kullanıcının
+                                hesabını silmek istediğinizden emin misiniz?
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-                              <AlertDialogCancel className="w-full sm:w-auto mt-0">İptal</AlertDialogCancel>
+                              <AlertDialogCancel className="w-full sm:w-auto mt-0">
+                                İptal
+                              </AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => {
                                   if (!userId) {
                                     toast.error("Silme işlemi başarısız", {
-                                      description: "Kullanıcı kimliği eksik."
+                                      description: "Kullanıcı kimliği eksik.",
                                     });
                                     return;
                                   }
-                                  
+
                                   // Admin kullanıcı kontrol kısmını kaldırıyoruz veya süper admin kontrolü ekliyoruz
                                   // Süper admin ise her kullanıcıyı silebilsin
-                                  if (userRole === UserRole.ADMIN && session?.user?.role !== UserRole.SUPERADMIN) {
+                                  if (
+                                    userRole === UserRole.ADMIN &&
+                                    session?.user?.role !== UserRole.SUPERADMIN
+                                  ) {
                                     toast.error("Silme işlemi başarısız", {
-                                      description: "Yönetim üyeleri silinemez."
+                                      description: "Yönetim üyeleri silinemez.",
                                     });
                                     return;
                                   }
-                                  
+
                                   handleDeleteUser(userId);
                                 }}
                                 className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -778,7 +852,9 @@ export function UsersList({ currentUserId }: UsersListProps) {
                 <TableHead className="min-w-[180px]">Ad Soyad</TableHead>
                 <TableHead className="min-w-[120px]">E-posta</TableHead>
                 <TableHead className="min-w-[100px]">Rol</TableHead>
-                <TableHead className="text-right min-w-[230px]">İşlemler</TableHead>
+                <TableHead className="text-right min-w-[230px]">
+                  İşlemler
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -787,7 +863,7 @@ export function UsersList({ currentUserId }: UsersListProps) {
                   // MongoDB _id/id dönüşümünü ele alalım
                   const userId = user.id || user._id;
                   const userRole = user.role as UserRole;
-                  
+
                   if (!userId) {
                     return null;
                   }
@@ -797,38 +873,60 @@ export function UsersList({ currentUserId }: UsersListProps) {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar} alt={`${user.name} ${user.lastname}`} />
-                            <AvatarFallback>{getUserInitials(user.name, user.lastname)}</AvatarFallback>
+                            <AvatarImage
+                              src={user.avatar}
+                              alt={`${user.name} ${user.lastname}`}
+                            />
+                            <AvatarFallback>
+                              {getUserInitials(user.name, user.lastname)}
+                            </AvatarFallback>
                           </Avatar>
-                          <span>{user.name} {user.lastname}</span>
+                          <span>
+                            {user.name} {user.lastname}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="break-all">{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role as UserRole)}>
+                        <Badge
+                          variant={getRoleBadgeVariant(user.role as UserRole)}
+                        >
                           {getRoleDisplayName(user.role as UserRole)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-col sm:flex-row gap-2 justify-end items-end">
                           <Select
-                            onValueChange={(value) => handleRoleChange(userId, value as UserRole)}
+                            onValueChange={(value) =>
+                              handleRoleChange(userId, value as UserRole)
+                            }
                             defaultValue={user.role}
-                            disabled={isUpdatingRole || !canChangeRole(userId, userRole)}
+                            disabled={
+                              isUpdatingRole || !canChangeRole(userId, userRole)
+                            }
                           >
-                            <SelectTrigger 
-                              className="w-full sm:w-[180px]" 
-                              title={getRoleChangeDisabledReason(userId, userRole)}
+                            <SelectTrigger
+                              className="w-full sm:w-[180px]"
+                              title={getRoleChangeDisabledReason(
+                                userId,
+                                userRole
+                              )}
                             >
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value={UserRole.ADMIN}>Yönetim Üyesi</SelectItem>
-                              <SelectItem value={UserRole.REPRESENTATIVE}>Topluluk Temsilcisi</SelectItem>
-                              <SelectItem value={UserRole.MEMBER}>Üye</SelectItem>
+                              <SelectItem value={UserRole.ADMIN}>
+                                Yönetim Üyesi
+                              </SelectItem>
+                              <SelectItem value={UserRole.REPRESENTATIVE}>
+                                Topluluk Temsilcisi
+                              </SelectItem>
+                              <SelectItem value={UserRole.MEMBER}>
+                                Üye
+                              </SelectItem>
                             </SelectContent>
                           </Select>
-                          
+
                           {/* Yedekleme Ayarları - Sadece SUPERADMIN ve admin kullanıcıları için */}
                           {isSuperAdmin && userRole === UserRole.ADMIN && (
                             <Button
@@ -841,54 +939,69 @@ export function UsersList({ currentUserId }: UsersListProps) {
                               <span>Yedekleme</span>
                             </Button>
                           )}
-                          
+
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="destructive" 
-                              size="default"
-                              className="w-full sm:w-auto flex items-center gap-2"
-                              disabled={isDeleting || !canDeleteUser(userId, userRole)}
-                              title={getDeleteDisabledReason(userId, userRole)}
-                            >
-                              <Trash className="h-4 w-4" />
-                              <span>Sil</span>
-                            </Button>
+                              <Button
+                                variant="destructive"
+                                size="default"
+                                className="w-full sm:w-auto flex items-center gap-2"
+                                disabled={
+                                  isDeleting || !canDeleteUser(userId, userRole)
+                                }
+                                title={getDeleteDisabledReason(
+                                  userId,
+                                  userRole
+                                )}
+                              >
+                                <Trash className="h-4 w-4" />
+                                <span>Sil</span>
+                              </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent className="sm:max-w-md">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Kullanıcıyı Sil</AlertDialogTitle>
-                              <AlertDialogDescription>
-                              Bu işlemi geri alamazsınız. Bu kullanıcının hesabını silmek istediğinizden emin misiniz?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-                              <AlertDialogCancel className="w-full sm:w-auto mt-0">İptal</AlertDialogCancel>
-                              <AlertDialogAction
-                              onClick={() => {
-                                if (!userId) {
-                                toast.error("Silme işlemi başarısız", {
-                                  description: "Kullanıcı kimliği eksik."
-                                });
-                                return;
-                                }
-                                
-                                // Admin kullanıcı kontrol kısmını kaldırıyoruz veya süper admin kontrolü ekliyoruz
-                                // Süper admin ise her kullanıcıyı silebilsin
-                                if (userRole === UserRole.ADMIN && session?.user?.role !== UserRole.SUPERADMIN) {
-                                  toast.error("Silme işlemi başarısız", {
-                                    description: "Yönetim üyeleri silinemez."
-                                  });
-                                  return;
-                                }
-                                
-                                handleDeleteUser(userId);
-                              }}
-                              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                              Sil
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Kullanıcıyı Sil
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Bu işlemi geri alamazsınız. Bu kullanıcının
+                                  hesabını silmek istediğinizden emin misiniz?
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+                                <AlertDialogCancel className="w-full sm:w-auto mt-0">
+                                  İptal
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => {
+                                    if (!userId) {
+                                      toast.error("Silme işlemi başarısız", {
+                                        description: "Kullanıcı kimliği eksik.",
+                                      });
+                                      return;
+                                    }
+
+                                    // Admin kullanıcı kontrol kısmını kaldırıyoruz veya süper admin kontrolü ekliyoruz
+                                    // Süper admin ise her kullanıcıyı silebilsin
+                                    if (
+                                      userRole === UserRole.ADMIN &&
+                                      session?.user?.role !==
+                                        UserRole.SUPERADMIN
+                                    ) {
+                                      toast.error("Silme işlemi başarısız", {
+                                        description:
+                                          "Yönetim üyeleri silinemez.",
+                                      });
+                                      return;
+                                    }
+
+                                    handleDeleteUser(userId);
+                                  }}
+                                  className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Sil
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
@@ -907,33 +1020,43 @@ export function UsersList({ currentUserId }: UsersListProps) {
           </Table>
         </div>
       )}
-      
+
       {/* Sayfalama - Mobil için optimize edilmiş */}
       {totalPages > 1 && (
         <Pagination>
           <PaginationContent className="flex-wrap justify-center">
             <PaginationItem>
-              <PaginationPrevious 
+              <PaginationPrevious
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                className={
+                  currentPage === 1
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
               />
             </PaginationItem>
-            
+
             {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(page => {
+              .filter((page) => {
                 // Mobilde sadece aktif sayfa ve komşu sayfaları göster
                 const windowSize = isMobile ? 0 : 2;
-                return Math.abs(page - currentPage) <= windowSize || page === 1 || page === totalPages;
+                return (
+                  Math.abs(page - currentPage) <= windowSize ||
+                  page === 1 ||
+                  page === totalPages
+                );
               })
               .map((page, index, array) => {
                 // Ellipsis ekleyelim
-                const showEllipsisBefore = index > 0 && array[index - 1] !== page - 1;
-                const showEllipsisAfter = index < array.length - 1 && array[index + 1] !== page + 1;
-                
+                const showEllipsisBefore =
+                  index > 0 && array[index - 1] !== page - 1;
+                const showEllipsisAfter =
+                  index < array.length - 1 && array[index + 1] !== page + 1;
+
                 return (
                   <div key={page} className="flex items-center">
                     {showEllipsisBefore && <span className="px-2">...</span>}
-                    
+
                     <PaginationItem>
                       <Button
                         variant={currentPage === page ? "default" : "outline"}
@@ -944,22 +1067,28 @@ export function UsersList({ currentUserId }: UsersListProps) {
                         {page}
                       </Button>
                     </PaginationItem>
-                    
+
                     {showEllipsisAfter && <span className="px-2">...</span>}
                   </div>
                 );
               })}
-            
+
             <PaginationItem>
-              <PaginationNext 
-                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              <PaginationNext
+                onClick={() =>
+                  handlePageChange(Math.min(totalPages, currentPage + 1))
+                }
+                className={
+                  currentPage === totalPages
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
               />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
       )}
-      
+
       {/* Toplam sonuç */}
       <p className="text-sm text-muted-foreground text-center">
         Toplam {totalUsers} kullanıcı

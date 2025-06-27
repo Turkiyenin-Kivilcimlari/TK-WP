@@ -58,7 +58,7 @@ export default function AdminCommunityTeamPage() {
           <h1 className="text-2xl font-bold">Topluluk Temsilci Yönetimi</h1>
         </div>
         <p className="mt-2 text-muted-foreground">
-          Topluluk temsilcilerini yönetin, üniversite logolarını ekleyin ve sıralamalarını değiştirin.
+          Topluluk temsilcilerini yönetin, üniversite logolarını ve kullanıcı resimlerini ekleyin, sıralamalarını değiştirin.
         </p>
       </div>
 

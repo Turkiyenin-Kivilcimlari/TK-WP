@@ -87,7 +87,6 @@ export async function PUT(req: NextRequest) {
       website,
     } = body;
 
-    console.log(body)
 
     await connectToDatabase();
 

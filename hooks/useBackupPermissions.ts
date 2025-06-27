@@ -75,7 +75,6 @@ export function useBackupPermissions(): BackupPermissions {
           });
         }
       } catch (error) {
-        console.error('İzinler yüklenirken hata oluştu:', error);
         setPermissions({
           canView: false,
           canManage: false,

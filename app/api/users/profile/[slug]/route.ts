@@ -131,7 +131,6 @@ export async function GET(
     });
     
   } catch (error) {
-    console.error("Profil API hatası:", error);
     return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }

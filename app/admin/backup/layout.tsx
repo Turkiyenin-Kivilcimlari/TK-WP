@@ -26,7 +26,7 @@ async function getUserBackupPermissions(userId: string) {
     const data = await response.json();
     return data.success ? data.user.backupPermissions : null;
   } catch (error) {
-    console.error("Yedekleme izinleri alma hatası:", error);
+    
     return null;
   }
 }

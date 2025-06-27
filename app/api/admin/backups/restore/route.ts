@@ -9,6 +9,7 @@ import { UserRole } from '@/models/User';
 import { isBackupPasswordVerified } from '@/lib/backupPermissions';
 import os from 'os';
 import { restoreCloudinaryFromBackup } from "@/lib/backup/restore";
+import { encryptedJson } from "@/lib/response";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session || (session.user.role !== UserRole.ADMIN && session.user.role !== UserRole.SUPERADMIN)) {
-      return NextResponse.json({ success: false, error: "Yetkisiz erişim" }, { status: 403 });
+      return encryptedJson({ success: false, error: "Yetkisiz erişim" }, { status: 403 });
     }
 
     const adminCheck = await checkAdminAuthWithTwoFactor(req);
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     const restoreOptions = body.restoreOptions || { cloudinary: true }; // Sadece cloudinary
 
     if (!backupId) {
-      return NextResponse.json(
+      return encryptedJson(
         {
           success: false,
           error: "Geri yüklenecek yedek ID'si belirtilmedi",
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
     const isPasswordValid = await isBackupPasswordVerified() || encryptionKey;
     
     if (!isPasswordValid) {
-      return NextResponse.json(
+      return encryptedJson(
         {
           success: false,
           error: "Yedekleme şifresi doğrulanmadı veya geçersiz",
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     // Check if backup exists
     if (!fs.existsSync(backupPath)) {
-      return NextResponse.json(
+      return encryptedJson(
         {
           success: false,
           error: "Belirtilen yedek bulunamadı",
@@ -81,13 +82,11 @@ export async function POST(req: NextRequest) {
         try {
           // Read encryption key from file
           const storedKey = fs.readFileSync(keyFilePath, 'utf8').trim();
-          console.log('Yedek klasöründen şifreleme anahtarı kullanılıyor');
           
           // Start restore with stored key
           return await performRestore(backupPath, storedKey, restoreOptions);
         } catch (keyError) {
-          console.error('Şifreleme anahtarı dosyası okuma hatası:', keyError);
-          return NextResponse.json(
+          return encryptedJson(
             {
               success: false,
               error: "Yedek şifrelenmiş ve şifreleme anahtarı okunamadı",
@@ -97,7 +96,7 @@ export async function POST(req: NextRequest) {
           );
         }
       } else {
-        return NextResponse.json(
+        return encryptedJson(
           {
             success: false,
             error: "Bu yedek şifrelenmiş, şifreleme anahtarı gerekli",
@@ -111,11 +110,10 @@ export async function POST(req: NextRequest) {
     // Start restore process
     return await performRestore(backupPath, encryptionKey, restoreOptions);
   } catch (error: any) {
-    console.error("Restore error:", error);
-    return NextResponse.json(
+    return encryptedJson(
       {
         success: false,
-        error: error.message,
+        error: `Geri yükleme işlemi sırasında hata oluştu.`,
       },
       { status: 500 }
     );
@@ -129,13 +127,10 @@ async function performRestore(
   restoreOptions: { mongodb?: boolean; cloudinary?: boolean }
 ) {
   try {
-    console.log(`Geri yükleme başlatılıyor: ${backupPath}`);
-    console.log(`Seçenekler: MongoDB=false (devre dışı), Cloudinary=${restoreOptions.cloudinary}`);
     
     // Check if backup directory exists and is accessible
     if (!fs.existsSync(backupPath)) {
-      console.error(`Backup directory not found: ${backupPath}`);
-      return NextResponse.json(
+      return encryptedJson(
         {
           success: false,
           error: "Belirtilen yedek klasörü bulunamadı veya erişilemez",
@@ -149,9 +144,7 @@ async function performRestore(
     if (!fs.existsSync(tempDir)) {
       try {
         fs.mkdirSync(tempDir, { recursive: true });
-        console.log(`Created temporary directory: ${tempDir}`);
       } catch (tempDirError) {
-        console.error('Temp directory creation error:', tempDirError);
       }
     }
     
@@ -190,16 +183,6 @@ async function performRestore(
         };
         
       } catch (cloudinaryError: any) {
-        console.error('Cloudinary restore error:', cloudinaryError);
-        result.cloudinary = {
-          success: false,
-          uploadedCount: 0,
-          failedCount: 0,
-          skippedCount: 0,
-          totalFiles: 0,
-          details: `Cloudinary geri yükleme hatası: ${cloudinaryError.message}`,
-          message: cloudinaryError.message
-        };
       }
     }
 
@@ -207,16 +190,6 @@ async function performRestore(
     const isCloudinarySuccess = !restoreOptions.cloudinary || result.cloudinary.success;
     const isOverallSuccess = isCloudinarySuccess;
     
-    console.log("Geri yükleme sonucu:", {
-      success: isOverallSuccess,
-      cloudinary: {
-        success: result.cloudinary.success,
-        uploadedCount: result.cloudinary.uploadedCount,
-        failedCount: result.cloudinary.failedCount,
-        skippedCount: result.cloudinary.skippedCount,
-        totalFiles: result.cloudinary.totalFiles
-      }
-    });
     
     // Return result
     if (isOverallSuccess) {
@@ -225,7 +198,7 @@ async function performRestore(
       const failedCount = result.cloudinary.failedCount;
       const skippedCount = result.cloudinary.skippedCount;
       
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         message: "Cloudinary verileri başarıyla geri yüklendi",
         uploadedCount,
@@ -240,7 +213,7 @@ async function performRestore(
       const uploadedCount = result.cloudinary.uploadedCount;
       const failedCount = result.cloudinary.failedCount;
       
-      return NextResponse.json(
+      return encryptedJson(
         {
           success: false,
           message: "Cloudinary geri yükleme başarısız oldu",
@@ -253,12 +226,10 @@ async function performRestore(
       );
     }
   } catch (error: any) {
-    console.error("Restore process error:", error);
-    return NextResponse.json(
+    return encryptedJson(
       {
         success: false,
-        error: `Geri yükleme işlemi sırasında hata oluştu: ${error.message}`,
-        details: `Hata detayı: ${error.stack || error.toString()}`,
+        error: `Geri yükleme işlemi sırasında hata oluştu.`,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }

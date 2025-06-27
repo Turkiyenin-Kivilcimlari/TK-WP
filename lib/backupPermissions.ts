@@ -54,7 +54,6 @@ export function saveBackupAccessToken(token: string, expiresAt: string | number)
       };
       localStorage.setItem('backup-access-token', JSON.stringify(tokenData));
     } catch (error) {
-      console.error('Backup access token kaydedilemedi:', error);
     }
   }
 }
@@ -80,7 +79,6 @@ export function getBackupAccessToken(): string | null {
         }
       }
     } catch (error) {
-      console.error('Backup access token alınamadı:', error);
     }
   }
   return null;
@@ -94,7 +92,6 @@ export function clearBackupAccessToken() {
     try {
       localStorage.removeItem('backup-access-token');
     } catch (error) {
-      console.error('Backup access token temizlenemedi:', error);
     }
   }
 }

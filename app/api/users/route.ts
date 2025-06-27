@@ -1,96 +1,160 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { UserRole } from '@/models/User';
-import * as fs from 'fs';
-import * as path from 'path';
-
-// Kullanıcı verileri dosya yolu (örnek implementasyon)
-const USERS_FILE_PATH = path.join(process.cwd(), 'data', 'users.json');
-
-// Kullanıcı verilerini dosyadan oku
-async function getUsers() {
-  try {
-    const dataDir = path.dirname(USERS_FILE_PATH);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    
-    if (!fs.existsSync(USERS_FILE_PATH)) {
-      fs.writeFileSync(USERS_FILE_PATH, JSON.stringify([], null, 2), 'utf8');
-      return [];
-    }
-    
-    const data = fs.readFileSync(USERS_FILE_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Kullanıcılar yüklenirken hata oluştu:', error);
-    return [];
-  }
-}
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { UserRole } from "@/models/User";
+import { connectToDatabase } from "@/lib/mongodb";
+import User from "@/models/User";
+import { encryptedJson } from "@/lib/response";
 
 // Yetki kontrolü yap
 async function checkPermission() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== UserRole.SUPERADMIN) {
+  if (
+    !session ||
+    (session.user.role !== UserRole.SUPERADMIN &&
+      session.user.role !== UserRole.ADMIN)
+  ) {
     return false;
   }
   return true;
 }
 
 // Tüm kullanıcıları getir
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const hasPermission = await checkPermission();
     if (!hasPermission) {
-      return new NextResponse(JSON.stringify({ error: 'Yetkisiz erişim' }), { 
+      return new NextResponse(JSON.stringify({ error: "Yetkisiz erişim" }), {
         status: 403,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       });
     }
-    
-    const users = await getUsers();
-    return NextResponse.json(users);
+
+    await connectToDatabase();
+
+    // URL parametrelerini al
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const role = searchParams.get("role") || "";
+
+    const skip = (page - 1) * limit;
+
+    // Sorgu filtresi oluştur
+    let filter: any = {};
+
+    // Arama filtresi
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { lastname: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Rol filtresi
+    if (role && Object.values(UserRole).includes(role as UserRole)) {
+      filter.role = role;
+    }
+
+    // Toplam kullanıcı sayısını al
+    const total = await User.countDocuments(filter);
+
+    // Kullanıcıları getir (hassas alanları hariç tut)
+    const users = await User.find(filter)
+      .select(
+        "-password -twoFactorSecret -resetToken -resetTokenExpiry -verificationToken -verificationExpiry"
+      )
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Toplam sayfa sayısını hesapla
+    const pages = Math.ceil(total / limit);
+
+    return encryptedJson({
+      success: true,
+      count: users.length,
+      total,
+      page,
+      pages,
+      users: users.map((user) => ({
+        ...user,
+        id: user._id.toString(),
+      })),
+    });
   } catch (error) {
-    console.error('Kullanıcı verileri alınırken hata oluştu:', error);
-    return NextResponse.json({ error: 'Kullanıcı verileri alınamadı' }, { status: 500 });
+    return encryptedJson(
+      { error: "Kullanıcı verileri alınamadı" },
+      { status: 500 }
+    );
   }
 }
 
-// Kullanıcı oluştur veya güncelle
+// Kullanıcı oluştur
 export async function POST(request: NextRequest) {
   try {
     const hasPermission = await checkPermission();
     if (!hasPermission) {
-      return new NextResponse(JSON.stringify({ error: 'Yetkisiz erişim' }), { 
+      return new NextResponse(JSON.stringify({ error: "Yetkisiz erişim" }), {
         status: 403,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       });
     }
-    
+
+    await connectToDatabase();
+
     const userData = await request.json();
-    const users = await getUsers();
-    
-    const existingIndex = users.findIndex((user: any) => user.id === userData.id);
-    
-    if (existingIndex >= 0) {
-      // Varolan kullanıcıyı güncelle
-      users[existingIndex] = { ...users[existingIndex], ...userData };
-    } else {
-      // Yeni kullanıcı ekle
-      users.push(userData);
+    const { name, lastname, email, role, phone, avatar } = userData;
+
+    // E-posta adresi kullanımda mı kontrol et
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return encryptedJson(
+        { error: "Bu e-posta adresi zaten kullanımda" },
+        { status: 400 }
+      );
     }
-    
-    // Dosyaya kaydet
-    try {
-      fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(users, null, 2), 'utf8');
-      return NextResponse.json(userData);
-    } catch (error) {
-      console.error('Kullanıcı kaydedilirken hata oluştu:', error);
-      throw error;
-    }
+
+    // Yeni kullanıcı oluştur
+    const user = new User({
+      name,
+      lastname,
+      email,
+      phone: phone || "",
+      role: role || UserRole.MEMBER,
+      avatar: avatar || "",
+      emailVerified: true, // Admin tarafından oluşturulan kullanıcılar otomatik doğrulanmış
+      password: "temp123456", // Geçici şifre - kullanıcı şifre sıfırlama yapmalı
+    });
+
+    await user.save();
+
+    // Hassas alanları hariç tutarak döndür
+    const userResponse = {
+      id: user.id.toString(),
+      name: user.name,
+      lastname: user.lastname,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      avatar: user.avatar,
+      emailVerified: user.emailVerified,
+      createdAt: user.createdAt,
+    };
+
+    return encryptedJson({
+      success: true,
+      message: "Kullanıcı başarıyla oluşturuldu",
+      user: userResponse,
+    });
   } catch (error) {
-    console.error('Kullanıcı kaydedilirken hata oluştu:', error);
-    return NextResponse.json({ error: 'Kullanıcı kaydedilemedi' }, { status: 500 });
+    return encryptedJson(
+      { error: "Kullanıcı oluşturulamadı" },
+      { status: 500 }
+    );
   }
 }

@@ -20,7 +20,6 @@ export async function GET() {
     
     return encryptedJson({ success: true, boardMembers }, { status: 200 });
   } catch (error) {
-    console.error("Board üyeleri alınırken hata:", error);
     return encryptedJson({ success: false, error: "İşlem başarısız" }, { status: 500 });
   }
 }
@@ -60,7 +59,6 @@ export async function POST(req: Request) {
     }, { status: 201 });
     
   } catch (error) {
-    console.error("Board üyesi eklenirken hata:", error);
     return encryptedJson({ success: false, error: "İşlem başarısız" }, { status: 500 });
   }
 }

@@ -134,7 +134,6 @@ export function BoardManagement() {
         try {
           await deleteImage(formData.src);
         } catch (error) {
-          console.error("Önceki görsel silinemedi:", error);
         }
       }
 

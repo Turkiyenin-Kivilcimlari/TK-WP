@@ -1,4 +1,4 @@
-import { UserRole } from '@/models/User';
+import { UserRole } from "@/models/User";
 
 // Kullanıcı arayüzü için temel bir tip tanımı
 export interface UserData {
@@ -11,14 +11,15 @@ export interface UserData {
 // API URL'lerini oluşturmak için yardımcı fonksiyon
 function getApiUrl(path: string): string {
   // Server tarafında çalışıyorsa tam URL oluştur
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     // Ortam değişkenlerinden URL al, yoksa localhost kullan
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 
-                   process.env.VERCEL_URL || 
-                   'http://localhost:3000';
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.VERCEL_URL ||
+      "http://localhost:3000";
     return `${baseUrl}${path}`;
   }
-  
+
   // Client tarafında relatif URL kullan
   return path;
 }
@@ -26,21 +27,20 @@ function getApiUrl(path: string): string {
 // Kullanıcı verilerini getir
 async function getUsers(): Promise<UserData[]> {
   try {
-    const url = getApiUrl('/api/users');
+    const url = getApiUrl("/api/users");
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
-      throw new Error('Kullanıcı verileri alınamadı');
+      throw new Error("Kullanıcı verileri alınamadı");
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error('Kullanıcılar yüklenirken hata oluştu:', error);
     return [];
   }
 }
@@ -49,26 +49,27 @@ async function getUsers(): Promise<UserData[]> {
  * ID'ye göre kullanıcı bilgilerini getirir
  * @param userId Kullanıcı ID'si
  */
-export async function getUserById(userId: string): Promise<UserData | undefined> {
+export async function getUserById(
+  userId: string
+): Promise<UserData | undefined> {
   try {
     const url = getApiUrl(`/api/users/${userId}`);
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
       if (response.status === 404) {
         return undefined;
       }
-      throw new Error('Kullanıcı verileri alınamadı');
+      throw new Error("Kullanıcı verileri alınamadı");
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error('Kullanıcı bilgisi alınırken hata oluştu:', error);
     return undefined;
   }
 }
@@ -82,19 +83,18 @@ export async function getUsersByRole(role: UserRole): Promise<UserData[]> {
     // URL'yi uygun şekilde oluştur - [role] yerine [id] kullanıyoruz
     const url = getApiUrl(`/api/users/by-role/${role}`);
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
-      throw new Error('Kullanıcı verileri alınamadı');
+      throw new Error("Kullanıcı verileri alınamadı");
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error('Kullanıcılar alınırken hata oluştu:', error);
     return [];
   }
 }
@@ -103,27 +103,28 @@ export async function getUsersByRole(role: UserRole): Promise<UserData[]> {
  * E-posta adresiyle kullanıcı arar
  * @param email E-posta adresi
  */
-export async function getUserByEmail(email: string): Promise<UserData | undefined> {
+export async function getUserByEmail(
+  email: string
+): Promise<UserData | undefined> {
   try {
     const encodedEmail = encodeURIComponent(email);
     const url = getApiUrl(`/api/users/by-email/${encodedEmail}`);
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
       if (response.status === 404) {
         return undefined;
       }
-      throw new Error('Kullanıcı verileri alınamadı');
+      throw new Error("Kullanıcı verileri alınamadı");
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error('Kullanıcı bilgisi alınırken hata oluştu:', error);
     return undefined;
   }
 }
@@ -134,22 +135,21 @@ export async function getUserByEmail(email: string): Promise<UserData | undefine
  */
 export async function saveUser(userData: UserData): Promise<UserData> {
   try {
-    const url = getApiUrl('/api/users');
+    const url = getApiUrl("/api/users");
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(userData),
     });
-    
+
     if (!response.ok) {
-      throw new Error('Kullanıcı kaydedilemedi');
+      throw new Error("Kullanıcı kaydedilemedi");
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error('Kullanıcı kaydedilirken hata oluştu:', error);
     throw error;
   }
 }

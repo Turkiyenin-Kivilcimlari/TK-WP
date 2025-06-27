@@ -27,15 +27,16 @@ export function Supporters() {
       try {
         setLoading(true);
         const response = await api.get("/api/public/supporters");
-        
+
         if (response.data.success) {
           setSupporters(response.data.supporters || []);
         } else {
           setError("Destekçi verileri alınamadı");
         }
       } catch (error) {
-        console.error("Destekçi verileri yüklenirken hata:", error);
-        setError("Destekçi verileri yüklenemedi. Lütfen daha sonra tekrar deneyin.");
+        setError(
+          "Destekçi verileri yüklenemedi. Lütfen daha sonra tekrar deneyin."
+        );
       } finally {
         setLoading(false);
       }
@@ -48,7 +49,7 @@ export function Supporters() {
   const getInitials = (name: string) => {
     return name
       .split(" ")
-      .map(part => part[0])
+      .map((part) => part[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
@@ -60,29 +61,29 @@ export function Supporters() {
       opacity: 1,
       transition: {
         staggerChildren: 0.15,
-        delayChildren: 0.2
-      }
-    }
-  };
-  
-  const item = {
-    hidden: { 
-      opacity: 0, 
-      scale: 0.8, 
-      rotateY: 45,
-      z: -100
+        delayChildren: 0.2,
+      },
     },
-    show: { 
-      opacity: 1, 
-      scale: 1, 
+  };
+
+  const item = {
+    hidden: {
+      opacity: 0,
+      scale: 0.8,
+      rotateY: 45,
+      z: -100,
+    },
+    show: {
+      opacity: 1,
+      scale: 1,
       rotateY: 0,
       z: 0,
-      transition: { 
-        type: "spring", 
-        bounce: 0.4, 
-        duration: 0.8 
-      } 
-    }
+      transition: {
+        type: "spring",
+        bounce: 0.4,
+        duration: 0.8,
+      },
+    },
   };
 
   if (loading) {
@@ -110,28 +111,35 @@ export function Supporters() {
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto perspective-1000"
       variants={container}
       initial="hidden"
       animate="show"
     >
       {supporters.map((supporter) => (
-        <motion.div 
-          key={supporter._id} 
+        <motion.div
+          key={supporter._id}
           variants={item}
-          whileHover={{ 
-            scale: 1.05, 
-            boxShadow: theme === 'dark' 
-              ? "0 10px 25px rgba(255,255,255,0.1)" 
-              : "0 10px 25px rgba(0,0,0,0.1)", 
-            transition: { duration: 0.2 } 
+          whileHover={{
+            scale: 1.05,
+            boxShadow:
+              theme === "dark"
+                ? "0 10px 25px rgba(255,255,255,0.1)"
+                : "0 10px 25px rgba(0,0,0,0.1)",
+            transition: { duration: 0.2 },
           }}
           className="transform-gpu"
         >
-          <Card className={`overflow-hidden ${theme === 'dark' ? 'bg-black/60 text-white border-gray-800' : 'bg-white text-black border-gray-200'}`}>
+          <Card
+            className={`overflow-hidden ${
+              theme === "dark"
+                ? "bg-black/60 text-white border-gray-800"
+                : "bg-white text-black border-gray-200"
+            }`}
+          >
             <CardContent className="p-6 flex flex-col items-center text-center">
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
@@ -146,12 +154,18 @@ export function Supporters() {
                     />
                   </div>
                 ) : (
-                  <Avatar className={`h-32 w-32 mb-4 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'}`}>
-                    <AvatarFallback>{getInitials(supporter.name)}</AvatarFallback>
+                  <Avatar
+                    className={`h-32 w-32 mb-4 ${
+                      theme === "dark" ? "bg-gray-800" : "bg-gray-200"
+                    }`}
+                  >
+                    <AvatarFallback>
+                      {getInitials(supporter.name)}
+                    </AvatarFallback>
                   </Avatar>
                 )}
               </motion.div>
-              <motion.h3 
+              <motion.h3
                 className="text-xl font-semibold mt-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -159,8 +173,10 @@ export function Supporters() {
               >
                 {supporter.name}
               </motion.h3>
-              <motion.p 
-                className={`${theme === 'dark' ? 'text-gray-400' : 'text-muted-foreground'}`}
+              <motion.p
+                className={`${
+                  theme === "dark" ? "text-gray-400" : "text-muted-foreground"
+                }`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}

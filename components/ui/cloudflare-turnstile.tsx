@@ -24,8 +24,12 @@ export function CloudflareTurnstile({
   const [isLocalhost, setIsLocalhost] = useState(false);
   
   // Hard-coded site key
-  const SITE_KEY = "0x4AAAAAABEm1LyPmKRYL-Of";
-
+  const SITE_KEY = process.env.NEXT_PUBLIC_CLOUDFLARE_SITE_KEY;
+  if (!SITE_KEY) {
+    console.error("CLOUDFLARE_SITE_KEY environment variable is not set.");
+    return null; // Site key eksikse hiçbir şey render etme
+  }
+  
   // İstemci tarafında çalışacak kodlar için
   useEffect(() => {
     setIsMounted(true);

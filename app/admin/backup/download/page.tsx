@@ -67,7 +67,6 @@ export default function BackupDownloadPage() {
       const data = await response.json();
       setBackups(data.backups || []);
     } catch (error) {
-      console.error('Yedeklemeler yüklenirken hata oluştu:', error);
       toast.error('Yedeklemeler yüklenemedi');
     } finally {
       setIsLoading(false);
@@ -97,7 +96,7 @@ export default function BackupDownloadPage() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Yedek indirilemedi' }));
-        throw new Error(errorData.message || 'Yedek indirilemedi');
+        throw new Error('Yedek indirilemedi');
       }
       
       // Dosya adını al
@@ -124,7 +123,6 @@ export default function BackupDownloadPage() {
       
       toast.success('Yedek indirildi');
     } catch (error) {
-      console.error('Yedek indirilirken hata oluştu:', error);
       toast.error('Yedek indirilemedi');
     } finally {
       setIsDownloading(false);

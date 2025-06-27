@@ -8,12 +8,12 @@ import { TeamMemberCard } from "./team-member-card";
 interface TeamMember {
   id?: string;
   _id?: string;
-  name: string; 
+  name: string;
   lastname: string;
   email?: string;
   role: string;
   avatar?: string;
-  photo?: string; 
+  photo?: string;
   title?: string;
   university?: string;
   universityLogo?: string;
@@ -30,10 +30,10 @@ export function TeamMembers() {
     const fetchTeamMembers = async () => {
       try {
         setIsLoading(true);
-        
+
         // CommunityTeam modeline kayıtlı kullanıcıları public API üzerinden çek
         const response = await api.get("/api/public/teams/members");
-        
+
         if (response.data && response.data.success) {
           // API'den gelen verileri doğrudan kullan - sıralama API tarafında yapılıyor
           setTeamMembers(response.data.members || []);
@@ -41,7 +41,6 @@ export function TeamMembers() {
           setError("Takım üyeleri yüklenemedi");
         }
       } catch (err) {
-        console.error("Takım üyeleri yüklenirken hata oluştu:", err);
         setError("Takım üyeleri yüklenemedi");
       } finally {
         setIsLoading(false);

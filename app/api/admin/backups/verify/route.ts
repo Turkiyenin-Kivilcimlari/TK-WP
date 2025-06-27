@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
     );
     
   } catch (error: any) {
-    console.error('Yedekleme şifre doğrulama hatası:', error);
     return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }

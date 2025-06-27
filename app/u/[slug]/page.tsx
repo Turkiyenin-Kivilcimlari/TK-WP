@@ -99,8 +99,7 @@ export default function UserProfilePage() {
         setError(null);
 
         const response = await api.get(`/users/profile/${slug}`);
-        console.log("Profil verisi:", response.data); // API yanıtını kontrol etmek için
-
+        
         // API yanıtında participatedEvents alanı yoksa, boş bir dizi olarak ekle
         if (!response.data.participatedEvents) {
           response.data.participatedEvents = [];
@@ -108,7 +107,6 @@ export default function UserProfilePage() {
 
         setProfileData(response.data);
       } catch (err: any) {
-        console.error("Profil yükleme hatası:", err);
         setError("Kullanıcı profili yüklenirken bir hata oluştu.");
       } finally {
         setIsLoading(false);
@@ -267,7 +265,7 @@ export default function UserProfilePage() {
           <CardHeader>
             <CardTitle className="text-center">Kullanıcı Bulunamadı</CardTitle>
             <CardDescription className="text-center">
-              {error || "İstediğiniz profil mevcut değil veya kaldırılmış olabilir."}
+              {"İstediğiniz profil mevcut değil veya kaldırılmış olabilir."}
             </CardDescription>
           </CardHeader>
           <CardFooter className="flex justify-center">

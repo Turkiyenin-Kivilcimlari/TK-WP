@@ -14,7 +14,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Plus, Trash, ArrowUp, ArrowDown, ImageIcon, Pencil } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Trash,
+  ArrowUp,
+  ArrowDown,
+  ImageIcon,
+  Pencil,
+} from "lucide-react";
 import { ISupporter } from "@/models/Supporter";
 import {
   Dialog,
@@ -53,7 +61,8 @@ export function SupportersManagement() {
   const [photo, setPhoto] = useState<string>("");
   const [photoPreview, setPhotoPreview] = useState<string>("");
 
-  const { uploadImage, deleteImage, isUploading, isDeleting } = useUploadImage();
+  const { uploadImage, deleteImage, isUploading, isDeleting } =
+    useUploadImage();
 
   const fetchSupporters = async () => {
     try {
@@ -61,12 +70,17 @@ export function SupportersManagement() {
       const response = await api.get("/api/admin/supporters");
 
       // Sort supporters by their order field
-      const sortedSupporters = response.data.supporters.sort((a: any, b: any) => {
-        if (a.order === b.order) {
-          return a._id.localeCompare(b._id);
+      const sortedSupporters = response.data.supporters.sort(
+        (a: any, b: any) => {
+          if (a.order === b.order) {
+            return a._id.localeCompare(b._id);
+          }
+          return (
+            (a.order || Number.MAX_SAFE_INTEGER) -
+            (b.order || Number.MAX_SAFE_INTEGER)
+          );
         }
-        return (a.order || Number.MAX_SAFE_INTEGER) - (b.order || Number.MAX_SAFE_INTEGER);
-      });
+      );
 
       setSupporters(sortedSupporters);
     } catch (error) {
@@ -87,7 +101,7 @@ export function SupportersManagement() {
 
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Dosya boyutu çok büyük", {
-        description: "Lütfen 5MB'dan küçük bir resim seçin."
+        description: "Lütfen 5MB'dan küçük bir resim seçin.",
       });
       return;
     }
@@ -123,7 +137,7 @@ export function SupportersManagement() {
 
       // Create new ordering
       const newSupporters = [...supporters];
-      
+
       // Swap the current supporter with the one above it
       const temp = newSupporters[index];
       newSupporters[index] = newSupporters[index - 1];
@@ -163,7 +177,7 @@ export function SupportersManagement() {
 
       // Create new ordering
       const newSupporters = [...supporters];
-      
+
       // Swap the current supporter with the one below it
       const temp = newSupporters[index];
       newSupporters[index] = newSupporters[index + 1];
@@ -212,10 +226,9 @@ export function SupportersManagement() {
       setTitle(supporter.title || "");
       setPhoto(supporter.photo || "");
       setPhotoPreview(supporter.photo || "");
-      
+
       setEditDialogOpen(true);
     } catch (err) {
-      console.error("Destekçi verilerini yükleme hatası:", err);
       toast.error("Destekçi bilgileri yüklenirken bir hata oluştu");
     }
   };
@@ -232,7 +245,7 @@ export function SupportersManagement() {
       const response = await api.post("/api/admin/supporters", {
         name,
         title,
-        photo
+        photo,
       });
 
       if (response.data.success) {
@@ -241,7 +254,9 @@ export function SupportersManagement() {
         resetForm();
         fetchSupporters();
       } else {
-        toast.error(response.data.message || "Destekçi eklenirken bir hata oluştu");
+        toast.error(
+          "Destekçi eklenirken bir hata oluştu"
+        );
       }
     } catch (error) {
       toast.error("Destekçi eklenirken bir hata oluştu");
@@ -259,12 +274,15 @@ export function SupportersManagement() {
 
     try {
       setIsEditing(true);
-      
-      const response = await api.put(`/api/admin/supporters/${selectedSupporterId}`, {
-        name,
-        title,
-        photo
-      });
+
+      const response = await api.put(
+        `/api/admin/supporters/${selectedSupporterId}`,
+        {
+          name,
+          title,
+          photo,
+        }
+      );
 
       if (response.data.success) {
         toast.success("Destekçi başarıyla güncellendi");
@@ -272,7 +290,9 @@ export function SupportersManagement() {
         resetForm();
         fetchSupporters();
       } else {
-        toast.error(response.data.message || "Destekçi güncellenirken bir hata oluştu");
+        toast.error(
+          "Destekçi güncellenirken bir hata oluştu"
+        );
       }
     } catch (error) {
       toast.error("Destekçi güncellenirken bir hata oluştu");
@@ -284,35 +304,39 @@ export function SupportersManagement() {
   // Delete supporter
   const handleRemoveSupporter = async (id: string) => {
     if (!id) return;
-    
+
     setSelectedSupporterId(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
     if (!selectedSupporterId) return;
-    
+
     try {
       // Find the supporter to get their photo URL
-      const supporter = supporters.find(s => String(s._id) === selectedSupporterId);
+      const supporter = supporters.find(
+        (s) => String(s._id) === selectedSupporterId
+      );
 
-      const response = await api.delete(`/api/admin/supporters/${selectedSupporterId}`);
+      const response = await api.delete(
+        `/api/admin/supporters/${selectedSupporterId}`
+      );
 
       if (response.data.success) {
         // Delete the photo from Cloudinary if exists
         if (supporter?.photo) {
           try {
             await deleteImage(supporter.photo);
-          } catch (error) {
-            console.error("Resim silinirken bir hata oluştu:", error);
-          }
+          } catch (error) {}
         }
-        
+
         toast.success("Destekçi başarıyla silindi");
         setDeleteDialogOpen(false);
         fetchSupporters();
       } else {
-        toast.error(response.data.message || "Destekçi silinirken bir hata oluştu");
+        toast.error(
+          "Destekçi silinirken bir hata oluştu"
+        );
       }
     } catch (error) {
       toast.error("Destekçi silinirken bir hata oluştu");
@@ -323,7 +347,7 @@ export function SupportersManagement() {
   const getInitials = (name: string) => {
     return name
       .split(" ")
-      .map(part => part[0])
+      .map((part) => part[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
@@ -335,13 +359,17 @@ export function SupportersManagement() {
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             <span>Topluluk Destekçileri</span>
-            <Button onClick={() => setAddDialogOpen(true)} className="flex items-center">
+            <Button
+              onClick={() => setAddDialogOpen(true)}
+              className="flex items-center"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Destekçi Ekle
             </Button>
           </CardTitle>
           <CardDescription>
-            Tüm destekçileri görüntüleyin ve yönetin. Sıralamayı değiştirmek için yukarı/aşağı butonlarını kullanabilirsiniz.
+            Tüm destekçileri görüntüleyin ve yönetin. Sıralamayı değiştirmek
+            için yukarı/aşağı butonlarını kullanabilirsiniz.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -393,11 +421,15 @@ export function SupportersManagement() {
                         </div>
                       ) : (
                         <Avatar className="h-14 w-14">
-                          <AvatarFallback>{getInitials(supporter.name)}</AvatarFallback>
+                          <AvatarFallback>
+                            {getInitials(supporter.name)}
+                          </AvatarFallback>
                         </Avatar>
                       )}
                       <div>
-                        <CardTitle className="text-lg">{supporter.name}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {supporter.name}
+                        </CardTitle>
                         <CardDescription>{supporter.title}</CardDescription>
                       </div>
                     </div>
@@ -413,7 +445,9 @@ export function SupportersManagement() {
                       <Button
                         variant="outline"
                         size="icon"
-                        disabled={index === supporters.length - 1 || isReordering}
+                        disabled={
+                          index === supporters.length - 1 || isReordering
+                        }
                         onClick={() => moveDown(index)}
                       >
                         <ArrowDown className="h-4 w-4" />
@@ -428,7 +462,11 @@ export function SupportersManagement() {
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => handleRemoveSupporter(String(supporter._id || supporter.id || ""))}
+                        onClick={() =>
+                          handleRemoveSupporter(
+                            String(supporter._id || supporter.id || "")
+                          )
+                        }
                       >
                         <Trash className="h-4 w-4" />
                       </Button>
@@ -442,10 +480,13 @@ export function SupportersManagement() {
       )}
 
       {/* Add Supporter Dialog */}
-      <Dialog open={addDialogOpen} onOpenChange={(open) => {
-        setAddDialogOpen(open);
-        if (!open) resetForm();
-      }}>
+      <Dialog
+        open={addDialogOpen}
+        onOpenChange={(open) => {
+          setAddDialogOpen(open);
+          if (!open) resetForm();
+        }}
+      >
         <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Topluluk Destekçisi Ekle</DialogTitle>
@@ -466,7 +507,7 @@ export function SupportersManagement() {
                   placeholder="Destekçinin ismi"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="title" className="mb-1 block">
                   Ünvan
@@ -478,12 +519,12 @@ export function SupportersManagement() {
                   placeholder="Örn: ABC Şirketi CEO"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="photo" className="mb-1 block">
                   Fotoğraf
                 </Label>
-                
+
                 {photoPreview ? (
                   <div className="relative border rounded-md overflow-hidden p-2">
                     <Image
@@ -494,17 +535,17 @@ export function SupportersManagement() {
                       className="mx-auto object-contain max-h-[200px]"
                     />
                     <div className="flex justify-end mt-2 space-x-2">
-                      <Button 
+                      <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          document.getElementById('photo-upload')?.click();
+                          document.getElementById("photo-upload")?.click();
                         }}
                       >
                         Değiştir
                       </Button>
-                      <Button 
+                      <Button
                         type="button"
                         variant="destructive"
                         size="sm"
@@ -527,19 +568,25 @@ export function SupportersManagement() {
                             <Skeleton className="h-4 w-4 rounded-full bg-primary/20 animate-pulse mr-2" />
                             Kaldırılıyor...
                           </div>
-                        ) : "Kaldır"}
+                        ) : (
+                          "Kaldır"
+                        )}
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div 
+                  <div
                     className="border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center gap-2 cursor-pointer"
-                    onClick={() => document.getElementById('photo-upload')?.click()}
+                    onClick={() =>
+                      document.getElementById("photo-upload")?.click()
+                    }
                   >
                     {isUploading ? (
                       <>
                         <Skeleton className="h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
-                        <p className="text-sm text-muted-foreground">Yükleniyor...</p>
+                        <p className="text-sm text-muted-foreground">
+                          Yükleniyor...
+                        </p>
                       </>
                     ) : (
                       <>
@@ -566,13 +613,19 @@ export function SupportersManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setAddDialogOpen(false);
-              resetForm();
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddDialogOpen(false);
+                resetForm();
+              }}
+            >
               İptal
             </Button>
-            <Button onClick={handleAddSupporter} disabled={isAdding || isUploading}>
+            <Button
+              onClick={handleAddSupporter}
+              disabled={isAdding || isUploading}
+            >
               {isAdding ? (
                 <>
                   <Skeleton className="mr-2 h-4 w-4 rounded-full bg-primary/20 animate-pulse" />
@@ -587,8 +640,8 @@ export function SupportersManagement() {
       </Dialog>
 
       {/* Edit Supporter Dialog */}
-      <Dialog 
-        open={editDialogOpen} 
+      <Dialog
+        open={editDialogOpen}
         onOpenChange={(open) => {
           if (!open) {
             resetForm();
@@ -616,7 +669,7 @@ export function SupportersManagement() {
                   placeholder="Destekçinin ismi"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="title-edit" className="mb-1 block">
                   Ünvan
@@ -628,12 +681,12 @@ export function SupportersManagement() {
                   placeholder="Örn: ABC Şirketi CEO"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="photo-edit" className="mb-1 block">
                   Fotoğraf
                 </Label>
-                
+
                 {photoPreview ? (
                   <div className="relative border rounded-md overflow-hidden p-2">
                     <Image
@@ -644,17 +697,17 @@ export function SupportersManagement() {
                       className="mx-auto object-contain max-h-[200px]"
                     />
                     <div className="flex justify-end mt-2 space-x-2">
-                      <Button 
+                      <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          document.getElementById('photo-upload-edit')?.click();
+                          document.getElementById("photo-upload-edit")?.click();
                         }}
                       >
                         Değiştir
                       </Button>
-                      <Button 
+                      <Button
                         type="button"
                         variant="destructive"
                         size="sm"
@@ -677,19 +730,25 @@ export function SupportersManagement() {
                             <Skeleton className="h-4 w-4 rounded-full bg-primary/20 animate-pulse mr-2" />
                             Kaldırılıyor...
                           </div>
-                        ) : "Kaldır"}
+                        ) : (
+                          "Kaldır"
+                        )}
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div 
+                  <div
                     className="border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center gap-2 cursor-pointer"
-                    onClick={() => document.getElementById('photo-upload-edit')?.click()}
+                    onClick={() =>
+                      document.getElementById("photo-upload-edit")?.click()
+                    }
                   >
                     {isUploading ? (
                       <>
                         <Skeleton className="h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
-                        <p className="text-sm text-muted-foreground">Yükleniyor...</p>
+                        <p className="text-sm text-muted-foreground">
+                          Yükleniyor...
+                        </p>
                       </>
                     ) : (
                       <>
@@ -716,8 +775,8 @@ export function SupportersManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setEditDialogOpen(false);
                 resetForm();
@@ -726,8 +785,8 @@ export function SupportersManagement() {
             >
               İptal
             </Button>
-            <Button 
-              onClick={handleEditSupporter} 
+            <Button
+              onClick={handleEditSupporter}
               disabled={isEditing || isUploading || !name || !title}
               type="button"
             >
@@ -750,7 +809,8 @@ export function SupportersManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>Destekçiyi Sil</AlertDialogTitle>
             <AlertDialogDescription>
-              Bu destekçiyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+              Bu destekçiyi silmek istediğinize emin misiniz? Bu işlem geri
+              alınamaz.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

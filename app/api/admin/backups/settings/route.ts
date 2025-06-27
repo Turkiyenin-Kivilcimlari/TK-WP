@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { UserRole } from "@/models/User";
 import { getBackupSettings, saveBackupSettings } from "@/lib/backup/backupPermissions";
 import { checkAdminAuthWithTwoFactor } from "@/middleware/authMiddleware";
+import { encryptedJson } from "@/lib/response";
 
 // Get backup settings
 export async function GET(req: NextRequest) {
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session || (session.user.role !== UserRole.ADMIN && session.user.role !== UserRole.SUPERADMIN)) {
-      return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 403 });
+      return encryptedJson({ error: "Yetkisiz erişim" }, { status: 403 });
     }
 
     // Admin yetkisi kontrolü
@@ -24,14 +25,13 @@ export async function GET(req: NextRequest) {
     // Ayarları getir
     const settings = await getBackupSettings();
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       settings
     });
   } catch (error: any) {
-    console.error("Backup settings retrieval error:", error);
-    return NextResponse.json(
-      { error: error.message, success: false },
+    return encryptedJson(
+      { error: "Ayarlar getirelemedi.", success: false },
       { status: 500 }
     );
   }
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session || (session.user.role !== UserRole.ADMIN && session.user.role !== UserRole.SUPERADMIN)) {
-      return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 403 });
+      return encryptedJson({ error: "Yetkisiz erişim" }, { status: 403 });
     }
 
     // Admin yetkisi kontrolü
@@ -57,14 +57,13 @@ export async function PUT(req: NextRequest) {
     // Ayarları kaydet
     await saveBackupSettings(settings);
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: "Ayarlar başarıyla kaydedildi"
     });
   } catch (error: any) {
-    console.error("Backup settings save error:", error);
-    return NextResponse.json(
-      { error: error.message, success: false },
+    return encryptedJson(
+      { error: "Ayarlarda hata oluştu", success: false },
       { status: 500 }
     );
   }

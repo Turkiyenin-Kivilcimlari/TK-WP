@@ -25,30 +25,34 @@ function Staff() {
       try {
         setIsLoading(true);
         const response = await api.get("/api/board");
-        
+
         // Veri kontrolü ekleyelim
         const members = response.data.boardMembers || [];
-        
+
         // Üyeleri sıralamaya göre sırala - null/undefined değerleri için güvenlik kontrolleri eklenmiş
         const sortedMembers = members.sort((a: BoardMember, b: BoardMember) => {
           // Order değeri yoksa veya eşitse ID'ye göre sırala
-          if ((a.order === undefined && b.order === undefined) || a.order === b.order) {
+          if (
+            (a.order === undefined && b.order === undefined) ||
+            a.order === b.order
+          ) {
             // ID karşılaştırmasını güvenli hale getir (id veya _id olabilir, ikisi de undefined olabilir)
-            const idA = a.id || a._id || '';
-            const idB = b.id || b._id || '';
+            const idA = a.id || a._id || "";
+            const idB = b.id || b._id || "";
             return String(idA).localeCompare(String(idB)); // String'e çevirerek güvenli karşılaştırma
           }
-          
+
           // Order değeri varsa ona göre sırala (küçükten büyüğe)
           // Undefined değerler için varsayılan yüksek değer ata
-          const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
-          const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
+          const orderA =
+            a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
+          const orderB =
+            b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
           return orderA - orderB;
         });
-        
+
         setBoardMembers(sortedMembers);
       } catch (err) {
-        console.error("Board üyeleri yüklenirken hata oluştu:", err);
         setError("Board üyeleri yüklenemedi");
       } finally {
         setIsLoading(false);
@@ -89,6 +93,15 @@ function Staff() {
 
   if (error) {
     return <div className="text-center text-red-500 py-4">{error}</div>;
+  }
+
+  // Boş dizi kontrolü ekleyelim
+  if (boardMembers.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-4">
+        Henüz board üyesi bulunmamaktadır.
+      </div>
+    );
   }
 
   return <AnimatedTestimonials testimonials={boardMembers} />;

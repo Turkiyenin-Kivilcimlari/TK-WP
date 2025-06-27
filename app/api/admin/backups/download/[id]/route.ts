@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { createReadStream, existsSync } from 'fs';
 import crypto from 'crypto';
+import { encryptedJson } from '@/lib/response';
 
 export async function GET(
   request: Request,
@@ -16,7 +17,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
     
     if (!session?.user) {
-      return NextResponse.json(
+      return encryptedJson(
         { message: 'Oturum açık değil' },
         { status: 401 }
       );
@@ -27,7 +28,7 @@ export async function GET(
                          session.user.role === UserRole.SUPERADMIN;
     
     if (!hasPermission) {
-      return NextResponse.json(
+      return encryptedJson(
         { message: 'Bu işlem için yetkiniz bulunmuyor' },
         { status: 403 }
       );
@@ -36,7 +37,7 @@ export async function GET(
     // Yedekleme ID'sini al
     const backupId = params.id;
     if (!backupId) {
-      return NextResponse.json(
+      return encryptedJson(
         { message: 'Yedek ID\'si gerekli' },
         { status: 400 }
       );
@@ -56,7 +57,7 @@ export async function GET(
     const isNormal = existsSync(backupFilePath);
 
     if (!isEncrypted && !isNormal) {
-      return NextResponse.json(
+      return encryptedJson(
         { message: 'Belirtilen yedek bulunamadı' },
         { status: 404 }
       );
@@ -65,7 +66,7 @@ export async function GET(
     // Dosya şifreli ve şifreleme anahtarı verilmişse
     if (isEncrypted) {
       if (!encryptionKey) {
-        return NextResponse.json(
+        return encryptedJson(
           { message: 'Bu yedek şifrelenmiş. Şifreleme anahtarı gerekli.' },
           { status: 400 }
         );
@@ -101,8 +102,7 @@ export async function GET(
           },
         });
       } catch (error) {
-        console.error('Şifre çözme hatası:', error);
-        return NextResponse.json(
+        return encryptedJson(
           { message: 'Şifre çözme başarısız. Geçersiz şifreleme anahtarı.' },
           { status: 400 }
         );
@@ -124,8 +124,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Yedek indirme hatası:', error);
-    return NextResponse.json(
+    return encryptedJson(
       { message: 'Yedek indirilirken bir hata oluştu' },
       { status: 500 }
     );

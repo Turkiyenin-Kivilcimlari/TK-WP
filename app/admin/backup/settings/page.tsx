@@ -1,15 +1,22 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { UserRole } from "@/models/User";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Settings, Check, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useBackupPermissions } from '@/hooks/useBackupPermissions';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useBackupPermissions } from "@/hooks/useBackupPermissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,28 +57,32 @@ interface BackupSettings {
 export default function BackupSettingsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { canManage, isLoading: permissionsLoading, isSuperAdmin } = useBackupPermissions();
-  
+  const {
+    canManage,
+    isLoading: permissionsLoading,
+    isSuperAdmin,
+  } = useBackupPermissions();
+
   const [settings, setSettings] = useState<BackupSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [emailRecipientInput, setEmailRecipientInput] = useState('');
-  const [folderInput, setFolderInput] = useState('');
+  const [emailRecipientInput, setEmailRecipientInput] = useState("");
+  const [folderInput, setFolderInput] = useState("");
 
   // Oturum ve izin kontrolleri
   useEffect(() => {
-    if (status === 'loading' || permissionsLoading) return;
-    
+    if (status === "loading" || permissionsLoading) return;
+
     if (!session) {
-      router.push('/signin');
+      router.push("/signin");
       return;
     }
-    
+
     if (!canManage && session.user.role !== UserRole.SUPERADMIN) {
-      router.push('/admin/backup');
+      router.push("/admin/backup");
       return;
     }
-    
+
     fetchSettings();
   }, [session, status, canManage, permissionsLoading, router]);
 
@@ -79,20 +90,19 @@ export default function BackupSettingsPage() {
   const fetchSettings = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/admin/backups/settings', {
-        credentials: 'include', // Oturum bilgilerini (cookie) dahil et
-        cache: 'no-store'
+      const response = await fetch("/api/admin/backups/settings", {
+        credentials: "include", // Oturum bilgilerini (cookie) dahil et
+        cache: "no-store",
       });
-      
+
       if (!response.ok) {
-        throw new Error('Ayarlar yüklenemedi');
+        throw new Error("Ayarlar yüklenemedi");
       }
-      
+
       const data = await response.json();
       setSettings(data.settings);
     } catch (error) {
-      console.error('Ayarlar yüklenirken hata oluştu:', error);
-      toast.error('Ayarlar yüklenemedi');
+      toast.error("Ayarlar yüklenemedi");
     } finally {
       setIsLoading(false);
     }
@@ -101,30 +111,29 @@ export default function BackupSettingsPage() {
   // Form gönderme
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!settings) return;
-    
+
     try {
       setIsSaving(true);
-      
+
       // API'yi değiştiriyoruz - admin endpoint'ini kullanıyoruz ve PUT metodu kullanıyoruz
-      const response = await fetch('/api/admin/backups/settings', {
-        method: 'PUT',
+      const response = await fetch("/api/admin/backups/settings", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(settings),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Ayarlar kaydedilemedi');
+        throw new Error("Ayarlar kaydedilemedi");
       }
-      
-      toast.success('Ayarlar başarıyla kaydedildi');
+
+      toast.success("Ayarlar başarıyla kaydedildi");
     } catch (error: any) {
-      console.error('Ayarlar kaydedilirken hata oluştu:', error);
-      toast.error(error.message || 'Ayarlar kaydedilemedi');
+      toast.error("Ayarlar kaydedilemedi");
     } finally {
       setIsSaving(false);
     }
@@ -133,134 +142,127 @@ export default function BackupSettingsPage() {
   // Form değişikliklerini işleme
   const handleChange = (path: string, value: any) => {
     if (!settings) return;
-    
-    const pathParts = path.split('.');
+
+    const pathParts = path.split(".");
     let newSettings = { ...settings };
     let current: any = newSettings;
-    
+
     // Son property'ye kadar git
     for (let i = 0; i < pathParts.length - 1; i++) {
       current = current[pathParts[i]];
     }
-    
+
     // Son property'yi güncelle
     current[pathParts[pathParts.length - 1]] = value;
-    
+
     setSettings(newSettings);
   };
 
   // E-posta alıcısı ekleme
   const addEmailRecipient = () => {
     if (!emailRecipientInput || !settings) {
-      toast.error('Lütfen bir e-posta adresi girin');
+      toast.error("Lütfen bir e-posta adresi girin");
       return;
     }
-    
-    console.log('Ekleme öncesi alıcılar:', settings.notifications?.email?.recipients || []);
-    
+
     // E-posta formatını doğrula
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRecipientInput)) {
-      toast.error('Geçersiz e-posta adresi');
+      toast.error("Geçersiz e-posta adresi");
       return;
     }
-    
+
     // Email alıcıları dizisinin var olduğundan emin olalım
     if (!settings.notifications?.email?.recipients) {
-      toast.error('Alıcı listesi bulunamadı');
+      toast.error("Alıcı listesi bulunamadı");
       return;
     }
-    
+
     // Eğer bu e-posta zaten eklenmiş mi kontrol et
     if (settings.notifications.email.recipients.includes(emailRecipientInput)) {
-      toast.error('Bu e-posta adresi zaten eklenmiş');
+      toast.error("Bu e-posta adresi zaten eklenmiş");
       return;
     }
-    
+
     try {
       // Yeni e-posta listesi oluştur (immutable şekilde)
-      const newRecipients = [...settings.notifications.email.recipients, emailRecipientInput];
-      console.log('Yeni alıcılar:', newRecipients);
-      
+      const newRecipients = [
+        ...settings.notifications.email.recipients,
+        emailRecipientInput,
+      ];
+
       // Ayarları güncelle (deep clone ile)
       const newSettings = JSON.parse(JSON.stringify(settings));
       newSettings.notifications.email.recipients = newRecipients;
-      
+
       // State'i güncelle
       setSettings(newSettings);
-      
+
       // Bildirim göster
       toast.success(`${emailRecipientInput} alıcı listesine eklendi`);
-      
+
       // Giriş alanını temizle
-      setEmailRecipientInput('');
-      
-      console.log('Ekleme sonrası alıcılar:', newSettings.notifications.email.recipients);
+      setEmailRecipientInput("");
     } catch (error) {
-      console.error('E-posta eklenirken hata oluştu:', error);
-      toast.error('E-posta eklenemedi');
+      toast.error("E-posta eklenemedi");
     }
   };
 
   // E-posta alıcısı silme
   const removeEmailRecipient = (email: string) => {
     if (!settings) return;
-    
-    console.log('Silme öncesi alıcılar:', settings.notifications.email.recipients);
-    
+
     try {
       // Immutable şekilde yeni nesne oluşturarak state'i güncelle (deep clone ile)
       const newSettings = JSON.parse(JSON.stringify(settings));
-      newSettings.notifications.email.recipients = 
-        settings.notifications.email.recipients.filter(r => r !== email);
-      
+      newSettings.notifications.email.recipients =
+        settings.notifications.email.recipients.filter((r) => r !== email);
+
       // State'i güncelle
       setSettings(newSettings);
       toast.success(`${email} alıcı listesinden kaldırıldı`);
-      
-      console.log('Silme sonrası alıcılar:', newSettings.notifications.email.recipients);
+
     } catch (error) {
-      console.error('E-posta silinirken hata oluştu:', error);
-      toast.error('E-posta silinemedi');
+      toast.error("E-posta silinemedi");
     }
   };
 
   // Cloudinary klasörü ekleme
   const addFolder = () => {
     if (!folderInput || !settings) return;
-    
+
     // Eğer bu klasör zaten eklenmiş mi kontrol et
     if (settings.cloudinary.folders.includes(folderInput)) {
-      toast.error('Bu klasör zaten eklenmiş');
+      toast.error("Bu klasör zaten eklenmiş");
       return;
     }
-    
+
     // Yeni klasör listesi oluştur
     const newFolders = [...settings.cloudinary.folders, folderInput];
-    
+
     // Ayarları güncelle
-    handleChange('cloudinary.folders', newFolders);
-    
+    handleChange("cloudinary.folders", newFolders);
+
     // Giriş alanını temizle
-    setFolderInput('');
+    setFolderInput("");
   };
 
   // Cloudinary klasörü silme
   const removeFolder = (folder: string) => {
     if (!settings) return;
-    
-    const newFolders = settings.cloudinary.folders.filter(f => f !== folder);
-    handleChange('cloudinary.folders', newFolders);
+
+    const newFolders = settings.cloudinary.folders.filter((f) => f !== folder);
+    handleChange("cloudinary.folders", newFolders);
   };
 
   // İçerik yüklenirken gösterilecek UI
-  if (isLoading || permissionsLoading || status === 'loading') {
+  if (isLoading || permissionsLoading || status === "loading") {
     return (
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-6">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-10 w-40" />
         </div>
-        
+
         <Skeleton className="h-[600px] w-full" />
       </div>
     );
@@ -289,7 +291,7 @@ export default function BackupSettingsPage() {
           </Link>
         </Button>
       </div>
-      
+
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="schedule">
           <TabsList className="mb-4">
@@ -298,7 +300,7 @@ export default function BackupSettingsPage() {
             <TabsTrigger value="data">Veri</TabsTrigger>
             <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
           </TabsList>
-          
+
           {/* Zamanlama Ayarları */}
           <TabsContent value="schedule">
             <Card>
@@ -308,7 +310,8 @@ export default function BackupSettingsPage() {
                   Otomatik Yedekleme Zamanlaması
                 </CardTitle>
                 <CardDescription>
-                  Otomatik yedekleme yapılacak zamanı ve saklama süresini ayarlayın.
+                  Otomatik yedekleme yapılacak zamanı ve saklama süresini
+                  ayarlayın.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -318,45 +321,77 @@ export default function BackupSettingsPage() {
                     id="schedule"
                     placeholder="0 3 * * *"
                     value={settings.schedule}
-                    onChange={(e) => handleChange('schedule', e.target.value)}
+                    onChange={(e) => handleChange("schedule", e.target.value)}
                   />
                   <div className="text-sm text-muted-foreground mt-1 space-y-2">
-                    <p><strong>Cron ifadesi nedir?</strong> Zamanlanmış görevlerin ne zaman çalışacağını belirten bir formattır.</p>
-                    <p>Format: <code>dakika saat günAyın günHafta ay</code> şeklindedir (5 adet değer)</p>
-                    <p><strong>Yaygın örnekler:</strong></p>
+                    <p>
+                      <strong>Cron ifadesi nedir?</strong> Zamanlanmış
+                      görevlerin ne zaman çalışacağını belirten bir formattır.
+                    </p>
+                    <p>
+                      Format: <code>dakika saat günAyın günHafta ay</code>{" "}
+                      şeklindedir (5 adet değer)
+                    </p>
+                    <p>
+                      <strong>Yaygın örnekler:</strong>
+                    </p>
                     <ul className="list-disc pl-5 space-y-1">
-                      <li><code>0 3 * * *</code> = Her gün gece 03:00'de</li>
-                      <li><code>0 */6 * * *</code> = Her 6 saatte bir (00:00, 06:00, 12:00, 18:00)</li>
-                      <li><code>0 0 * * 0</code> = Her hafta Pazar günü gece yarısı</li>
-                      <li><code>0 0 1 * *</code> = Her ayın ilk günü gece yarısı</li>
+                      <li>
+                        <code>0 3 * * *</code> = Her gün gece 03:00'de
+                      </li>
+                      <li>
+                        <code>0 */6 * * *</code> = Her 6 saatte bir (00:00,
+                        06:00, 12:00, 18:00)
+                      </li>
+                      <li>
+                        <code>0 0 * * 0</code> = Her hafta Pazar günü gece
+                        yarısı
+                      </li>
+                      <li>
+                        <code>0 0 1 * *</code> = Her ayın ilk günü gece yarısı
+                      </li>
                     </ul>
-                    <p><a href="https://crontab.guru/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      Cron ifadelerini test etmek için tıklayın →
-                    </a></p>
+                    <p>
+                      <a
+                        href="https://crontab.guru/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Cron ifadelerini test etmek için tıklayın →
+                      </a>
+                    </p>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="grid gap-6">
                   <h3 className="text-lg font-medium">Saklama Politikaları</h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="retentionDays">Saklama Süresi (Gün)</Label>
+                      <Label htmlFor="retentionDays">
+                        Saklama Süresi (Gün)
+                      </Label>
                       <Input
                         id="retentionDays"
                         type="number"
                         min="1"
                         placeholder="7"
                         value={settings.retention.days}
-                        onChange={(e) => handleChange('retention.days', parseInt(e.target.value) || 1)}
+                        onChange={(e) =>
+                          handleChange(
+                            "retention.days",
+                            parseInt(e.target.value) || 1
+                          )
+                        }
                       />
                       <p className="text-sm text-muted-foreground mt-1">
                         Yedeklerin kaç gün saklanacağını belirler.
                       </p>
                     </div>
-                    
+
                     <div className="grid gap-2">
                       <Label htmlFor="maxBackups">Maksimum Yedek Sayısı</Label>
                       <Input
@@ -365,7 +400,12 @@ export default function BackupSettingsPage() {
                         min="1"
                         placeholder="10"
                         value={settings.retention.maxBackups}
-                        onChange={(e) => handleChange('retention.maxBackups', parseInt(e.target.value) || 1)}
+                        onChange={(e) =>
+                          handleChange(
+                            "retention.maxBackups",
+                            parseInt(e.target.value) || 1
+                          )
+                        }
                       />
                       <p className="text-sm text-muted-foreground mt-1">
                         Saklanacak maksimum yedek sayısını belirler.
@@ -376,7 +416,7 @@ export default function BackupSettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* Depolama Ayarları */}
           <TabsContent value="storage">
             <Card>
@@ -396,18 +436,20 @@ export default function BackupSettingsPage() {
                     id="storagePath"
                     placeholder="./backups"
                     value={settings.storage.local.path}
-                    onChange={(e) => handleChange('storage.local.path', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("storage.local.path", e.target.value)
+                    }
                   />
                   <p className="text-sm text-muted-foreground mt-1">
                     Yedeklerin kaydedileceği klasör yolu (sunucu üzerinde).
                   </p>
                 </div>
-                
+
                 {/* Gelecekte burada cloud storage ayarları eklenebilir */}
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* Veri Ayarları */}
           <TabsContent value="data">
             <Card>
@@ -423,30 +465,38 @@ export default function BackupSettingsPage() {
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Cloudinary Medya</h3>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Cloudinary Yedekleme</Label>
-                      <p className="text-sm text-muted-foreground">Cloudinary'deki medya dosyalarını yedekle</p>
+                      <p className="text-sm text-muted-foreground">
+                        Cloudinary'deki medya dosyalarını yedekle
+                      </p>
                     </div>
                     <Switch
                       checked={settings.cloudinary.enabled}
-                      onCheckedChange={(checked) => handleChange('cloudinary.enabled', checked)}
+                      onCheckedChange={(checked) =>
+                        handleChange("cloudinary.enabled", checked)
+                      }
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Cloudinary Şifreleme</Label>
-                      <p className="text-sm text-muted-foreground">Cloudinary yedeklerini şifrele</p>
+                      <p className="text-sm text-muted-foreground">
+                        Cloudinary yedeklerini şifrele
+                      </p>
                     </div>
                     <Switch
                       checked={settings.cloudinary.encrypt}
-                      onCheckedChange={(checked) => handleChange('cloudinary.encrypt', checked)}
+                      onCheckedChange={(checked) =>
+                        handleChange("cloudinary.encrypt", checked)
+                      }
                       disabled={!settings.cloudinary.enabled}
                     />
                   </div>
-                  
+
                   <div className="mt-4">
                     <Label>Yedeklenecek Cloudinary Klasörleri</Label>
                     <div className="flex gap-2 mt-1">
@@ -455,14 +505,21 @@ export default function BackupSettingsPage() {
                         value={folderInput}
                         onChange={(e) => setFolderInput(e.target.value)}
                       />
-                      <Button type="button" variant="outline" onClick={addFolder}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addFolder}
+                      >
                         Ekle
                       </Button>
                     </div>
-                    
+
                     <div className="mt-4 space-y-2">
                       {settings.cloudinary.folders.map((folder) => (
-                        <div key={folder} className="flex items-center justify-between px-3 py-2 rounded-md bg-muted">
+                        <div
+                          key={folder}
+                          className="flex items-center justify-between px-3 py-2 rounded-md bg-muted"
+                        >
                           <span>{folder}</span>
                           <Button
                             type="button"
@@ -474,18 +531,20 @@ export default function BackupSettingsPage() {
                           </Button>
                         </div>
                       ))}
-                      
+
                       {settings.cloudinary.folders.length === 0 && (
                         <p className="text-sm text-muted-foreground">
-                          Henüz bir klasör eklenmemiş. Tüm medya dosyaları yedeklenecek.
+                          Henüz bir klasör eklenmemiş. Tüm medya dosyaları
+                          yedeklenecek.
                         </p>
                       )}
                     </div>
-                    
+
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                       <p className="text-sm text-blue-800">
-                        <strong>Not:</strong> Bu projede sadece Cloudinary medya dosyaları yedeklenmektedir. 
-                        MongoDB veritabanı yedeklemesi tamamen kaldırılmıştır.
+                        <strong>Not:</strong> Bu projede sadece Cloudinary medya
+                        dosyaları yedeklenmektedir. MongoDB veritabanı
+                        yedeklemesi tamamen kaldırılmıştır.
                       </p>
                     </div>
                   </div>
@@ -493,7 +552,7 @@ export default function BackupSettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* Bildirim Ayarları */}
           <TabsContent value="notifications">
             <Card>
@@ -509,42 +568,54 @@ export default function BackupSettingsPage() {
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">E-posta Bildirimleri</h3>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>E-posta Bildirimleri</Label>
-                      <p className="text-sm text-muted-foreground">Yedekleme işlemleri hakkında e-posta gönder</p>
+                      <p className="text-sm text-muted-foreground">
+                        Yedekleme işlemleri hakkında e-posta gönder
+                      </p>
                     </div>
                     <Switch
                       checked={settings.notifications.email.enabled}
-                      onCheckedChange={(checked) => handleChange('notifications.email.enabled', checked)}
+                      onCheckedChange={(checked) =>
+                        handleChange("notifications.email.enabled", checked)
+                      }
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Başarılı İşlemlerde</Label>
-                      <p className="text-sm text-muted-foreground">Başarılı yedekleme işlemleri için bildirim gönder</p>
+                      <p className="text-sm text-muted-foreground">
+                        Başarılı yedekleme işlemleri için bildirim gönder
+                      </p>
                     </div>
                     <Switch
                       checked={settings.notifications.email.onSuccess}
-                      onCheckedChange={(checked) => handleChange('notifications.email.onSuccess', checked)}
+                      onCheckedChange={(checked) =>
+                        handleChange("notifications.email.onSuccess", checked)
+                      }
                       disabled={!settings.notifications.email.enabled}
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Başarısız İşlemlerde</Label>
-                      <p className="text-sm text-muted-foreground">Başarısız yedekleme işlemleri için bildirim gönder</p>
+                      <p className="text-sm text-muted-foreground">
+                        Başarısız yedekleme işlemleri için bildirim gönder
+                      </p>
                     </div>
                     <Switch
                       checked={settings.notifications.email.onFailure}
-                      onCheckedChange={(checked) => handleChange('notifications.email.onFailure', checked)}
+                      onCheckedChange={(checked) =>
+                        handleChange("notifications.email.onFailure", checked)
+                      }
                       disabled={!settings.notifications.email.enabled}
                     />
                   </div>
-                  
+
                   <div className="mt-4">
                     <Label>Bildirim Alıcıları</Label>
                     <div className="flex gap-2 mt-1">
@@ -554,7 +625,7 @@ export default function BackupSettingsPage() {
                         value={emailRecipientInput}
                         onChange={(e) => setEmailRecipientInput(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             e.preventDefault();
                             addEmailRecipient();
                           }
@@ -570,32 +641,41 @@ export default function BackupSettingsPage() {
                         Ekle
                       </Button>
                     </div>
-                    
+
                     <div className="mt-4 space-y-2">
-                      {Array.isArray(settings.notifications.email.recipients) && 
-                       settings.notifications.email.recipients.length > 0 ? (
+                      {Array.isArray(settings.notifications.email.recipients) &&
+                      settings.notifications.email.recipients.length > 0 ? (
                         <>
                           <p className="text-sm text-muted-foreground">
-                            {settings.notifications.email.recipients.length} adet alıcı eklenmiş
+                            {settings.notifications.email.recipients.length}{" "}
+                            adet alıcı eklenmiş
                           </p>
-                          {settings.notifications.email.recipients.map((email) => (
-                            <div key={email} className="flex items-center justify-between px-3 py-2 rounded-md bg-muted">
-                              <span>{email}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeEmailRecipient(email)}
-                                disabled={!settings.notifications.email.enabled}
+                          {settings.notifications.email.recipients.map(
+                            (email) => (
+                              <div
+                                key={email}
+                                className="flex items-center justify-between px-3 py-2 rounded-md bg-muted"
                               >
-                                Kaldır
-                              </Button>
-                            </div>
-                          ))}
+                                <span>{email}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeEmailRecipient(email)}
+                                  disabled={
+                                    !settings.notifications.email.enabled
+                                  }
+                                >
+                                  Kaldır
+                                </Button>
+                              </div>
+                            )
+                          )}
                         </>
                       ) : (
                         <p className="text-sm text-muted-foreground">
-                          Henüz bir alıcı eklenmemiş. Bildirimler gönderilmeyecek.
+                          Henüz bir alıcı eklenmemiş. Bildirimler
+                          gönderilmeyecek.
                         </p>
                       )}
                     </div>
@@ -605,7 +685,7 @@ export default function BackupSettingsPage() {
             </Card>
           </TabsContent>
         </Tabs>
-        
+
         <div className="mt-6 flex justify-end">
           <Button
             type="submit"

@@ -6,7 +6,7 @@ import { UserRole } from "@/models/User";
 import { encryptedJson } from "@/lib/response";
 import { Schema } from "mongoose";
 import slugify from "slugify";
-import { safeParseDate } from '@/lib/utils';
+import { safeParseDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -49,34 +49,38 @@ export async function GET(req: NextRequest) {
     } else {
       // Yaklaşan/Geçmiş etkinlik filtrelemesi için etkinlik günlerini kontrol et
       const now = new Date();
-      
+
       if (upcoming) {
         // Yaklaşan etkinlikler: Son günü henüz geçmemiş etkinlikler
         filter.$or = [
-          { 
-            "eventDays.date": { 
-              $gte: safeParseDate(new Date(now.setHours(0, 0, 0, 0)))
-            } 
+          {
+            "eventDays.date": {
+              $gte: safeParseDate(new Date(now.setHours(0, 0, 0, 0))),
+            },
           },
           {
             $and: [
-              { "eventDays.date": { $eq: safeParseDate(new Date(now.setHours(0, 0, 0, 0))) } },
-              { 
+              {
+                "eventDays.date": {
+                  $eq: safeParseDate(new Date(now.setHours(0, 0, 0, 0))),
+                },
+              },
+              {
                 $or: [
                   { "eventDays.endTime": { $exists: true, $ne: "" } },
-                  { "eventDays.startTime": { $exists: true } }
-                ]
-              }
-            ]
-          }
+                  { "eventDays.startTime": { $exists: true } },
+                ],
+              },
+            ],
+          },
         ];
       } else if (past) {
         // Geçmiş etkinlikler: Son günü geçmiş etkinlikler
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
-        
-        filter["eventDays.date"] = { 
-          $lt: safeParseDate(new Date(yesterday.setHours(23, 59, 59, 999)))
+
+        filter["eventDays.date"] = {
+          $lt: safeParseDate(new Date(yesterday.setHours(23, 59, 59, 999))),
         };
       }
 
@@ -157,12 +161,13 @@ function formatEvent(event: any) {
           avatar: event.author.avatar,
         }
       : null,
-    participants: event.participants?.map((p: any) => ({
-      userId: p.userId.toString(),
-      name: p.name,
-      lastname: p.lastname,
-      email: p.email,
-    })) || [],
+    participants:
+      event.participants?.map((p: any) => ({
+        userId: p.userId.toString(),
+        name: p.name,
+        lastname: p.lastname,
+        email: p.email,
+      })) || [],
     participantCount: event.participantCount || event.participants?.length || 0,
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
@@ -315,19 +320,12 @@ export async function POST(req: NextRequest) {
       );
     } catch (modelError: any) {
       if (modelError.name === "ValidationError") {
-        const validationErrors: Record<string, string> = {};
-
-        for (const path in modelError.errors) {
-          validationErrors[path] = modelError.errors[path].message;
-        }
+        
 
         return encryptedJson(
           {
             success: false,
-            message:
-              "Validasyon hatası: " +
-              Object.values(validationErrors).join(", "),
-            validationErrors,
+            message: "Validasyon hatası, ",
           },
           { status: 400 }
         );
