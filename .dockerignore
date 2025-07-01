@@ -1,8 +1,6 @@
 .git
 .gitignore
 .next
-.env
-.env.*
 node_modules
 Dockerfile
 .dockerignore

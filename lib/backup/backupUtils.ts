@@ -272,14 +272,6 @@ export async function prepareBackupDirectory(basePath: string): Promise<{ backup
   return { backupDir };
 }
 
-/**
- * MongoDB araçları için yapılandırma ayarları
- */
-const MONGODB_TOOLS_CONFIG = {
-  binPath: process.env.MONGODB_TOOLS_PATH || '', // MongoDB araçlarının tam yolu
-  mongodump: 'mongodump', // mongodump komutu
-  mongoexport: 'mongoexport', // mongoexport komutu
-};
 
 // MongoDB araçlarının kurulu olup olmadığını kontrol eder
 export async function checkMongoDBTools(): Promise<boolean> {
