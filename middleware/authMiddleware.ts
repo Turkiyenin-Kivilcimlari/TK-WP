@@ -4,8 +4,9 @@ import { UserRole } from '@/models/User';
 import { CustomJwtPayload } from '@/types/auth';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { connectToDatabase } from '@/lib/db';
+import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/models/User';
+import { encryptedJson } from '@/lib/response';
 
 /**
  * Kullanıcının kimliğini doğrular ve token bilgilerini döndürür
@@ -29,7 +30,8 @@ export async function authenticateUser(req: NextRequest) {
       return {
         id: session.user.id,
         role: session.user.role as UserRole,
-        email: session.user.email as string
+        email: session.user.email as string,
+        slug: session.user.slug as string
       };
     }
     
@@ -76,7 +78,7 @@ export function authorizeRoles(...roles: UserRole[]) {
     const token = await authenticateUser(req);
     
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -90,7 +92,7 @@ export function authorizeRoles(...roles: UserRole[]) {
     }
     
     if (!userRole || !roles.includes(userRole as UserRole)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için yetkiniz bulunmamaktadır' },
         { status: 403 }
       );
@@ -107,7 +109,7 @@ export async function checkAdminAuthWithTwoFactor(req: NextRequest) {
   try {
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'Giriş yapmalısınız', 
@@ -119,7 +121,7 @@ export async function checkAdminAuthWithTwoFactor(req: NextRequest) {
     
     // Kullanıcı rolünü kontrol et
     if (typeof token === 'string') {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'Geçersiz kimlik bilgileri', 
@@ -131,7 +133,7 @@ export async function checkAdminAuthWithTwoFactor(req: NextRequest) {
     
     // Admin değilse yetkisiz
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'Bu işlem için yetkiniz bulunmuyor', 
@@ -146,7 +148,7 @@ export async function checkAdminAuthWithTwoFactor(req: NextRequest) {
     
     const user = await User.findById(token.id);
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'Kullanıcı bulunamadı', 
@@ -158,7 +160,7 @@ export async function checkAdminAuthWithTwoFactor(req: NextRequest) {
     
     // Admin/SuperAdmin ise ve 2FA etkinleştirilmemişse, zorunlu kılmalıyız
     if (!user.twoFactorEnabled) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'Lütfen önce iki faktörlü doğrulamayı etkinleştirin. Admin işlemleri için 2FA gereklidir.', 
@@ -184,10 +186,17 @@ export async function checkAdminAuthWithTwoFactor(req: NextRequest) {
         // Doğrulama geçerli, devam et
         return null;
       }
+    } else if (isVerified) {
+      // lastTwoFactorVerification null olsa bile, twoFactorVerified true ise devam et
+      // Bu aradaki durumları düzeltir
+      // Yeni bir doğrulama zamanı oluştur
+      user.lastTwoFactorVerification = new Date();
+      await user.save();
+      return null;
     }
     
     // Doğrulama geçersiz veya süresi dolmuş
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'İki faktörlü doğrulama yapmanız gerekiyor. Admin işlemlerini gerçekleştirebilmek için lütfen 2FA doğrulamasını tamamlayın.', 
@@ -198,7 +207,7 @@ export async function checkAdminAuthWithTwoFactor(req: NextRequest) {
     );
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Sunucu hatası. ',

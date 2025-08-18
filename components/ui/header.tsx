@@ -24,10 +24,11 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { UserRole } from "@/models/User";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Avatar bileşenini import ediyoruz
+import api from "@/lib/api";
 
 function Header({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname();
-  
+
   const navigationItems = [
     {
       title: "Ana Sayfa",
@@ -38,94 +39,109 @@ function Header({ children }: { children?: React.ReactNode }) {
       href: "/about",
     },
     {
-      title: "İletişim",
-      href: "/contact",
-    },
-    {
       title: "Yazılar",
       href: "/articles",
     },
     {
       title: "Etkinlikler",
       href: "/events",
-    }
+    },
+    {
+      title: "İletişim",
+      href: "/contact",
+    },
   ];
 
   // Bir yolun aktif olup olmadığını kontrol eden yardımcı fonksiyon
   const isActive = (path: string) => {
-    if (path === '/' && pathname === '/') return true;
-    if (path !== '/' && pathname.startsWith(path)) return true;
+    if (path === "/" && pathname === "/") return true;
+    if (path !== "/" && pathname.startsWith(path)) return true;
     return false;
   };
 
   const [isOpen, setOpen] = useState(false);
   const { theme, setTheme } = useTheme();
-  
+
   const { data: session, status } = useSession();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState({
     name: "",
     profileImage: "",
+    slug: "", // Slug alanını ekle
   });
-  
+
   // Session değişikliklerini izle
   useEffect(() => {
     setIsLoggedIn(status === "authenticated");
-    
+
     if (session?.user) {
       setUserData({
-        name: `${session.user.name || ''} ${session.user.lastname || ''}`.trim(),
+        name: `${session.user.name || ""} ${
+          session.user.lastname || ""
+        }`.trim(),
         profileImage: session.user.avatar || "",
+        slug: session.user.slug || "", // Access slug property directly from the user object
       });
     } else {
       // Session yoksa kullanıcı bilgilerini sıfırla
       setUserData({
         name: "",
         profileImage: "",
+        slug: "",
       });
     }
-    
+
     // EventBus'a profil güncellemelerini dinleyici ekle
     const handleProfileUpdate = () => {
       // Manuel session yenileme
       const refreshSessionData = async () => {
-        const newSession = await fetch('/api/auth/session');
-        if (newSession.ok) {
-          const sessionData = await newSession.json();
-          if (sessionData?.user) {
-            setUserData({
-              name: `${sessionData.user.name || ''} ${sessionData.user.lastname || ''}`.trim(),
-              profileImage: sessionData.user.avatar || "",
-            });
+        try {
+          const response = await api.get("/api/auth/session");
+          if (response.status === 200) {
+            const sessionData = response.data;
+            if (sessionData?.user) {
+              setUserData({
+                name: `${sessionData.user.name || ""} ${
+                  sessionData.user.lastname || ""
+                }`.trim(),
+                profileImage: sessionData.user.avatar || "",
+                slug: sessionData.user.slug || "", // API'dan gelen slug değerini al
+              });
+            }
           }
-        }
+        } catch (error) {}
       };
-      
+
       refreshSessionData();
     };
 
     // Özel olayları dinle
-    window.addEventListener('profile-updated', handleProfileUpdate);
-    
+    window.addEventListener("profile-updated", handleProfileUpdate);
+
     return () => {
-      window.removeEventListener('profile-updated', handleProfileUpdate); // Düzeltildi - removeEventListener kullanılmalı
+      window.removeEventListener("profile-updated", handleProfileUpdate); // Düzeltildi - removeEventListener kullanılmalı
     };
   }, [session, status]);
 
   // Kullanıcı rollerine göre yetkiler
-  const isAdmin = isLoggedIn && (session?.user?.role === UserRole.ADMIN || 
-                                session?.user?.role === UserRole.SUPERADMIN);
-  
+  const isAdmin =
+    isLoggedIn &&
+    (session?.user?.role === UserRole.ADMIN ||
+      session?.user?.role === UserRole.SUPERADMIN);
+
   // Süper yönetici kontrolü
-  const isSuperAdmin = isLoggedIn && session?.user?.role === UserRole.SUPERADMIN;
+  const isSuperAdmin =
+    isLoggedIn && session?.user?.role === UserRole.SUPERADMIN;
 
   // Function to generate fallback avatar if user has no profile image
   const getProfileImage = () => {
     if (userData.profileImage) return userData.profileImage;
     // Return a placeholder image URL
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name || 'User')}&background=random`;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      userData.name || "User"
+    )}&background=random`;
   };
-
+  
   // Component for user profile display
   const UserProfileSection = () => (
     <DropdownMenu>
@@ -137,20 +153,32 @@ function Header({ children }: { children?: React.ReactNode }) {
           </Avatar>
           <span>{userData.name}</span>
           {isSuperAdmin && (
-            <Shield className="h-4 w-4 text-destructive" aria-label="Süper Yönetici" />
+            <Shield
+              className="h-4 w-4 text-destructive"
+              aria-label="Süper Yönetici"
+            />
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="z-[200]">
         <DropdownMenuItem>
-          <Link href="/profile" className="w-full">Profil</Link>
+          <Link href="/profile" className="w-full">
+            Profil
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Link href="/applications" className="w-full">
+            Başvurularım
+          </Link>
         </DropdownMenuItem>
         {isAdmin && (
           <DropdownMenuItem>
-            <Link href="/admin/dashboard" className="w-full">Yönetim Paneli</Link>
+            <Link href="/admin/dashboard" className="w-full">
+              Yönetim Paneli
+            </Link>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })}>
+        <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
           Çıkış Yap
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -188,8 +216,9 @@ function Header({ children }: { children?: React.ReactNode }) {
   // Tema değiştirme butonunu render eden fonksiyon
   const ThemeToggleButton = () => {
     // İkon göstermek için istemci tarafında olmamız gerekiyor
-    const icon = !mounted ? null : (theme === "dark" ? 
-      <Sun className="h-4 w-4" /> : 
+    const icon = !mounted ? null : theme === "dark" ? (
+      <Sun className="h-4 w-4" />
+    ) : (
       <Moon className="h-4 w-4" />
     );
 
@@ -209,26 +238,42 @@ function Header({ children }: { children?: React.ReactNode }) {
   return (
     <>
       <header className="w-full z-[100] fixed top-0 left-0 bg-background border-b shadow-sm">
-        <div className="container relative mx-auto min-h-20 flex gap-4 flex-row lg:grid lg:grid-cols-12 items-center">
+        <div className="container mx-auto py-2 flex gap-2 flex-row lg:grid lg:grid-cols-12 items-center">
           {/* Logo ve Başlık - Sol taraf */}
           <div className="flex lg:col-span-3 justify-start items-center pl-3 lg:pl-0">
-            <Link href="/" className="text-m lg:text-xl font-bold flex items-center gap-2">
-              <Image src="https://res.cloudinary.com/dkqu2s9gz/image/upload/v1742649496/eewobokrrfmwt5maygoh.png" alt="Logo" width={70} height={70} />
-              <span className="text-xl">Türkiye'nin Kıvılcımları</span>
+            <Link
+              href="/"
+              className="text-m lg:text-xl font-bold flex items-center gap-2"
+            >
+              <Image
+                src="https://res.cloudinary.com/dkqu2s9gz/image/upload/v1742649496/eewobokrrfmwt5maygoh.png"
+                alt="Logo"
+                width={48}
+                height={48}
+                className="object-contain"
+              />
+              <span className="text-lg lg:text-xl">
+                Türkiye'nin Kıvılcımları
+              </span>
             </Link>
           </div>
-          
+
           {/* Navigasyon Menüsü - Orta kısım */}
-          <div className="justify-center items-center gap-4 lg:flex hidden lg:col-span-6">
-            <NavigationMenu className="flex justify-center items-start">
-              <NavigationMenuList className="flex justify-center gap-4 flex-row">
+          <div className="justify-center items-center gap-2 lg:gap-4 lg:flex hidden lg:col-span-6">
+            <NavigationMenu className="flex justify-center items-center">
+              <NavigationMenuList className="flex justify-center gap-1 md:gap-2 flex-row">
                 {navigationItems.map((item) => (
                   <NavigationMenuItem key={item.title}>
                     <Link href={item.href} legacyBehavior passHref>
                       <NavigationMenuLink asChild>
-                        <Button 
+                        <Button
                           variant={isActive(item.href) ? "default" : "ghost"}
-                          className={isActive(item.href) ? "bg-primary text-primary-foreground" : ""}
+                          size="default"
+                          className={
+                            isActive(item.href)
+                              ? "bg-primary text-primary-foreground"
+                              : ""
+                          }
                         >
                           {item.title}
                         </Button>
@@ -239,17 +284,22 @@ function Header({ children }: { children?: React.ReactNode }) {
               </NavigationMenuList>
             </NavigationMenu>
           </div>
-          
+
           {/* Kullanıcı ve Tema Kontrolleri - Sağ taraf */}
-          <div className="hidden md:flex lg:col-span-3 justify-end w-full gap-4 ml-auto">
+          <div className="hidden md:flex lg:col-span-3 justify-end w-full gap-2 ml-auto">
             {isLoggedIn ? <UserProfileSection /> : <AuthButtons />}
             <ThemeToggleButton />
           </div>
-          
+
           {/* Mobil Menü Açma Düğmesi */}
-          <div className="flex ml-auto mr-2 md:hidden items-center justify-end gap-2">
+          <div className="flex ml-auto mr-0 md:hidden items-center justify-end gap-2">
             <ThemeToggleButton />
-            <Button variant="ghost" size="sm" onClick={() => setOpen(!isOpen)} className="p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOpen(!isOpen)}
+              className="p-0"
+            >
               {isOpen ? (
                 <X className="w-5 h-5" />
               ) : (
@@ -259,7 +309,7 @@ function Header({ children }: { children?: React.ReactNode }) {
           </div>
         </div>
         {isOpen && (
-          <div className="fixed inset-0 top-20 bg-background/95 backdrop-blur-sm z-[100] overflow-y-auto max-h-[calc(100vh-5rem)]">
+          <div className="fixed inset-0 top-16 bg-background/95 backdrop-blur-sm z-[100] overflow-y-auto max-h-[calc(100vh-4rem)]">
             <div className="container mx-auto py-4 px-4">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
@@ -268,7 +318,11 @@ function Header({ children }: { children?: React.ReactNode }) {
                       <Link href={item.href} onClick={() => setOpen(false)}>
                         <Button
                           variant={isActive(item.href) ? "default" : "ghost"}
-                          className={`w-full justify-start text-base ${isActive(item.href) ? "bg-primary text-primary-foreground" : ""}`}
+                          className={`w-full justify-start text-base ${
+                            isActive(item.href)
+                              ? "bg-primary text-primary-foreground"
+                              : ""
+                          }`}
                         >
                           {item.title}
                         </Button>
@@ -281,35 +335,61 @@ function Header({ children }: { children?: React.ReactNode }) {
                   {isLoggedIn ? (
                     <>
                       <div className="flex items-center gap-2 p-2">
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src={userData.profileImage} alt="Profile" />
-                          <AvatarFallback>{userData.name.substring(0, 2)}</AvatarFallback>
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage
+                            src={userData.profileImage}
+                            alt="Profile"
+                          />
+                          <AvatarFallback>
+                            {userData.name.substring(0, 2)}
+                          </AvatarFallback>
                         </Avatar>
                         <span className="font-medium">{userData.name}</span>
                         {isSuperAdmin && (
-                          <Shield className="h-4 w-4 text-destructive" aria-label="Süper Yönetici" />
+                          <Shield
+                            className="h-4 w-4 text-destructive"
+                            aria-label="Süper Yönetici"
+                          />
                         )}
                       </div>
                       <Link href="/profile" onClick={() => setOpen(false)}>
-                        <Button variant="outline" className="w-full justify-between">
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                        >
                           <span>Profil</span>
                           <MoveRight className="w-4 h-4 stroke-1" />
                         </Button>
                       </Link>
+                      <Link href="/applications" onClick={() => setOpen(false)}>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                        >
+                          <span>Başvurularım</span>
+                          <MoveRight className="w-4 h-4 stroke-1" />
+                        </Button>
+                      </Link>
                       {isAdmin && (
-                        <Link href="/admin/dashboard" onClick={() => setOpen(false)}>
-                          <Button variant="outline" className="w-full justify-between">
+                        <Link
+                          href="/admin/dashboard"
+                          onClick={() => setOpen(false)}
+                        >
+                          <Button
+                            variant="outline"
+                            className="w-full justify-between"
+                          >
                             <span>Yönetim Paneli</span>
                             <MoveRight className="w-4 h-4 stroke-1" />
                           </Button>
                         </Link>
                       )}
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         className="w-full justify-between"
                         onClick={() => {
                           setOpen(false);
-                          signOut({ callbackUrl: '/' });
+                          signOut({ callbackUrl: "/" });
                         }}
                       >
                         <span>Çıkış Yap</span>
@@ -318,26 +398,35 @@ function Header({ children }: { children?: React.ReactNode }) {
                     </>
                   ) : (
                     <>
-                        <a href="/signin" onClick={(e) => {
-                        e.preventDefault();
-                        setOpen(false);
-                        window.location.href = "/signin";
-                        }}>
-                        <Button variant="outline" className="w-full justify-between">
+                      <a
+                        href="/signin"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setOpen(false);
+                          window.location.href = "/signin";
+                        }}
+                      >
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                        >
                           <span>Giriş Yap</span>
                           <MoveRight className="w-4 h-4 stroke-1" />
                         </Button>
-                        </a>
-                        <a href="/signup" onClick={(e) => {
-                        e.preventDefault();
-                        setOpen(false);
-                        window.location.href = "/signup";
-                        }}>
+                      </a>
+                      <a
+                        href="/signup"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setOpen(false);
+                          window.location.href = "/signup";
+                        }}
+                      >
                         <Button className="w-full justify-between">
                           <span>Kayıt Ol</span>
                           <MoveRight className="w-4 h-4 stroke-1" />
                         </Button>
-                        </a>
+                      </a>
                     </>
                   )}
                 </div>
@@ -346,7 +435,7 @@ function Header({ children }: { children?: React.ReactNode }) {
           </div>
         )}
       </header>
-      <div className="pt-20 relative z-0">{children}</div>
+      <div className="pt-16 relative z-0">{children}</div>
     </>
   );
 }

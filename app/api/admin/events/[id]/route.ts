@@ -4,6 +4,7 @@ import Event from '@/models/Event';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { UserRole } from '@/models/User';
 import { checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
+import { encryptedJson } from '@/lib/response';
 
 // Etkinlik silme (admin için)
 export async function DELETE(
@@ -18,7 +19,7 @@ export async function DELETE(
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -26,7 +27,7 @@ export async function DELETE(
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -40,19 +41,19 @@ export async function DELETE(
     const result = await Event.findByIdAndDelete(eventId);
     
     if (!result) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Etkinlik bulunamadı' },
         { status: 404 }
       );
     }
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Etkinlik başarıyla silindi'
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

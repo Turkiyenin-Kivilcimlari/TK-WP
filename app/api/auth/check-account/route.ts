@@ -1,4 +1,5 @@
 import { connectToDatabase } from '@/lib/mongodb';
+import { encryptedJson } from '@/lib/response';
 import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
       checkAccountSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return NextResponse.json({ success: false}, { status: 400 });
+        return encryptedJson({ success: false}, { status: 400 });
       }
       throw error;
     }
@@ -31,21 +32,21 @@ export async function POST(req: NextRequest) {
     
     // Güvenlik için, kullanıcı bulunamasa bile kısıtlı bilgi ver
     if (!user) {
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         has2FA: false
       });
     }
     
     // Kullanıcının 2FA durumu
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       has2FA: user.twoFactorEnabled || false,
       email: email
     });
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

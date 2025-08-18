@@ -24,7 +24,7 @@ import {
 
 const signInSchema = z.object({
   email: z.string().email("Geçerli bir e-posta adresi girin"),
-  password: z.string().min(6, "Şifre en az 6 karakter olmalıdır"),
+  password: z.string(),
 });
 
 // Ayrı bir bileşen olarak URL parametrelerini işleyen kısmı ayırıyoruz
@@ -121,11 +121,12 @@ function SignInWithSearchParams() {
     setError("");
 
     try {
-      setEmail2FA(data.email);
+      // Temizlenmiş veri ile gönderim yap
+      setEmail2FA(data.email.trim().toLowerCase());
       setPassword2FA(data.password);
 
       await login({
-        email: data.email,
+        email: data.email.trim().toLowerCase(),
         password: data.password,
         turnstileToken: turnstileToken || "localhost-dev-verification-token",
       });

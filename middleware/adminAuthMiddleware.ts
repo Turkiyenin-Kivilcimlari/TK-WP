@@ -29,11 +29,26 @@ export async function adminAuthMiddleware(request: NextRequest) {
   if (twoFactorStatus) {
     try {
       const parsedStatus = JSON.parse(twoFactorStatus.value);
-      // 2FA etkinse ve doğrulanmamışsa
-      if (parsedStatus.enabled && !parsedStatus.verified) {
-        requiresVerification = true;
-      } else {
+      
+      // 2FA etkin değilse doğrulama gerekmez
+      if (!parsedStatus.enabled) {
         requiresVerification = false;
+      }
+      // 2FA etkinse, doğrulama durumu ve süreyi kontrol et
+      else {
+        // Eğer doğrulanmış olarak işaretlendiyse, son doğrulama zamanını kontrol et
+        if (parsedStatus.verified && parsedStatus.lastVerification) {
+          const now = new Date();
+          const lastVerification = new Date(parsedStatus.lastVerification);
+          const diffMs = now.getTime() - lastVerification.getTime();
+          const diffMins = Math.floor(diffMs / (1000 * 60));
+          const timeoutMins = parsedStatus.sessionTimeoutMins || 180; // Varsayılan 3 saat
+          
+          // Süre dolmadıysa doğrulama gerekmez
+          if (diffMins < timeoutMins) {
+            requiresVerification = false;
+          }
+        }
       }
     } catch (error) {
       requiresVerification = true;

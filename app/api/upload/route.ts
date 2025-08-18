@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import cloudinary from '@/lib/cloudinary';
+import { encryptedJson } from '@/lib/response';
 
 export async function POST(req: NextRequest) {
   try {
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -19,14 +20,15 @@ export async function POST(req: NextRequest) {
     
 
     if (!image) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Resim verisi eksik' },
         { status: 400 }
       );
     }
 
-    // Klasör doğrulama
-    const uploadFolder = folder === 'article_thumbnails' ? 'article_thumbnails' : 'user_avatars';
+    // Klasör doğrulama - board_members klasörü için destek ekleyelim
+    const allowedFolders = ['user_avatars', 'article_thumbnails', 'board_members'];
+    const uploadFolder = allowedFolders.includes(folder) ? folder : 'user_avatars';
     
     
     // Cloudinary'ye yükleme ayarları
@@ -47,18 +49,25 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    // Board üyeleri için özel boyutlandırma
+    if (uploadFolder === 'board_members') {
+      uploadOptions.transformation.push(
+        { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 99 },
+      );
+    }
+    
     
     // Cloudinary'ye yükleme
     const uploadResponse = await cloudinary.uploader.upload(image, uploadOptions);
     
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       url: uploadResponse.secure_url,
       public_id: uploadResponse.public_id
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Resim yüklenemedi' },
       { status: 500 }
     );

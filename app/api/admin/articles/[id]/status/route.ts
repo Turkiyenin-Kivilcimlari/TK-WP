@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
+import { encryptedJson } from '@/lib/response';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,7 @@ export async function PATCH(
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -30,7 +31,7 @@ export async function PATCH(
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -38,7 +39,7 @@ export async function PATCH(
     
     const articleId = params.id;
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale kimliği' },
         { status: 400 }
       );
@@ -49,7 +50,7 @@ export async function PATCH(
     const { status } = body;
     
     if (!status) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Durum bilgisi gereklidir' },
         { status: 400 }
       );
@@ -58,7 +59,7 @@ export async function PATCH(
     
     // Enum doğrulaması
     if (!Object.values(ArticleStatus).includes(status as ArticleStatus)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: `Geçersiz durum değeri: ${status}. Geçerli değerler: ${Object.values(ArticleStatus).join(', ')}` },
         { status: 400 }
       );
@@ -70,7 +71,7 @@ export async function PATCH(
     const article = await Article.findById(articleId);
     
     if (!article) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale bulunamadı' },
         { status: 404 }
       );
@@ -95,14 +96,14 @@ export async function PATCH(
     );
     
     if (!updatedArticle) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Makale güncellenemedi' },
         { status: 500 }
       );
     }
     
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Makale durumu başarıyla güncellendi',
       article: {
@@ -113,7 +114,7 @@ export async function PATCH(
       }
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

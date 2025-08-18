@@ -10,6 +10,7 @@ export interface UpdateUserData {
   lastname?: string;
   phone?: string;
   role?: UserRole;
+  allowEmails?: boolean; // Yeni alan eklendi
 }
 
 export function useUser(userId?: string) {

@@ -97,7 +97,7 @@ export function useUsers(params: UsersParams = {}) {
       } catch (error: any) {
         
         // API hata mesajlarını yakala
-        const errorMessage = 'Kullanıcı silme işlemi başarısız oldu';
+        const errorMessage = error.response?.data?.message || 'Kullanıcı silme işlemi başarısız oldu';
         throw new Error(errorMessage);
       }
     },

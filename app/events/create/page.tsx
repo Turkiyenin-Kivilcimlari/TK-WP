@@ -2,9 +2,9 @@
 
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import { EventForm } from "@/components/events/EventForm";
 import { UserRole } from "@/models/User";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CreateEventPage() {
   const { data: session, status } = useSession();
@@ -12,8 +12,22 @@ export default function CreateEventPage() {
   // Oturum yükleniyor
   if (status === "loading") {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="container mx-auto py-10 px-4">
+        <div className="space-y-6 max-w-3xl mx-auto">
+          <Skeleton className="h-12 w-full bg-primary/20" />
+          
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full bg-primary/20" />
+            <Skeleton className="h-10 w-full bg-primary/20" />
+            <Skeleton className="h-32 w-full bg-primary/20" />
+            <Skeleton className="h-10 w-full bg-primary/20" />
+            <Skeleton className="h-10 w-2/3 bg-primary/20" />
+          </div>
+          
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-32 bg-primary/20" />
+          </div>
+        </div>
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,38 +11,40 @@ cloudinary.config({
 export const extractPublicId = (url: string): string | null => {
   try {
     if (!url) return null;
-    
+
     // URL'deki public_id kısmını ayıklama
-    let publicId = '';
-    
+    let publicId = "";
+
     // Regex ile en son / ile . arasındaki kısmı al
     const matched = url.match(/\/([^\/]+)\.([^\.]+)$/);
-    
+
     if (matched && matched[1]) {
       // Son kısımda dosya adı
       const filename = matched[1];
-      
+
       // URL'de klasör (folder) var mı kontrol et
-      if (url.includes('/user_avatars/')) {
-        publicId = 'user_avatars/' + filename;
-      } else if (url.includes('/article_thumbnails/')) {
-        publicId = 'article_thumbnails/' + filename;
+      if (url.includes("/user_avatars/")) {
+        publicId = "user_avatars/" + filename;
+      } else if (url.includes("/article_thumbnails/")) {
+        publicId = "article_thumbnails/" + filename;
+      } else if (url.includes("/board_members/")) {
+        publicId = "board_members/" + filename;
       } else {
         publicId = filename;
       }
     } else {
       // Alternatif yaklaşım: URL'yi parçalara böl
-      const parts = url.split('/');
-      const filename = parts[parts.length - 1].split('.')[0]; // Uzantıyı kaldır
-      
+      const parts = url.split("/");
+      const filename = parts[parts.length - 1].split(".")[0]; // Uzantıyı kaldır
+
       // İki parça yukarıda klasör adı olabilir
-      if (parts.length > 2 && parts[parts.length - 2] !== 'upload') {
-        publicId = parts[parts.length - 2] + '/' + filename;
+      if (parts.length > 2 && parts[parts.length - 2] !== "upload") {
+        publicId = parts[parts.length - 2] + "/" + filename;
       } else {
         publicId = filename;
       }
     }
-    
+
     return publicId || null;
   } catch (error) {
     return null;
@@ -53,43 +55,45 @@ export const extractPublicId = (url: string): string | null => {
 export const deleteCloudinaryImage = async (url: string): Promise<boolean> => {
   try {
     if (!url) return false;
-    
+
     const publicId = extractPublicId(url);
     if (!publicId) {
       return false;
     }
-    
+
     const result = await cloudinary.uploader.destroy(publicId);
-    
-    return result.result === 'ok' || result.result === 'not found';
+
+    return result.result === "ok" || result.result === "not found";
   } catch (error) {
     return false;
   }
 };
 
 // Toplu görsel silme fonksiyonu
-export const deleteMultipleImages = async (urls: string[]): Promise<{
+export const deleteMultipleImages = async (
+  urls: string[]
+): Promise<{
   success: boolean;
   deleted: number;
   failed: number;
   errors: string[];
 }> => {
   const result = {
-    success: true,
+    success: false,
     deleted: 0,
     failed: 0,
-    errors: [] as string[]
+    errors: [] as string[],
   };
-  
+
   if (!urls || urls.length === 0) {
     return result;
   }
-  
+
   // Her URL için silme işlemi yap
   for (const url of urls) {
     try {
       if (!url) continue;
-      
+
       const isDeleted = await deleteCloudinaryImage(url);
       if (isDeleted) {
         result.deleted++;
@@ -102,11 +106,51 @@ export const deleteMultipleImages = async (urls: string[]): Promise<{
       result.errors.push(`${url} için hata: ${error}`);
     }
   }
-  
+
   // En az bir başarılı silme varsa ve hiç başarısız yoksa genel başarı true
   result.success = result.deleted > 0 && result.failed === 0;
-  
+
   return result;
 };
 
 export default cloudinary;
+
+/**
+ * Cloudinary'den tüm klasör ve dosyaları getirir (yedekleme için)
+ */
+export const getAllCloudinaryAssets = async (
+  folders: string[] = []
+): Promise<any[]> => {
+  try {
+    const allAssets: any[] = [];
+
+    // Eğer klasör belirtilmemişse, tüm klasörleri al
+    let foldersToBackup = folders && folders.length > 0 ? folders : [];
+
+    if (foldersToBackup.length === 0) {
+      // Tüm klasörleri al
+      const response = await cloudinary.api.root_folders();
+      foldersToBackup = response.folders.map((folder: any) => folder.name);
+    }
+
+    // Her klasör için varlıkları al
+    for (const folder of foldersToBackup) {
+      let nextCursor: string | undefined = undefined;
+
+      do {
+        const result = await cloudinary.search
+          .expression(`folder:${folder}`)
+          .max_results(500)
+          .next_cursor(nextCursor)
+          .execute();
+
+        allAssets.push(...result.resources);
+        nextCursor = result.next_cursor;
+      } while (nextCursor);
+    }
+
+    return allAssets;
+  } catch (error) {
+    return [];
+  }
+};

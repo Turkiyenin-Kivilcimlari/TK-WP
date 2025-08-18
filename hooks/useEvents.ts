@@ -162,22 +162,16 @@ export function useApproveEvent() {
   
   return useMutation({
     mutationFn: async (eventId: string) => {
-      const response = await api.patch(`/api/admin/events/${eventId}/status`, {
-        status: EventStatus.APPROVED
-      });
+      const response = await api.post(`/api/admin/events/${eventId}/approve`);
+      if (!response.data.success) {
+        throw new Error('Failed to approve event');
+      }
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      queryClient.invalidateQueries({ queryKey: ['my-events'] });
-      toast.success('Etkinlik onaylandı');
     },
-    onError: (error: any) => {
-      toast.error('Etkinlik onaylanamadı', {
-        description: 'Bir hata oluştu. Lütfen tekrar deneyin.'
-      });
-    }
   });
 }
 
@@ -186,20 +180,15 @@ export function useRejectEvent() {
   
   return useMutation({
     mutationFn: async ({ eventId, rejectionReason }: { eventId: string, rejectionReason: string }) => {
-      const response = await fetch(`/api/admin/events/${eventId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ rejectionReason }), // Make sure we're sending rejectionReason, not reason
+      const response = await api.post(`/api/admin/events/${eventId}/reject`, {
+        rejectionReason
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!response.data.success) {
         throw new Error('Failed to reject event');
       }
       
-      return response.json();
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
@@ -214,19 +203,15 @@ export function useDeleteEvent() {
   return useMutation({
     mutationFn: async (eventId: string) => {
       const response = await api.delete(`/api/admin/events/${eventId}`);
+      if (!response.data.success) {
+        throw new Error('Failed to delete event');
+      }
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      queryClient.invalidateQueries({ queryKey: ['my-events'] });
-      toast.success('Etkinlik silindi');
     },
-    onError: (error: any) => {
-      toast.error('Etkinlik silinemedi', {
-        description: 'Bir hata oluştu. Lütfen tekrar deneyin.'
-      });
-    }
   });
 }
 

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
+import { encryptedJson } from '@/lib/response';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function POST(
     const { id } = params;
     
     if (!id || id === 'undefined') {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Geçersiz etkinlik ID'si" },
         { status: 400 }
       );
@@ -26,7 +27,7 @@ export async function POST(
 
     // MongoDB ObjectId doğrulaması
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Geçersiz etkinlik ID formatı" },
         { status: 400 }
       );
@@ -39,7 +40,7 @@ export async function POST(
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -47,7 +48,7 @@ export async function POST(
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -55,7 +56,7 @@ export async function POST(
     
     user = token; // Save user info
     } catch (error: any) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Doğrulama hatası.' },
         { status: 401 }
       );
@@ -68,7 +69,7 @@ export async function POST(
 
 
     if (!rejectionReason) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Reddetme nedeni belirtilmelidir" },
         { status: 400 }
       );
@@ -77,7 +78,7 @@ export async function POST(
     const event = await Event.findById(id);
 
     if (!event) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: "Etkinlik bulunamadı" },
         { status: 404 }
       );
@@ -88,12 +89,12 @@ export async function POST(
     event.rejectionReason = rejectionReason;
     await event.save();
 
-    return NextResponse.json(
+    return encryptedJson(
       { success: true, message: "Etkinlik reddedildi" },
       { status: 200 }
     );
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: "Bir hata oluştu" },
       { status: 500 }
     );

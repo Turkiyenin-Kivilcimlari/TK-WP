@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/models/User';
 import crypto from 'crypto';
+import { encryptedJson } from '@/lib/response';
 
 // 2FA doğrulama işlemini gerçekleştirecek api endpoint
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { email, twoFactorCode } = await req.json();
     
     if (!email || !twoFactorCode) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'E-posta ve doğrulama kodu gereklidir' },
         { status: 400 }
       );
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email }).select('+twoFactorSecret');
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     
     // 2FA aktif değilse hata döndür
     if (!user.twoFactorEnabled) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu hesap için 2FA etkinleştirilmemiş' },
         { status: 400 }
       );
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     const cleanToken = twoFactorCode.replace(/\s/g, '');
     
     if (!secret || !/^\d{6}$/.test(cleanToken)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz doğrulama kodu' },
         { status: 400 }
       );
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest) {
     }
     
     if (!isValid) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz doğrulama kodu' },
         { status: 400 }
       );
@@ -117,13 +118,13 @@ export async function POST(req: NextRequest) {
     user.lastTwoFactorVerification = new Date();
     await user.save();
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'İki faktörlü doğrulama başarılı'
     });
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

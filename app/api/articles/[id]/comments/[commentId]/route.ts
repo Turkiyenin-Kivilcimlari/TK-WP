@@ -4,6 +4,7 @@ import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/auth
 import Comment from '@/models/Comment';
 import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
+import { encryptedJson } from '@/lib/response';
 
 // Dynamic route için yapılandırma
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function DELETE(
     // Kimlik doğrulama kontrolü
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -27,14 +28,14 @@ export async function DELETE(
 
     // ID kontrolü
     if (!articleId || !mongoose.Types.ObjectId.isValid(articleId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz makale kimliği' },
         { status: 400 }
       );
     }
 
     if (!commentId || !mongoose.Types.ObjectId.isValid(commentId)) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçersiz yorum kimliği' },
         { status: 400 }
       );
@@ -46,7 +47,7 @@ export async function DELETE(
     const comment = await Comment.findById(commentId);
 
     if (!comment) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yorum bulunamadı' },
         { status: 404 }
       );
@@ -64,7 +65,7 @@ export async function DELETE(
     } 
     // Ne kendi yorumu ne de admin - izin verme
     else {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu yorumu silme yetkiniz yok' },
         { status: 403 }
       );
@@ -78,12 +79,12 @@ export async function DELETE(
     // Yorumu sil
     await Comment.findByIdAndDelete(commentId);
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Yorum başarıyla silindi'
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

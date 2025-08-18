@@ -5,6 +5,7 @@ import { authenticateUser } from '@/middleware/authMiddleware';
 import crypto from 'crypto';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { encryptedJson } from '@/lib/response';
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
       // Session yoksa JWT token'ı kontrol et
       const authToken = await authenticateUser(req);
       if (!authToken) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Giriş yapmalısınız' },
           { status: 401 }
         );
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     
     // Token eksikse hata döndür
     if (!token || typeof token !== 'string') {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Geçerli bir doğrulama kodu gereklidir' },
         { status: 400 }
       );
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findById(userId).select('+twoFactorSecret');
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kullanıcı bulunamadı' },
         { status: 404 }
       );
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     // Kullanıcı admin ise, 2FA'yı devre dışı bırakmasına izin verme
     if (user.role === UserRole.ADMIN || user.role === UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yöneticiler için 2FA zorunludur' },
         { status: 403 }
       );
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
     
     // 2FA aktif değilse bildir
     if (!user.twoFactorEnabled) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: true, message: '2FA zaten devre dışı' },
         { status: 200 }
       );
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
     
     // Secret kontrolü
     if (!user.twoFactorSecret || typeof user.twoFactorSecret !== 'string') {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: '2FA yapılandırması geçersiz' },
         { status: 400 }
       );
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
       }
       
       if (!isValid) {
-        return NextResponse.json(
+        return encryptedJson(
           { success: false, message: 'Geçersiz doğrulama kodu' },
           { status: 400 }
         );
@@ -122,12 +123,12 @@ export async function POST(req: NextRequest) {
       user.lastTwoFactorVerification = undefined;
       await user.save();
       
-      return NextResponse.json({ 
+      return encryptedJson({ 
         success: true, 
         message: '2FA başarıyla devre dışı bırakıldı'
       });
     } catch (verifyError) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Doğrulama kodu işlenirken hata oluştu' },
         { status: 400 }
       );
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
     
   } catch (error) {
     
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Sunucu hatası',

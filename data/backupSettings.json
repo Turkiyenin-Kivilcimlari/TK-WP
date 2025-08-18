@@ -1,0 +1,31 @@
+{
+  "schedule": "0 3 * * *",
+  "retention": {
+    "days": 30,
+    "maxBackups": 10
+  },
+  "storage": {
+    "local": {
+      "path": "./backups"
+    }
+  },
+  "mongodb": {
+    "enabled": true,
+    "encrypt": false
+  },
+  "cloudinary": {
+    "enabled": true,
+    "encrypt": false,
+    "folders": []
+  },
+  "notifications": {
+    "email": {
+      "enabled": true,
+      "recipients": [
+        "kemalcalak@gmail.com"
+      ],
+      "onSuccess": true,
+      "onFailure": true
+    }
+  }
+}

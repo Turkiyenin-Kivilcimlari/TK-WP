@@ -30,6 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { LikeButton } from "@/components/button/LikeButton";
+import { SafeHTML } from "@/components/SafeHTML";
 
 interface CommentAuthor {
   id: string;
@@ -372,7 +373,7 @@ export function CommentsSection({ articleId, isAdmin = false }: CommentsSectionP
                       </div>
                       
                       <div className="mt-2 md:mt-3 text-xs md:text-sm">
-                        {comment.content}
+                        <SafeHTML html={comment.content} className="comment-content" />
                       </div>
                       
                       {/* Yanıt formu */}
@@ -497,7 +498,7 @@ export function CommentsSection({ articleId, isAdmin = false }: CommentsSectionP
                                 </div>
                                 
                                 <div className="mt-1 text-xs md:text-sm">
-                                  {reply.content}
+                                  <SafeHTML html={reply.content} className="comment-content" />
                                 </div>
                               </div>
                             </div>

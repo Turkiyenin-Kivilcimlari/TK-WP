@@ -21,6 +21,7 @@ interface ArticleCardProps {
       name: string;
       lastname: string;
       avatar: string;
+      slug: string;
     };
     likeCount: number;
     dislikeCount: number;
@@ -43,7 +44,8 @@ export function ArticleCard({ article }: ArticleCardProps) {
   // Yazar adını formatla
   const getAuthorName = (author: any) => {
     if (!author) return "Anonim";
-    if (author.name && author.lastname) return `${author.name} ${author.lastname}`;
+    if (author.name && author.lastname)
+      return `${author.name} ${author.lastname}`;
     if (author.name) return author.name;
     return "Anonim";
   };
@@ -61,7 +63,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
 
   // Tag değerinin label karşılığını bul
   const getTagLabel = (tagValue: string): string => {
-    const tag = ARTICLE_TAGS.find(t => t.value === tagValue);
+    const tag = ARTICLE_TAGS.find((t) => t.value === tagValue);
     return tag ? tag.label : tagValue;
   };
 
@@ -70,42 +72,49 @@ export function ArticleCard({ article }: ArticleCardProps) {
       <div className="p-3 flex flex-col h-full">
         {/* Yazar ve tarih */}
         <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
+          <Link
+            href={`/u/${article.author.slug}`}
+            className="flex items-center gap-1"
+          >
             <Avatar className="h-5 w-5">
-              <AvatarImage 
-                src={article.author?.avatar || ""} 
-                alt={getAuthorName(article.author)} 
+              <AvatarImage
+                src={article.author?.avatar || ""}
+                alt={getAuthorName(article.author)}
               />
               <AvatarFallback>
                 {getAuthorInitials(article.author)}
               </AvatarFallback>
             </Avatar>
             <span>{getAuthorName(article.author)}</span>
-          </div>
+          </Link>
           <span>{formatDate(article.date)}</span>
         </div>
 
         {/* Başlık ve içerik önizlemesi */}
         <Link href={`/articles/${article.slug}`} className="group">
-          <div className="h-[48px] mb-1"> {/* Başlık için yüksekliği azalttım */}
+          <div className="h-[48px] mb-1">
+            {" "}
+            {/* Başlık için yüksekliği azalttım */}
             <h3 className="text-base font-semibold line-clamp-2 group-hover:text-primary transition-colors">
               {article.title}
             </h3>
           </div>
-          <div className="h-[54px]"> {/* Açıklama için yüksekliği azalttım */}
+          <div className="h-[54px]">
+            {" "}
+            {/* Açıklama için yüksekliği azalttım */}
             <p className="text-muted-foreground text-xs line-clamp-3">
               {article.description}
             </p>
           </div>
-          
+
           {/* Makale resmi */}
           {article.thumbnail && (
             <div className="relative w-full aspect-[16/9] rounded-md overflow-hidden bg-muted my-2">
-              <Image 
-                src={article.thumbnail} 
-                alt={article.title} 
-                fill 
-                className="object-cover" 
+              <Image
+                src={article.thumbnail}
+                alt={article.title}
+                fill
+                className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </div>
@@ -146,7 +155,10 @@ export function ArticleCard({ article }: ArticleCardProps) {
                 </Badge>
               ))}
               {article.tags.length > 3 && (
-                <Badge variant="secondary" className="text-[10px] py-0 px-1 h-4">
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] py-0 px-1 h-4"
+                >
                   +{article.tags.length - 3}
                 </Badge>
               )}

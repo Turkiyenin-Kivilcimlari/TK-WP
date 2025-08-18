@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { encryptedJson } from '@/lib/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     // Check if the user is authenticated
     if (!session || !session.user) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: "Oturum bulunamadı",
@@ -32,10 +33,10 @@ export async function GET(req: NextRequest) {
     const userId = session.user.id;
     await connectToDatabase();
     
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select('+lastTwoFactorVerification');
     
     if (!user) {
-      return NextResponse.json(
+      return encryptedJson(
         { 
           success: false, 
           message: 'Kullanıcı bulunamadı',
@@ -58,20 +59,32 @@ export async function GET(req: NextRequest) {
     // Son doğrulama zamanını kontrol et (3 saat geçerliliği)
     // Admin kullanıcıları için süre kontrolünü 3 saat olarak ayarlayalım
     let isVerificationExpired = false;
-    
-    if (user.lastTwoFactorVerification) {
-      const now = new Date();
-      const lastVerification = new Date(user.lastTwoFactorVerification);
-      const diffMs = now.getTime() - lastVerification.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      const verificationTimeoutMins = 180; // Admin için 3 saat (180 dakika)
-      isVerificationExpired = diffMins > verificationTimeoutMins; 
+
+    if (isAdmin && isTwoFactorEnabled) {
+      // Doğrulama yapılmış mı kontrol et
+      if (isTwoFactorVerified) {
+        // Doğrulama zamanını kontrol et
+        if (user.lastTwoFactorVerification) {
+          const now = new Date();
+          const lastVerification = new Date(user.lastTwoFactorVerification);
+          const diffMs = now.getTime() - lastVerification.getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const verificationTimeoutMins = 180; // Admin için 3 saat (180 dakika)
+          isVerificationExpired = diffMins > verificationTimeoutMins; 
+        } else {
+          isVerificationExpired = true; // Değer yoksa doğrulama süresi dolmuş kabul et
+        }
+      } else {
+        // Doğrulama yapılmamış
+        isVerificationExpired = true;
+      }
     } else {
-      // Hiç doğrulama yapılmamışsa süresi geçmiş kabul et
-      isVerificationExpired = true;
+      // Admin olmayan kullanıcılar için always false
+      isVerificationExpired = false;
     }
     
-    return NextResponse.json({
+    
+    return encryptedJson({
       success: true,
       data: {
         enabled: isTwoFactorEnabled,
@@ -84,7 +97,7 @@ export async function GET(req: NextRequest) {
     });
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { 
         success: false, 
         message: 'Sunucu hatası',

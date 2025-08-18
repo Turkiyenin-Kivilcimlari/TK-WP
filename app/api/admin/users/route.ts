@@ -4,6 +4,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import User, { UserRole } from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
+import { encryptedJson } from '@/lib/response';
 
 // Tüm kullanıcıları getir (sadece yönetim üyeleri için)
 export async function GET(req: NextRequest) {
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
     
     // Kullanıcıları getir
     const users = await User.find(query)
-      .select('-password')
+      .select('name lastname email role avatar createdAt emailVerified twoFactorEnabled') // Sadece gerekli alanları seç, password ve twoFactorSecret hariç
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
     // Toplam kullanıcı sayısını hesapla
     const total = await User.countDocuments(query);
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       count: users.length,
       total,
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
       users
     });
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

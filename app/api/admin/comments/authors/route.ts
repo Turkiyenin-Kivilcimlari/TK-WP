@@ -4,6 +4,7 @@ import Comment from '@/models/Comment';
 import User from '@/models/User';
 import { checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
 import mongoose from 'mongoose';
+import { encryptedJson } from '@/lib/response';
 
 // Dynamic rendering için yapılandırma
 export const dynamic = 'force-dynamic';
@@ -32,12 +33,12 @@ export async function GET(req: NextRequest) {
       name: `${author.name || ''} ${author.lastname || ''}`.trim() || 'İsimsiz Kullanıcı'
     }));
 
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       authors: formattedAuthors
     });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

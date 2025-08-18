@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { deleteCloudinaryImage } from '@/lib/cloudinary';
+import { encryptedJson } from '@/lib/response';
 
 export async function POST(req: NextRequest) {
   try {
     // Kullanıcı kimlik doğrulaması
     const authResult = await authenticateUser(req);
     if (!authResult || !authResult.success) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Kimlik doğrulama başarısız' },
         { status: 401 }
       );
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
 
 
     if (!url) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Resim URL\'si eksik' },
         { status: 400 }
       );
@@ -30,18 +31,18 @@ export async function POST(req: NextRequest) {
     
     // İşlem sonucuna göre yanıt dön
     if (isDeleted) {
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         message: 'Resim başarıyla silindi'
       });
     } else {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Resim silinemedi' },
         { status: 500 }
       );
     }
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

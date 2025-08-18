@@ -7,6 +7,7 @@ import Article from '@/models/Article';
 import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
 import { authenticateUser } from '@/middleware/authMiddleware';
+import { encryptedJson } from '@/lib/response';
 
 // Yorumları getirme işlevi
 export async function GET(
@@ -18,13 +19,13 @@ export async function GET(
     const articleId = params.id;
 
     if (!mongoose.isValidObjectId(articleId)) {
-      return NextResponse.json({ message: "Geçersiz makale ID'si" }, { status: 400 });
+      return encryptedJson({ message: "Geçersiz makale ID'si" }, { status: 400 });
     }
 
     // Article modelini kontrol et - makale var mı?
     const article = await Article.findById(articleId);
     if (!article) {
-      return NextResponse.json({ message: "Makale bulunamadı" }, { status: 404 });
+      return encryptedJson({ message: "Makale bulunamadı" }, { status: 404 });
     }
 
     // Yorumları getir
@@ -78,9 +79,9 @@ export async function GET(
       });
     }
 
-    return NextResponse.json({ success: true, comments: formattedComments });
+    return encryptedJson({ success: true, comments: formattedComments });
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { message: "Yorumlar yüklenirken bir hata oluştu." },
       { status: 500 }
     );
@@ -97,7 +98,7 @@ export async function POST(
 
     // Kimlik doğrulama kontrolü ekleyelim
     if (!session || !session.user) {
-      return NextResponse.json(
+      return encryptedJson(
         { error: "Bu işlem için giriş yapmalısınız." },
         { status: 401 }
       );
@@ -121,7 +122,7 @@ export async function POST(
     const populatedComment = await Comment.findById(newComment._id)
       .populate('author', 'name lastname avatar');
     if (!populatedComment) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Yorum bulunamadı' },
         { status: 404 }
       );
@@ -137,14 +138,14 @@ export async function POST(
     }
     
     // Yanıt
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Yorum başarıyla eklendi',
       comment: formattedComment
     }, { status: 201 });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu' },
       { status: 500 }
     );

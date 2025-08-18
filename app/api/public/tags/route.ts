@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Article, { ArticleStatus } from '@/models/Article';
 import { ARTICLE_TAGS } from '@/lib/constants';
+import { encryptedJson } from '@/lib/response';
 
 // Dynamic rendering için yapılandırma
 export const dynamic = 'force-dynamic';
@@ -27,13 +28,13 @@ export async function GET(req: NextRequest) {
       };
     });
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       tags: formattedTags
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Etiketleri getirirken bir hata oluştu' },
       { status: 500 }
     );

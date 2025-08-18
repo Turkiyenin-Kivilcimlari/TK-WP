@@ -4,6 +4,7 @@ import Event, { EventStatus } from '@/models/Event';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { UserRole } from '@/models/User';
 import { checkAdminAuthWithTwoFactor } from '@/middleware/authMiddleware';
+import { encryptedJson } from '@/lib/response';
 
 // Etkinlik durumunu güncelleme (admin için)
 export async function PATCH(
@@ -18,7 +19,7 @@ export async function PATCH(
     // Normal token kontrolünü de yapalım
     const token = await authenticateUser(req);
     if (!token) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Giriş yapmalısınız' },
         { status: 401 }
       );
@@ -26,7 +27,7 @@ export async function PATCH(
     
     // Admin yetkisi kontrolü
     if (token.role !== UserRole.ADMIN && token.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Bu işlem için admin yetkisi gereklidir' },
         { status: 403 }
       );
@@ -41,7 +42,7 @@ export async function PATCH(
     const event = await Event.findById(eventId);
     
     if (!event) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'Etkinlik bulunamadı' },
         { status: 404 }
       );
@@ -51,14 +52,14 @@ export async function PATCH(
     event.status = status;
     await event.save();
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Etkinlik durumu güncellendi',
       event
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Bir hata oluştu'},
       { status: 500 }
     );

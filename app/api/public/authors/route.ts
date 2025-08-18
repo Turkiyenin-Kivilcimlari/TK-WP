@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/models/User';
 import Article, { ArticleStatus } from '@/models/Article';
+import { encryptedJson } from '@/lib/response';
 
 // Dynamic rendering için yapılandırma
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     });
     
     if (!articleAuthors || articleAuthors.length === 0) {
-      return NextResponse.json({
+      return encryptedJson({
         success: true,
         authors: []
       });
@@ -36,13 +37,13 @@ export async function GET(req: NextRequest) {
       avatar: author.avatar
     }));
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       authors: formattedAuthors
     });
     
   } catch (error: any) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Yazarları getirirken bir hata oluştu' },
       { status: 500 }
     );

@@ -22,6 +22,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -154,8 +155,14 @@ export function TwoFactorSetup() {
   // Ana yükleme durumu
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-10">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="flex flex-col space-y-4 py-10">
+        <Skeleton className="h-[40px] w-full bg-primary/20" />
+        <Skeleton className="h-[200px] w-full bg-primary/10" />
+        <Skeleton className="h-[40px] w-full bg-primary/20" />
+        <div className="flex space-x-3">
+          <Skeleton className="h-[30px] w-full bg-primary/10" />
+          <Skeleton className="h-[30px] w-1/3 bg-primary/20" />
+        </div>
       </div>
     );
   }

@@ -53,11 +53,21 @@ function VerifyEmailClient() {
       return;
     }
 
+    // Email formatını kontrol et - güvenlik için
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Geçersiz e-posta formatı");
+      return;
+    }
+
     setResendDisabled(true);
     setCountdown(60); // 60 saniye bekleme süresi
 
     try {
-      const response = await api.post("/auth/send-verification", { email });
+      const response = await api.post("/auth/send-verification", { 
+        email: email.trim().toLowerCase(), // Normalize email
+        forceNew: true 
+      });
 
       if (response.status === 200) {
         toast.success("Doğrulama kodu gönderildi", {
@@ -65,7 +75,7 @@ function VerifyEmailClient() {
         });
       } else {
         toast.error("Doğrulama kodu gönderilemedi", {
-          description: response.data.message,
+          description: "Bir hata oluştu",
         });
         setResendDisabled(false);
         setCountdown(0);
@@ -105,7 +115,7 @@ function VerifyEmailClient() {
         });
       } else {
         toast.error("Doğrulama kodu gönderilemedi", {
-          description: response.data.message,
+          description: "Bir hata oluştu",
         });
         setResendDisabled(false);
         setCountdown(0);
@@ -140,9 +150,7 @@ function VerifyEmailClient() {
           router.push("/signin");
         }, 2000);
       } else {
-        toast.error("Doğrulama başarısız", {
-          description: response.data.message,
-        });
+        toast.error("Doğrulama başarısız");
       }
     } catch (error: any) {
       toast.error("Doğrulama hatası", {
@@ -152,13 +160,6 @@ function VerifyEmailClient() {
       setIsSubmitting(false);
     }
   }, [otpCode, email, router]);
-
-  // OTP kodu değiştiğinde ve 6 hane olduğunda otomatik doğrulama yap
-  useEffect(() => {
-    if (otpCode.length === 6 && !isSubmitting && !isVerified) {
-      handleVerifyOtp();
-    }
-  }, [otpCode, isSubmitting, isVerified, handleVerifyOtp]);
 
   if (isVerified) {
     return (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { sendEmail } from '@/lib/mail';
+import { encryptedJson } from '@/lib/response';
 
 // Form verilerini doğrulamak için schema
 const contactFormSchema = z.object({
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
       contactFormSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return NextResponse.json({ success: false}, { status: 400 });
+        return encryptedJson({ success: false}, { status: 400 });
       }
       throw error;
     }
@@ -43,26 +44,26 @@ export async function POST(req: NextRequest) {
     
     // E-posta gönder
     const emailSent = await sendEmail({
-      to: 'contact@turkiyeninkivilcimlari.com',
+      to: 'info@turkiyeninkivilcimlari.com',
       subject: `İletişim Formu: ${subject}`,
       html,
       replyTo: email // Yanıtların doğrudan form gönderenin adresine gitmesi için
     });
     
     if (!emailSent) {
-      return NextResponse.json(
+      return encryptedJson(
         { success: false, message: 'E-posta gönderilemedi, lütfen daha sonra tekrar deneyin' },
         { status: 500 }
       );
     }
     
-    return NextResponse.json({
+    return encryptedJson({
       success: true,
       message: 'Mesajınız başarıyla gönderildi'
     });
     
   } catch (error) {
-    return NextResponse.json(
+    return encryptedJson(
       { success: false, message: 'Sunucu hatası' },
       { status: 500 }
     );

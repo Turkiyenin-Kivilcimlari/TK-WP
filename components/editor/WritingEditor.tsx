@@ -63,6 +63,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSession } from "next-auth/react";
+import { SafeHTML } from "@/components/SafeHTML";
 
 export type BlockType = "text" | "heading" | "image" | "code";
 
@@ -406,10 +407,8 @@ export function WritingEditor({ articleData, isEdit = false }: {
       router.push("/articles");
     } catch (error: any) {
       
-      // Daha detaylı hata mesajları
-      const errorMessage = "Yazınız kaydedilirken bir hata oluştu";
       
-      toast.error(errorMessage);
+      toast.error("Yazınız kaydedilirken bir hata oluştu");
     } finally {
       setIsSaving(false);
     }
@@ -491,16 +490,8 @@ export function WritingEditor({ articleData, isEdit = false }: {
       
       router.push("/articles");
     } catch (error: any) {
-      
-      // Daha detaylı hata yakalama
-      const errorResponse = error.response?.data;
-      let errorMessage = "Makale gönderilemedi";
-      
-      if (errorResponse) {
-        errorMessage = "Makale gönderilirken bir hata oluştu";
-      }
-      
-      toast.error(errorMessage);
+    
+      toast.error("Makale gönderilirken bir hata oluştu");
     } finally {
       setIsSaving(false);
     }
@@ -721,9 +712,9 @@ export function WritingEditor({ articleData, isEdit = false }: {
                 // Önizleme modunda içerik
                 <>
                   {block.type === "text" && (
-                    <div
+                    <SafeHTML 
+                      html={block.content} 
                       className="prose dark:prose-invert max-w-none prose-a:text-primary prose-a:underline hover:prose-a:text-primary/80"
-                      dangerouslySetInnerHTML={{ __html: block.content }}
                     />
                   )}
 
