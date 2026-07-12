@@ -1,26 +1,63 @@
-# Base image - Node.js
+# Multi-stage Dockerfile for Next.js 14 application
+# Optimized for security, performance, and caching
+
+# Base image with security updates
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
+# Install security updates and required packages
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    libc6-compat \
+    dumb-init \
+    python3 \
+    make \
+    g++ && \
+    rm -rf /var/cache/apk/*
+
+# Set working directory
 WORKDIR /app
 
-# Install dependencies for node-gyp
-RUN apk add --no-cache libc6-compat python3 make g++
+# Create non-root user early
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy package files - Improved caching
+# Dependencies stage - optimized for caching
+FROM base AS deps
+
+# Copy package files for better caching
 COPY package*.json ./
-# Install dependencies
-RUN npm ci
+
+# Install dependencies with security optimizations
+RUN npm ci --only=production --ignore-scripts && \
+    npm rebuild bcrypt --build-from-source && \
+    npm cache clean --force
+
+# Development dependencies stage
+FROM base AS dev-deps
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies including dev dependencies
+RUN npm ci --ignore-scripts && \
+    npm rebuild bcrypt --build-from-source && \
+    npm cache clean --force
 
 # Builder stage
 FROM base AS builder
-WORKDIR /app
 
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy dependencies from dev-deps stage
+COPY --from=dev-deps /app/node_modules ./node_modules
 
-# Copy necessary project files
+# Copy source code with proper ordering for cache optimization
+COPY next.config.js ./
+COPY tsconfig.json ./
+COPY tailwind.config.ts ./
+COPY postcss.config.mjs ./
+COPY components.json ./
+COPY package*.json ./
+
+# Copy application source
 COPY app/ ./app/
 COPY components/ ./components/
 COPY lib/ ./lib/
@@ -29,40 +66,39 @@ COPY hooks/ ./hooks/
 COPY types/ ./types/
 COPY middleware/ ./middleware/
 COPY middleware.ts ./
-COPY next.config.js ./
-COPY next.config.mjs ./
-COPY tsconfig.json ./
-COPY postcss.config.mjs ./
-COPY tailwind.config.ts ./
-COPY components.json ./
-COPY package.json ./
-COPY package-lock.json ./
-#COPY public/ ./public/
+COPY public/ ./public/
 
-# Build application
-RUN npm run build
+# Set build environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build the application
+RUN npm run build && \
+    npm prune --production
 
 # Production stage
 FROM base AS production
-WORKDIR /app
 
-# Set environment variables
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+# Set production environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Install curl for health checks
+RUN apk add --no-cache curl
 
-# Copy necessary files from builder
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
-COPY --from=builder /app/.next ./.next
-#COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
+# Copy built application from builder (standalone mode)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Ensure correct permissions
-RUN chown -R nextjs:nodejs .
+# Copy package.json for standalone mode
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Set correct permissions
+RUN chown -R nextjs:nodejs /app && \
+    chmod -R 755 /app
 
 # Switch to non-root user
 USER nextjs
@@ -70,12 +106,37 @@ USER nextjs
 # Expose port
 EXPOSE 3000
 
-# Set hostname
-ENV HOSTNAME "0.0.0.0"
+# Add comprehensive health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
+
+# Development stage
+FROM base AS development
+
+# Install additional development tools
+RUN apk add --no-cache git
+
+# Copy dependencies from dev-deps stage
+COPY --from=dev-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+# Copy source code
+COPY --chown=nextjs:nodejs . .
+
+# Set development environment
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Run as root in development for file permissions
+# USER nextjs
+
+# Expose port and debug port
+EXPOSE 3000 9229
+
+# Start development server with hot reload
+CMD ["npm", "run", "dev"]

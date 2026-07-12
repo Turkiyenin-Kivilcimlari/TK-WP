@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # Next.js Application - Development
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+      - "9229:9229" # Debug port
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - MONGODB_URI=mongodb://mongodb:27017/topluluk_dev
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-key}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-dev-nextauth-secret}
+      - NEXTAUTH_URL=http://localhost:3000
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_EMAIL=${MAIL_EMAIL}
+      - NEXT_PUBLIC_CLOUDFLARE_SITE_KEY=${NEXT_PUBLIC_CLOUDFLARE_SITE_KEY}
+      - CLOUDFLARE_WIDGET_SECRET_KEY=${CLOUDFLARE_WIDGET_SECRET_KEY}
+      - NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=${NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}
+    volumes:
+      - .:/app:cached
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: ./app
+          target: /app/app
+        - action: sync
+          path: ./components
+          target: /app/components
+        - action: sync
+          path: ./lib
+          target: /app/lib
+        - action: sync
+          path: ./hooks
+          target: /app/hooks
+        - action: sync
+          path: ./types
+          target: /app/types
+        - action: rebuild
+          path: package.json
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7-jammy
+    container_name: topluluk_mongodb_dev
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_DATABASE=topluluk_dev
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: topluluk_redis_dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass redis123
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # MongoDB Express - Database Admin UI
+  mongo-express:
+    image: mongo-express:1-20-alpine3.19
+    container_name: topluluk_mongo_express_dev
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password123
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:password123@mongodb:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin123
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Redis Commander - Redis Admin UI
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: topluluk_redis_commander_dev
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:redis123
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
