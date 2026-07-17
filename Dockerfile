@@ -83,6 +83,13 @@ ENV NEXT_PUBLIC_CLOUDFLARE_SITE_KEY=$NEXT_PUBLIC_CLOUDFLARE_SITE_KEY
 ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=$NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
 ENV NEXT_PUBLIC_ENCRYPTION_KEY=$NEXT_PUBLIC_ENCRYPTION_KEY
 
+# Build-time placeholders for modules that throw at import when these are
+# unset (e.g. lib/mongodb). No connection is made during `next build`;
+# real values are provided at runtime via the server's .env
+ENV MONGODB_URI=mongodb://build-placeholder:27017/build
+ENV JWT_SECRET=build-placeholder
+ENV NEXTAUTH_SECRET=build-placeholder
+
 # Build the application
 RUN npm run build && \
     npm prune --production
