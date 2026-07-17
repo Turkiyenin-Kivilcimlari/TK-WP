@@ -51,15 +51,20 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      packages: read
     steps:
       - name: Deploy over SSH
         env:
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
-            "$SSH_USER@$SSH_HOST" "bash /opt/tkwp/deploy.sh ${{ github.sha }}"
+          # GHCR package is private; log the server in with the job's token
+          printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
+            "$SSH_USER@$SSH_HOST" "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+          ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" "bash /opt/tkwp/deploy.sh ${{ github.sha }}"
