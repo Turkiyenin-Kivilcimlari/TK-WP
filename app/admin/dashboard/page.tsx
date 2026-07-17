@@ -375,21 +375,9 @@ export default function AdminDashboardPage() {
                 </CardFooter>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Database className="h-5 w-5" /> Yedekleme Yönetimi
-                  </CardTitle>
-                  <CardDescription>
-                    Sistem yedeklerini oluştur ve geri yükle
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter>
-                  <Button asChild className="w-full">
-                    <Link href="/admin/backup">Yedeklemeler</Link>
-                  </Button>
-                </CardFooter>
-              </Card>
+              {/* Backup management UI disabled: the in-app backup feature is
+                  non-functional in the container deployment. Database backups
+                  run via a nightly host-side mongodump cron instead. */}
             </>
           )}
         </div>

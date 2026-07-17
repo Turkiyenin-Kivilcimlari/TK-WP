@@ -28,9 +28,10 @@ export async function GET(req: NextRequest) {
     // Sorgu filtresi oluştur
     let filter: any = { status: 'published' };
     
-    // Arama filtresi
+    // Arama filtresi — escape regex metacharacters to prevent ReDoS/injection
     if (search) {
-      filter.title = { $regex: search, $options: 'i' };
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.title = { $regex: escaped, $options: 'i' };
     }
     
     // Etiket filtresi

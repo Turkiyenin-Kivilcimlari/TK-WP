@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="Etkinlik görseli">
+  <rect width="1200" height="675" fill="#1f2937"/>
+  <path d="M0 500 L300 380 L520 470 L780 300 L1000 420 L1200 340 L1200 675 L0 675 Z" fill="#374151"/>
+  <circle cx="960" cy="160" r="70" fill="#4b5563"/>
+  <text x="600" y="345" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="52" font-weight="600" fill="#9ca3af" text-anchor="middle">Türkiye'nin Kıvılcımları</text>
+  <text x="600" y="410" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="30" fill="#6b7280" text-anchor="middle">Etkinlik</text>
+</svg>

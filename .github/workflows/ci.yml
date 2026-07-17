@@ -33,5 +33,3 @@ jobs:
           JWT_SECRET: ci-placeholder
           NEXTAUTH_SECRET: ci-placeholder
           NEXT_PUBLIC_APP_URL: http://localhost:3000
-          # lib/crypto.ts throws at import if unset; must be 64 hex chars
-          NEXT_PUBLIC_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"

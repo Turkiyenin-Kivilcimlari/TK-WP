@@ -18,53 +18,72 @@ function getRateLimitData(endpoint: string) {
 }
 
 function getClientIP(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
+  // Behind Cloudflare -> nginx, the only trustworthy client IP is
+  // CF-Connecting-IP (set by Cloudflare) or X-Real-IP (set by nginx).
+  // x-forwarded-for is client-controllable and must not be trusted for
+  // rate limiting, so it's the last resort only.
+  const cfIP = request.headers.get('cf-connecting-ip');
+  if (cfIP) return cfIP.trim();
+
   const realIP = request.headers.get('x-real-ip');
-  
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
-  
-  if (realIP) {
-    return realIP;
-  }
-  
+  if (realIP) return realIP.trim();
+
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+
   return request.ip || 'unknown';
 }
 
-function isRateLimited(ip: string, endpoint: string): { limited: boolean; remainingTime?: number } {
+// Stricter per-minute limits for auth-sensitive endpoints to slow brute force.
+// Everything else keeps the generous default.
+function requestLimitFor(pathname: string): number {
+  const sensitive = [
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/reset-password-2fa',
+    '/api/auth/2fa/signin',
+    '/api/auth/2fa/verify',
+    '/api/auth/send-verification',
+    '/api/contact',
+  ];
+  return sensitive.some((p) => pathname.startsWith(p)) ? 10 : 100;
+}
+
+function isRateLimited(ip: string, endpoint: string, limit: number): { limited: boolean; remainingTime?: number } {
   const data = getRateLimitData(endpoint);
   const now = Date.now();
-  
+
   // Ban kontrolü
   const banUntil = data.bans.get(ip);
   if (banUntil && now < banUntil) {
     return { limited: true, remainingTime: Math.ceil((banUntil - now) / 1000) };
   }
-  
+
   // Ban süresi geçmişse temizle
   if (banUntil && now >= banUntil) {
     data.bans.delete(ip);
   }
-  
+
   // Rate limit kontrolü
   const requests = data.requests.get(ip) || [];
   const oneMinuteAgo = now - 60 * 1000;
-  
+
   // Eski istekleri temizle
   const recentRequests = requests.filter(time => time > oneMinuteAgo);
-  
-  if (recentRequests.length >= 100) {
+
+  if (recentRequests.length >= limit) {
     // 10 dakika ban uygula
     data.bans.set(ip, now + 10 * 60 * 1000);
     data.requests.delete(ip); // İstek geçmişini temizle
     return { limited: true, remainingTime: 600 };
   }
-  
+
   // Yeni isteği ekle
   recentRequests.push(now);
   data.requests.set(ip, recentRequests);
-  
+
   return { limited: false };
 }
 
@@ -86,8 +105,9 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/')) {
     const ip = getClientIP(request);
     const endpoint = pathname;
-    
-    const rateLimitResult = isRateLimited(ip, endpoint);
+    const limit = requestLimitFor(pathname);
+
+    const rateLimitResult = isRateLimited(ip, endpoint, limit);
     
     if (rateLimitResult.limited) {
       return new NextResponse(

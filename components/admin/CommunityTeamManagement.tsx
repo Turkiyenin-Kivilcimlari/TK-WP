@@ -288,7 +288,7 @@ export function CommunityTeamManagement() {
     try {
       // Önce üye bilgilerini al
       const member = teamMembers.find(
-        (m) => m._id === selectedMemberIdToDelete
+        (m) => String(m._id) === selectedMemberIdToDelete
       );
 
       const response = await api.delete(
@@ -464,7 +464,7 @@ export function CommunityTeamManagement() {
                         variant="outline"
                         size="icon"
                         className="text-red-500"
-                        onClick={() => handleRemoveMember(member._id as string)}
+                        onClick={() => handleRemoveMember(String(member._id))}
                       >
                         <Trash className="h-4 w-4" />
                       </Button>

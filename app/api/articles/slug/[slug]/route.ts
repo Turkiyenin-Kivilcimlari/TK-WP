@@ -66,7 +66,7 @@ export async function GET(
     
     // Convert ObjectId to string id
     formattedArticle.id = (formattedArticle._id as mongoose.Types.ObjectId).toString();
-    delete formattedArticle._id;
+    delete (formattedArticle as any)._id;
     
     // Format author data
     if (formattedArticle.author && formattedArticle.author._id) {

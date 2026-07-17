@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       
       // ID formatını düzenle
       formattedComment.id = (formattedComment._id as mongoose.Types.ObjectId).toString();
-      delete formattedComment._id;
+      delete (formattedComment as any)._id;
       
       // Yazar bilgilerini düzenle
       if (formattedComment.author) {

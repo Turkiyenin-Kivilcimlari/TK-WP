@@ -36,12 +36,20 @@ export default async function BackupLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // The in-app backup feature is non-functional in the container deployment
+  // (ephemeral disk, no mongo tools, missing routes). It is disabled by
+  // default; DB backups run via a nightly host-side mongodump cron. To
+  // re-enable after a proper rebuild, set ENABLE_BACKUP_UI=true.
+  if (process.env.ENABLE_BACKUP_UI !== "true") {
+    redirect("/admin/dashboard");
+  }
+
   const session = await getServerSession(authOptions);
-  
+
   if (!session) {
     redirect("/signin");
   }
-  
+
   // SuperAdmin her zaman erişebilir
   if (session.user.role === UserRole.SUPERADMIN) {
     return (

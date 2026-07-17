@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
     const formattedArticles = articles.map((article: IArticle) => {
       const formattedArticle = article.toObject();
       formattedArticle.id = (formattedArticle._id as any).toString();
-      delete formattedArticle._id;
+      delete (formattedArticle as any)._id;
       
       // Yazar varsa, yazar ID'sini düzelt
       if (formattedArticle.author && formattedArticle.author._id) {

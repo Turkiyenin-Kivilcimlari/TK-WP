@@ -809,7 +809,7 @@ export default function EventsPage() {
             >
               <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
                 <Image
-                  src={event.coverImage || "/images/placeholder-event.jpg"}
+                  src={event.coverImage || "/images/placeholder-event.svg"}
                   alt={event.title}
                   fill
                   className="object-cover transition-transform hover:scale-105"

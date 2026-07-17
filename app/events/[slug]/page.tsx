@@ -1161,7 +1161,7 @@ export default function EventDetailPage({
           <div className="relative w-full rounded-lg overflow-hidden mb-6">
             <div className="max-h-[400px] relative">
               <Image
-                src={event.coverImage || "/images/placeholder-event.jpg"}
+                src={event.coverImage || "/images/placeholder-event.svg"}
                 alt={event.title}
                 width={1200}
                 height={675}

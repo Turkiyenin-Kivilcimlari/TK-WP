@@ -6,6 +6,9 @@ const nextConfig = {
   images: {
     domains: ['api.microlink.io', 'res.cloudinary.com', 'images.unsplash.com', 'ui-avatars.com'],
     unoptimized: process.env.NODE_ENV === 'development',
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   
   // Output configuration for Docker

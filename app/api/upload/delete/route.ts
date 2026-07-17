@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     // Kullanıcı kimlik doğrulaması
     const authResult = await authenticateUser(req);
-    if (!authResult || !authResult.success) {
+    if (!authResult) {
       return encryptedJson(
         { success: false, message: 'Kimlik doğrulama başarısız' },
         { status: 401 }

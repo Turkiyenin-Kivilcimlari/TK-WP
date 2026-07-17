@@ -19,10 +19,30 @@ export async function POST(req: NextRequest) {
     const { image, folder = 'user_avatars' } = data;
     
 
-    if (!image) {
+    if (!image || typeof image !== 'string') {
       return encryptedJson(
         { success: false, message: 'Resim verisi eksik' },
         { status: 400 }
+      );
+    }
+
+    // Only accept base64 data URIs of allowed image types
+    const dataUriMatch = image.match(/^data:(image\/(png|jpe?g|webp|gif));base64,([A-Za-z0-9+/=]+)$/);
+    if (!dataUriMatch) {
+      return encryptedJson(
+        { success: false, message: 'Geçersiz resim formatı' },
+        { status: 400 }
+      );
+    }
+
+    // Enforce a max decoded size (~5MB) before sending to Cloudinary
+    const base64Data = dataUriMatch[3];
+    const approxBytes = Math.floor((base64Data.length * 3) / 4);
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (approxBytes > MAX_BYTES) {
+      return encryptedJson(
+        { success: false, message: 'Resim boyutu çok büyük (en fazla 5MB)' },
+        { status: 413 }
       );
     }
 

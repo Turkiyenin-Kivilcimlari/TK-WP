@@ -5,6 +5,7 @@ import { UserRole } from "@/models/User";
 import { connectToDatabase } from "@/lib/mongodb";
 import User from "@/models/User";
 import { encryptedJson } from "@/lib/response";
+import crypto from "crypto";
 
 // Yetki kontrolü yap
 async function checkPermission() {
@@ -128,7 +129,9 @@ export async function POST(request: NextRequest) {
       role: role || UserRole.MEMBER,
       avatar: avatar || "",
       emailVerified: true, // Admin tarafından oluşturulan kullanıcılar otomatik doğrulanmış
-      password: "temp123456", // Geçici şifre - kullanıcı şifre sıfırlama yapmalı
+      // Random one-time password; the account is unusable until the user
+      // completes a password reset (admins should trigger "forgot password").
+      password: crypto.randomBytes(24).toString("hex"),
     });
 
     await user.save();

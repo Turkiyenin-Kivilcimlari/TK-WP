@@ -43,7 +43,6 @@ jobs:
             NEXT_PUBLIC_APP_URL=https://turkiyeninkivilcimlari.com
             NEXT_PUBLIC_CLOUDFLARE_SITE_KEY=0x4AAAAAABQI5iBiMONER5aI
             NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-7ET6TLMWDD
-            NEXT_PUBLIC_ENCRYPTION_KEY=${{ secrets.NEXT_PUBLIC_ENCRYPTION_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

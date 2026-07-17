@@ -78,7 +78,7 @@ export async function GET(
     formattedArticle.id = (
       formattedArticle._id as mongoose.Types.ObjectId
     ).toString();
-    delete formattedArticle._id;
+    delete (formattedArticle as any)._id;
 
     // Yazar bilgisini düzenle
     if (formattedArticle.author && formattedArticle.author._id) {

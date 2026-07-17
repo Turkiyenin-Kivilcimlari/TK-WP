@@ -48,7 +48,7 @@ export async function GET(
         
         // Alt yorum ID dönüşümü
         replyObj.id = (replyObj._id as any).toString();
-        delete replyObj._id;
+        delete (replyObj as any)._id;
         
         // Alt yorum yazar ID dönüşümü
         if (replyObj.author && typeof replyObj.author === 'object' && '_id' in replyObj.author) {
@@ -64,7 +64,7 @@ export async function GET(
       
       // Ana yorum ID dönüşümü
       commentObj.id = (commentObj._id as any).toString();
-      delete commentObj._id;
+      delete (commentObj as any)._id;
       
       // Ana yorum yazar ID dönüşümü
       if (commentObj.author && typeof commentObj.author !== 'string' && (commentObj.author as any)._id) {
@@ -129,7 +129,7 @@ export async function POST(
     }
     const formattedComment = populatedComment.toObject() as { _id: any; [key: string]: any };
     formattedComment.id = formattedComment._id.toString();
-    delete formattedComment._id;
+    delete (formattedComment as any)._id;
     
     // Yazar _id'sini id'ye dönüştür
     if (formattedComment.author && formattedComment.author._id) {
