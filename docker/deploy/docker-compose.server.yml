@@ -1,0 +1,61 @@
+# Production compose file as installed at /opt/tkwp/docker-compose.yml on the
+# server. Images are built by GitHub Actions (deploy.yml) and pulled from
+# GHCR — nothing is built on the server (2GB RAM). Redis is intentionally
+# omitted: the app only references it in the health endpoint.
+services:
+  web:
+    image: ghcr.io/turkiyenin-kivilcimlari/tk-wp:${IMAGE_TAG:-latest}
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file: .env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
+  mongodb:
+    image: mongo:7-jammy
+    container_name: tkwp_mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_DATABASE}
+      - MONGO_APP_USERNAME=${MONGO_APP_USERNAME}
+      - MONGO_APP_PASSWORD=${MONGO_APP_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongodb/mongod.conf:/etc/mongod.conf:ro
+      - ./docker/mongodb/init-mongo-prod.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    command: ["mongod", "--config", "/etc/mongod.conf"]
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  mongodb_data:

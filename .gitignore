@@ -20,6 +20,10 @@
 .DS_Store
 *.pem
 
+# SSH keys — never commit (public repo)
+*.key
+ssh-key-*
+
 # debug
 npm-debug.log*
 yarn-debug.log*
