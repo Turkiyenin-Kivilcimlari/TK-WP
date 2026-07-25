@@ -16,9 +16,33 @@ import { SearchParamsWrapper } from '@/components/utils/SearchParamsWrapper';
 
 const inter = Inter({ subsets: ["latin"] });
 
+const SITE_DESCRIPTION =
+  "Türkiye'nin dört bir yanındaki gençleri teknoloji, bilim ve üretim " +
+  "kültürü etrafında buluşturan topluluk. Makaleler, etkinlikler ve daha fazlası.";
+
 export const metadata: Metadata = {
-  title: "Türkiye'nin Kıvılcımları",
-  description: "",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://turkiyeninkivilcimlari.com"
+  ),
+  title: {
+    default: "Türkiye'nin Kıvılcımları",
+    template: "%s | Türkiye'nin Kıvılcımları",
+  },
+  description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    siteName: "Türkiye'nin Kıvılcımları",
+    title: "Türkiye'nin Kıvılcımları",
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Türkiye'nin Kıvılcımları",
+  },
   verification: {
     google: "rceQ2iUC9oCm-WSNefE6s7-wns26ZGGPivz0jGMiY9Q"
   }
