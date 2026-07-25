@@ -5,6 +5,7 @@ import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/auth
 import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
 import { encryptedJson } from '@/lib/response';
+import { revalidateEventPages } from '@/lib/revalidate';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -71,7 +72,10 @@ export async function POST(
     event.reviewedBy = new mongoose.Types.ObjectId(token.id);
     
     await event.save();
-    
+
+    // Etkinlik yayına girdi: liste, detay ve sitemap önbelleğini tazele
+    revalidateEventPages(event.slug);
+
     return encryptedJson(
       { 
         success: true, 

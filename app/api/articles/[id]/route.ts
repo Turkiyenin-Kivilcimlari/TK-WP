@@ -7,6 +7,7 @@ import { UserRole } from '@/models/User';
 import { deleteMultipleImages } from '@/lib/cloudinary';
 import { createArticleSlug } from '@/lib/utils';
 import { encryptedJson } from '@/lib/response';
+import { revalidateArticlePages } from '@/lib/revalidate';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -300,15 +301,17 @@ export async function PATCH(
       { $set: updates },
       { new: true, runValidators: true }
     );
-    
+
     if (!updatedArticle) {
       return encryptedJson(
         { success: false, message: 'Makale güncellenemedi' },
         { status: 500 }
       );
     }
-    
-    
+
+    revalidateArticlePages(updatedArticle.slug);
+
+
     return encryptedJson({
       success: true,
       message: 'Makale başarıyla güncellendi',
@@ -426,8 +429,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         { status: 404 }
       );
     }
-    
-    
+
+    revalidateArticlePages(updatedArticle.slug);
+
+
     return encryptedJson({
       success: true,
       message: 'Makale başarıyla güncellendi',
@@ -510,6 +515,8 @@ export async function DELETE(
     
     // Önce makaleyi veritabanından sil
     await Article.findByIdAndDelete(articleId);
+
+    revalidateArticlePages(article.slug);
 
     // Ardından görselleri Cloudinary'den sil
     if (imageUrls.length > 0) {

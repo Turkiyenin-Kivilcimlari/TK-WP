@@ -5,6 +5,7 @@ import { authenticateUser, checkAdminAuthWithTwoFactor } from '@/middleware/auth
 import mongoose from 'mongoose';
 import { UserRole } from '@/models/User';
 import { encryptedJson } from '@/lib/response';
+import { revalidateArticlePages } from '@/lib/revalidate';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -101,8 +102,11 @@ export async function PATCH(
         { status: 500 }
       );
     }
-    
-    
+
+    // Yayın durumu değişti: liste, detay ve sitemap önbelleğini tazele
+    revalidateArticlePages(updatedArticle.slug);
+
+
     return encryptedJson({
       success: true,
       message: 'Makale durumu başarıyla güncellendi',

@@ -4,6 +4,7 @@ import Event, { EventStatus, EventType } from '@/models/Event';
 import { authenticateUser } from '@/middleware/authMiddleware';
 import { UserRole } from '@/models/User';
 import { encryptedJson } from '@/lib/response';
+import { revalidateEventPages } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -166,6 +167,8 @@ export async function PUT(
       );
     }
 
+    revalidateEventPages(updatedEvent.slug);
+
     return encryptedJson({
       success: true,
       message: 'Etkinlik başarıyla güncellendi',
@@ -221,6 +224,8 @@ export async function DELETE(
     
     // Etkinliği sil
     await Event.deleteOne({ _id: event._id });
+
+    revalidateEventPages(event.slug);
     
     return encryptedJson({
       success: true,

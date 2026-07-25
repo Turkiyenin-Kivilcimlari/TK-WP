@@ -112,10 +112,12 @@ export function useEvents({
   status,
   eventType,
   search = "",
-  grace = 60 // Varsayılan olarak 60 dakika (1 saat) 
-}: EventsQueryParams) {
+  grace = 60, // Varsayılan olarak 60 dakika (1 saat)
+  initialData // SSR'dan gelen ilk veri (yalnızca varsayılan sorgu için geçilmeli)
+}: EventsQueryParams & { initialData?: any }) {
   return useQuery({
     queryKey: ['events', { upcoming, past, my, status, eventType, search, grace }],
+    initialData,
     queryFn: async () => {
       let url = `/events?`;
       if (upcoming) url += `upcoming=true&`;
