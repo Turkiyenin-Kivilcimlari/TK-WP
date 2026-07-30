@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { getApprovedEventBySlug } from '@/lib/data/events';
+import { notFound } from 'next/navigation';
+import { eventSlugExists, getApprovedEventBySlug } from '@/lib/data/events';
 import { EventType } from '@/models/Event';
 import EventDetailClient from './EventDetailClient';
 
@@ -96,6 +97,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EventDetailPage({ params }: Props) {
   const event = await getApprovedEventBySlug(params.slug);
+
+  // Hiç var olmayan slug'lar gerçek 404 döner; onaylı olmayan ama var olan
+  // etkinlikler (taslak/onay bekleyen) istemcide oturum yetkisiyle açılabilsin
+  // diye 404'e düşürülmez.
+  if (!event && !(await eventSlugExists(params.slug))) {
+    notFound();
+  }
 
   const days: any[] = event?.eventDays || [];
   const firstDay = days[0];

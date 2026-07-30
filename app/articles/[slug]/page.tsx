@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { getPublishedArticleBySlug } from '@/lib/data/articles';
+import { notFound } from 'next/navigation';
+import { articleSlugExists, getPublishedArticleBySlug } from '@/lib/data/articles';
 import ArticleDetailClient from './ArticleDetailClient';
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL || 'https://turkiyeninkivilcimlari.com';
@@ -72,6 +73,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticleDetailPage({ params }: Props) {
   const article = await getPublishedArticleBySlug(params.slug);
+
+  // Hiç var olmayan slug'lar gerçek 404 döner; yayında olmayan ama var olan
+  // makaleler (taslak/onay bekleyen) istemcide oturum yetkisiyle açılabilsin
+  // diye 404'e düşürülmez.
+  if (!article && !(await articleSlugExists(params.slug))) {
+    notFound();
+  }
 
   const jsonLd = article
     ? {

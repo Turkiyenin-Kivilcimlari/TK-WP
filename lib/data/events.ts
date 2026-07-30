@@ -63,6 +63,23 @@ export const getApprovedEvents = cache(async (limit = 50) => {
 });
 
 /**
+ * Slug'ın herhangi bir durumda (onaysız dahil) var olup olmadığını söyler.
+ * DB hatasında true döner (fail-open): geçerli bir etkinlik DB
+ * kesintisi yüzünden 404'e düşmemeli.
+ */
+export const eventSlugExists = cache(async (slug: string) => {
+  if (!slug) return false;
+
+  try {
+    await connectToDatabase();
+    const count = await EventModel.countDocuments({ slug }).limit(1);
+    return count > 0;
+  } catch {
+    return true;
+  }
+});
+
+/**
  * Sitemap için onaylanmış etkinliklerin slug ve tarih bilgileri.
  */
 export const getApprovedEventSlugs = cache(async () => {

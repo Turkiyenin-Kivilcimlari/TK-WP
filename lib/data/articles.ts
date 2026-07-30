@@ -66,6 +66,23 @@ export const getPublishedArticles = cache(async (limit = 10) => {
 });
 
 /**
+ * Slug'ın herhangi bir durumda (taslak dahil) var olup olmadığını söyler.
+ * DB hatasında true döner (fail-open): geçerli bir makale DB
+ * kesintisi yüzünden 404'e düşmemeli.
+ */
+export const articleSlugExists = cache(async (slug: string) => {
+  if (!slug) return false;
+
+  try {
+    await connectToDatabase();
+    const count = await Article.countDocuments({ slug }).limit(1);
+    return count > 0;
+  } catch {
+    return true;
+  }
+});
+
+/**
  * Sitemap için yayında olan makalelerin slug ve tarih bilgileri.
  */
 export const getPublishedArticleSlugs = cache(async () => {
