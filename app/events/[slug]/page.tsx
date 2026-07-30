@@ -8,6 +8,14 @@ const BASE = process.env.NEXT_PUBLIC_APP_URL || 'https://turkiyeninkivilcimlari.
 
 export const revalidate = 3600;
 
+// Build'de yol üretilmez; tüm slug'lar ilk istekte render edilip ISR
+// önbelleğine alınır. Bu export olmadan Next rotayı her istekte dinamik
+// render ediyor, revalidate devre dışı kalıyor ve notFound() akış
+// başladığı için 404 durum kodu döndüremiyordu.
+export function generateStaticParams() {
+  return [];
+}
+
 interface Props {
   params: { slug: string };
 }
