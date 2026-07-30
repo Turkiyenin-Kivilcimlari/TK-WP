@@ -12,7 +12,6 @@ import { Suspense } from "react";
 import Script from "next/script";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import { ErrorHandler } from '@/components/layout/ErrorHandler';
-import { SearchParamsWrapper } from '@/components/utils/SearchParamsWrapper';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -54,43 +53,46 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <head>
-        <Script
-          id="Cookiebot"
-          src="https://consent.cookiebot.com/uc.js"
-          data-cbid="fd72f4c2-414a-4be3-977a-5ada0f1ac1e5"
-          strategy="beforeInteractive"
-        />
-      </head>
-      <html lang="tr" suppressHydrationWarning>
-        <body
-          className={`min-h-screen bg-background font-sans antialiased ${inter.className}`}
-        >
-          <Suspense fallback={null}>
-            <GoogleAnalytics />
-          </Suspense>
-          <Providers>
-            <SearchParamsWrapper>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
-              >
-                <Header />
-                <main className="min-h-screen">
-                  <ErrorHandler />
-                  {children}
-                  <SpeedInsights />
-                  <Analytics />
-                </main>
-                <Footer />
-              </ThemeProvider>
-            </SearchParamsWrapper>
-          </Providers>
-        </body>
-      </html>
-    </>
+    <html lang="tr" suppressHydrationWarning>
+      {/* beforeInteractive script'leri Next tarafından <head>'e taşınır; elle
+          <head> yazmak (hele <html> dışında) App Router'da geçersizdir ve
+          notFound()/durum kodu mekanizmasını bozuyordu. */}
+      <Script
+        id="Cookiebot"
+        src="https://consent.cookiebot.com/uc.js"
+        data-cbid="fd72f4c2-414a-4be3-977a-5ada0f1ac1e5"
+        strategy="beforeInteractive"
+      />
+      <body
+        className={`min-h-screen bg-background font-sans antialiased ${inter.className}`}
+      >
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
+        <Providers>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Header />
+            <main className="min-h-screen">
+              {/* ErrorHandler useSearchParams kullandığı için kendi Suspense
+                  sınırına alınır. children bilinçli olarak Suspense DIŞINDA:
+                  sayfa içeriğini saran bir sınır, sayfaların fırlattığı
+                  notFound() hatasını yutup 404 durum kodunu engelliyordu. */}
+              <Suspense fallback={null}>
+                <ErrorHandler />
+              </Suspense>
+              {children}
+              <SpeedInsights />
+              <Analytics />
+            </main>
+            <Footer />
+          </ThemeProvider>
+        </Providers>
+      </body>
+    </html>
   );
 }

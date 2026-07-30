@@ -78,11 +78,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = await getApprovedEventBySlug(params.slug);
 
   if (!event) {
-    // notFound() burada (generateMetadata'da) çağrılmalı: sayfa gövdesinde
-    // çağrılırsa streaming başladığı için durum kodu 200 olarak gitmiş oluyor.
-    if (!(await eventSlugExists(params.slug))) {
-      notFound();
-    }
     return { robots: { index: false, follow: false } };
   }
 

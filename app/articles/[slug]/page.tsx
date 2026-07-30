@@ -48,11 +48,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await getPublishedArticleBySlug(params.slug);
 
   if (!article) {
-    // notFound() burada (generateMetadata'da) çağrılmalı: sayfa gövdesinde
-    // çağrılırsa streaming başladığı için durum kodu 200 olarak gitmiş oluyor.
-    if (!(await articleSlugExists(params.slug))) {
-      notFound();
-    }
     // Taslak/onay bekleyen makaleler (yazarına istemci tarafında gösterilir)
     // dizine eklenmemeli.
     return { robots: { index: false, follow: false } };
