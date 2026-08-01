@@ -50,7 +50,17 @@ const nextConfig = {
   // Redirects
   async redirects() {
     return [
-      // Add any redirects here
+      // Eski sitenin /home tabanlı URL'leri (Google dizininde kalıntıları var)
+      {
+        source: '/home',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/home/:path*',
+        destination: '/',
+        permanent: true,
+      },
     ];
   },
   
