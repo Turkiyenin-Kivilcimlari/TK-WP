@@ -41,7 +41,7 @@ jobs:
             ${{ env.IMAGE }}:latest
           build-args: |
             NEXT_PUBLIC_APP_URL=https://turkiyeninkivilcimlari.com
-            NEXT_PUBLIC_CLOUDFLARE_SITE_KEY=0x4AAAAAABQI5iBiMONER5aI
+            NEXT_PUBLIC_CLOUDFLARE_SITE_KEY=0x4AAAAAAEL1SO1WPlx-YGJj
             NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-7ET6TLMWDD
           cache-from: type=gha
           cache-to: type=gha,mode=max
