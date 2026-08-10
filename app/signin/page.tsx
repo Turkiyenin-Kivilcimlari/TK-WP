@@ -328,12 +328,6 @@ function SignInWithSearchParams() {
                 setError("Robot doğrulama başarısız oldu. Lütfen tekrar deneyin.");
               }}
             />
-            {turnstileVerified && (
-              <div className="flex items-center text-sm text-green-600 mt-2">
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                <span>Robot doğrulaması başarılı</span>
-              </div>
-            )}
           </div>
 
           <Button

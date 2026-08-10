@@ -250,7 +250,6 @@ export default function ForgotPasswordPage() {
               onVerify={handleTurnstileVerify}
               onError={handleTurnstileError}
             />
-            {turnstileVerified && renderVerificationSuccess()}
           </div>
           
           <Button 

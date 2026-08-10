@@ -777,7 +777,6 @@ export function SignupForm({ className, ...props }: SignupFormProps) {
             onVerify={handleTurnstileVerify}
             onError={handleTurnstileError}
           />
-          {turnstileVerified && renderVerificationSuccess()}
         </div>
 
         <Button
