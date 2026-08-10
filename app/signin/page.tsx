@@ -262,6 +262,7 @@ function SignInWithSearchParams() {
             <Input
               id="email"
               type="email"
+              autoComplete="username"
               placeholder="ornek@email.com"
               {...form.register("email")}
               disabled={loading || isLoggingIn}
@@ -286,6 +287,7 @@ function SignInWithSearchParams() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 placeholder="••••••••"
                 {...form.register("password")}
                 disabled={loading || isLoggingIn}
